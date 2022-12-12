@@ -1,0 +1,20 @@
+version: '3'
+services:
+  strapi:
+    build: 
+      context: ./api
+    restart: unless-stopped
+    env_file: ./api/.env
+    network_mode: "host"
+    environment:
+      PORT: 1338
+      # DATABASE_URL: ${DATABASE_URL}
+      # JWT_SECRET: ${JWT_SECRET}
+      # ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      # API_TOKEN_SALT: ${API_TOKEN_SALT}
+      # APP_KEYS: ${APP_KEYS}
+      # R2_PUBLIC_URL: R2_PUBLIC_URL
+      # R2_ACCOUNT_ID: R2_ACCOUNT_ID
+      # R2_BUCKET: R2_BUCKET
+      # R2_ACCESS_SECRET: R2_ACCESS_SECRET
+      # R2_ACCESS_KEY_ID: R2_ACCESS_KEY_ID
