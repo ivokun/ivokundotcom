@@ -65,3 +65,19 @@ resource "aws_apigatewayv2_stage" "default" {
     )
   }
 }
+
+resource "aws_apigatewayv2_deployment" "api" {
+  api_id      = aws_apigatewayv2_api.lambda.id
+  description = "Lambda CMS"
+
+  triggers = {
+    redeployment = sha1(join(",", tolist([
+      jsonencode(aws_apigatewayv2_integration.api),
+      jsonencode(aws_apigatewayv2_route.api),
+    ])))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}

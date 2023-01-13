@@ -1,6 +1,28 @@
 # This file is maintained automatically by "terraform init".
 # Manual edits may be lost in future updates.
 
+provider "registry.terraform.io/cloudflare/cloudflare" {
+  version     = "3.0.1"
+  constraints = "~> 3.0.0"
+  hashes = [
+    "h1:6QArPU3wtSfrlxSOputzIsnjCAu8OgaXHwiSGRlbHto=",
+    "zh:0391be794d2421e5201291a2a8a7524a5b778b6a444a98f363b92cf061cbf430",
+    "zh:160d19e0d191fee3c3703ec086de99840cb03a7f5df25dcdaf3b7e836b6ca42e",
+    "zh:40783f957ddbeed51bb56841920491e77b3da4ccf093107d9917181bf17ae475",
+    "zh:4e321972670f4bc5ef60754ad4ebe597a99d1a7ff8509dd223e70d66b1cae391",
+    "zh:5a0f4909381bd1c2bb30edc1b68b9ec913ed6685c50289944e070b2de72399ca",
+    "zh:6814a6c1ba31955cad336eba5664ed769abf31da89d843039cd1b4b41bb7bc3e",
+    "zh:70afd25b3705b25186bfa81aa918adc10c1fa9cff9a90740880bf78799c451a4",
+    "zh:98bcd4a8bd66f963fdd0e0c200d7d74e53163847acd0f6980fa72af1d07c9def",
+    "zh:a58d3fa29e3281dca418b83738e2d1330fef215106158c9df26f5070d642eb55",
+    "zh:d59952d1208e07e111e0322ef1ca43e9f8798ccfaa87de357bb472d4d2dc7edd",
+    "zh:eb0281aa9aff7857f686aba196e296424b3967e5663460d37973a89e5f1a3b60",
+    "zh:eee26aa95cf41efa67765b5d0f30a27fdcc642a1a237490b7e774489a51751a6",
+    "zh:f50fe09dadbfe8e1eac04b8090606f87b95e475b267391709f67b874c9205ff6",
+    "zh:ff71d71caa3749a597f64192b7ec2353611071ce850bc3972095566566732db0",
+  ]
+}
+
 provider "registry.terraform.io/hashicorp/aws" {
   version     = "4.15.1"
   constraints = "~> 4.15.1"
