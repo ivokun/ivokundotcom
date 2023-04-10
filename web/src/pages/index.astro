@@ -1,59 +1,85 @@
 ---
-import Layout from "@layouts/Layout.astro";
-import { Header } from "@components/Header.tsx";
-const posts = [];
+import Layout from '@layouts/Layout.astro';
+import { Header } from '@components/Header';
+import { Type, Static } from '@sinclair/typebox';
+
+const PostSchema = Type.Object({
+  title: Type.String(),
+  content: Type.String(),
+  slug: Type.String(),
+  featuredPicture: Type.String(),
+  excerpt: Type.String(),
+  createdAt: Type.String(),
+  updatedAt: Type.String(),
+});
+type Post = Static<typeof PostSchema>;
+
+const posts: Post = [];
 ---
+
 <Layout>
   <Header />
   <main>
     <div class="border-b-[1px] py-5">
-    <h1 class="text-5xl">Hello world</h1>
-    <!-- Introduction about myself -->
-    <p class="text-xl mt-8 mb-2">
-      Welcome to my blog! I'm Ivokun, a Tech Lead at <a href="https://ib-tec.co.jp" target="_blank" class="text-blue-600 hover:text-blue-800">Inbound Technology</a>, and a passionate tinkerer. I enjoy working with various technologies such as IoT and web development, and I also love street photography. Follow my blog to explore the endless possibilities of these exciting fields together.
-    </p>
-    <!-- List of social links -->
-    <div class="flex flex-row space-x-4 text-md">
-      <p>
-        Find me on:
+      <h1 class="text-5xl">Hello world</h1>
+      <!-- Introduction about myself -->
+      <p class="text-xl mt-8 mb-2">
+        Welcome to my blog! I'm Ivokun, a Tech Lead at <a
+          href="https://ib-tec.co.jp"
+          target="_blank"
+          class="text-blue-600 hover:text-blue-800">Inbound Technology</a
+        >, and a passionate tinkerer. I enjoy working with various technologies
+        such as IoT and web development, and I also love street photography.
+        Follow my blog to explore the endless possibilities of these exciting
+        fields together.
       </p>
-      <a href="https://twitter.com/ivokun"
-        target="_blank"
-        class="text-blue-600 hover:text-blue-800"
-      >
-       Twitter 
-      </a>
-      <a href="https://instagram.com/ivokun"
-        target="_blank"
-        class="text-blue-600 hover:text-blue-800"
-      >
-        Instagram
-      </a>
-      <a href="https://github.com/ivokun"
-        target="_blank"
-        class="text-blue-600 hover:text-blue-800"
-      >
-        GitHub
-      </a>
+      <!-- List of social links -->
+      <div class="flex flex-row space-x-4 text-md">
+        <p>Find me on:</p>
+        <a
+          href="https://twitter.com/ivokun"
+          target="_blank"
+          class="text-blue-600 hover:text-blue-800"
+        >
+          Twitter
+        </a>
+        <a
+          href="https://instagram.com/ivokun"
+          target="_blank"
+          class="text-blue-600 hover:text-blue-800"
+        >
+          Instagram
+        </a>
+        <a
+          href="https://github.com/ivokun"
+          target="_blank"
+          class="text-blue-600 hover:text-blue-800"
+        >
+          GitHub
+        </a>
+      </div>
     </div>
-        </div>
 
     <!-- List of blog posts -->
     <div class="py-5">
       <h2 class="text-3xl">Blog posts</h2>
       <ul class="mt-4">
-        {posts && posts.length > 0 ? posts.map((post) => (
-          <li class="mt-4">
-            <a href={post.url} class="text-blue-600 hover:text-blue-800">
-              {post.title}
-            </a>
-            <p class="text-gray-500 text-sm">{post.date}</p>
-          </li>
-        )) : (
-          <li class="mt-4">
-            <p class="text-gray-500 text-sm">No posts yet</p>
-          </li>
-        )}
+        {
+          posts && posts.length > 0 ? (
+            posts.map((post) => (
+              <li class="mt-4">
+                <a href={post.url} class="text-blue-600 hover:text-blue-800">
+                  {post.title}
+                </a>
+                <p class="text-gray-500 text-sm">{post.date}</p>
+              </li>
+            ))
+          ) : (
+            <li class="mt-4">
+              <p class="text-gray-500 text-sm">No posts yet</p>
+            </li>
+          )
+        }
       </ul>
     </div>
   </main>
