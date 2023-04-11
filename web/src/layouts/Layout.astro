@@ -17,12 +17,27 @@ const socialImageURL = new URL(ogImage ? ogImage : 'ogp.jpg', Astro.url.origin)
   .href;
 ---
 
-<style>
-  body {
-    font-family: 'Noto Sans', open-sans, sans-serif;
-    max-width: 620px;
-    margin: 0 auto;
+<style is:global>
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  a {
+    @apply text-blue-600;
   }
+  a:hover {
+    @apply text-blue-400;
+    @apply underline;
+    @apply underline-offset-4;
+    @apply decoration-2;
+  }
+}
+body {
+  font-family: 'Noto Sans', open-sans, sans-serif;
+  max-width: 620px;
+  margin: 0 auto;
+}
 </style>
 
 <html lang="en">

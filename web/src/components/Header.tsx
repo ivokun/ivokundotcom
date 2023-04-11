@@ -6,23 +6,17 @@ export function Header() {
         <div className="justify-self-end">
           <ul className="flex space-x-4">
             <li>
-              <a href="/" className="text-lg text-blue-600 hover:text-blue-800">
+              <a href="/" className="text-lg">
                 Home
               </a>
             </li>
             <li>
-              <a
-                href="/posts"
-                className="text-lg text-blue-600 hover:text-blue-800"
-              >
+              <a href="/posts" className="text-lg">
                 Posts
               </a>
             </li>
             <li>
-              <a
-                href="/galleries"
-                className="text-lg text-blue-600 hover:text-blue-800"
-              >
+              <a href="/galleries" className="text-lg">
                 Galleries
               </a>
             </li>
