@@ -4,16 +4,25 @@ import { Header } from '@components/Header';
 import { marked } from 'marked';
 import type { Home } from '@api/home';
 
-const response = await fetch(`${import.meta.env.CMS_API_URL}/home?populate=*`, {
+const homeResponse = await fetch(`${import.meta.env.CMS_API_URL}/home?populate=*`, {
   headers: {
     'Content-Type': 'application/json',
     'Authorization': `bearer ${import.meta.env.CMS_API_TOKEN}`,
   },
 });
-const { data: homeData} = await response.json();
+const { data: homeData} = await homeResponse.json();
 const home: Home = homeData.attributes;
 const parsedDescription = marked.parse(home.description);
-const posts = [];
+
+const postResponse = await fetch(`${import.meta.env.CMS_API_URL}/posts?populate=*`, {
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `bearer ${import.meta.env.CMS_API_TOKEN}`,
+  },
+});
+const { data: postData} = await postResponse.json();
+const posts = postData.map((post) => post.attributes);
+
 console.log(homeData)
 ---
 
@@ -56,7 +65,7 @@ console.log(homeData)
           posts && posts.length > 0 ? (
             posts.map((post) => (
               <li class="mt-4">
-                <a href={post.url} class="text-blue-600 hover:text-blue-800">
+                <a href={`/${post.slug}`} class="text-blue-600 hover:text-blue-800">
                   {post.title}
                 </a>
                 <p class="text-gray-500 text-sm">{post.date}</p>
