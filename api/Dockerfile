@@ -1,5 +1,8 @@
 # Dockerfile
-FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:16.16.0-slim as builder
+FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:18.18.2-slim as builder
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 # Installing libvips-dev for sharp Compatability
 RUN apt-get update && apt-get install libvips-dev -y
 # Set environment to production
@@ -18,10 +21,10 @@ RUN yarn build
 
 
 
-FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:16.16.0-slim as runner
+FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:18.18.2-slim as runner
 # Installing libvips-dev for sharp Compatability
 RUN apt-get update && apt-get install libvips-dev -y
-COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.6.0 /lambda-adapter /opt/extensions/lambda-adapter
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.7.1 /lambda-adapter /opt/extensions/lambda-adapter
 ENV PORT=1337 NODE_ENV=production
 WORKDIR /app
 COPY --from=builder /opt/node_modules ./node_modules
@@ -29,5 +32,5 @@ COPY --from=builder /opt/app .
 COPY --from=builder /opt/package.json ./package.json
 
 EXPOSE 1337
-# Start the Strapi application 
+# Start the Strapi application
 CMD ["yarn", "start"]

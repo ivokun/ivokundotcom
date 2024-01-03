@@ -1,2 +1,4 @@
 infra/.terraform*
 .env.local
+node_modules
+.sst
