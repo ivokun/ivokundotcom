@@ -1,0 +1,23 @@
+---
+import Layout from '@layouts/Layout.astro';
+import { Header } from '@components/Header';
+import { Post, fetchPosts } from '@api/post';
+
+export async function getStaticPaths() {
+  const posts = await fetchPosts<Post[]>({
+    endpoint: 'posts?populate=*',
+    wrappedByKey: 'data'
+  });
+  return posts.map((post) =>({
+    params: { slug: post.attributes.slug },
+    props: post
+  }));
+}
+
+const post = Astro.props;
+---
+<Layout title={post.attributes.title}>
+      <h1 class="text-5xl">{post.attributes.title}</h1>
+      <div class="text-xl mt-8 mb-2" set:html={post.attributes.content} />
+</Layout>
+
