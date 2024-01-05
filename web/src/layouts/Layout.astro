@@ -1,5 +1,6 @@
 ---
 import { Header } from '@components/Header';
+import FooterNav from '@components/FooterNav';
 const googleSiteVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
 export interface Props {
   title?: string;
@@ -120,7 +121,7 @@ body {
                     <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                     <polyline points="9 22 9 12 15 12 15 22"></polyline>
                   </svg>
-                  Home
+                  Pekarangan 
                 </div>
               </a>
             </li>
@@ -142,16 +143,17 @@ body {
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                About Me
-                  </div>
+                    Tentangku
+                </div>
               </a>
             </li>
           </ul>
         </nav>
       </aside>
-    <main class="lg:pl-[19.5rem]">
+    <main class="px-4 mb-16 lg:mb-0 lg:pl-[19.5rem]">
       <slot />
-        </main>
+    </main>
     </div>
+    <FooterNav />
   </body>
 </html>
