@@ -1,7 +1,7 @@
 ---
 import Layout from '@layouts/Layout.astro';
-import { Header } from '@components/Header';
-import { Post, fetchPosts } from '@api/post';
+import { type Post, fetchPosts } from '@api/post';
+import { marked } from 'marked';
 
 export async function getStaticPaths() {
   const posts = await fetchPosts<Post[]>({
@@ -15,9 +15,27 @@ export async function getStaticPaths() {
 }
 
 const post = Astro.props;
+const { attributes: postAttributes } = post;
+const { title, featuredPicture, content } = postAttributes;
+const parsedContent = marked.parse(content ?? '');
+const featuredPictureFormats = featuredPicture.data.attributes.formats;
+const srcSetUrls = `${featuredPictureFormats.small.url} 500w, ${featuredPictureFormats.medium.url} 800w, ${featuredPictureFormats.large.url} 1000w`
 ---
 <Layout title={post.attributes.title}>
-      <h1 class="text-5xl">{post.attributes.title}</h1>
-      <div class="text-xl mt-8 mb-2" set:html={post.attributes.content} />
+  <h1 class="text-4xl lg:text-5xl pb-2 capitalize">{title}</h1>
+  <figure class="py-2">
+    <picture>
+    <img 
+      srcset={srcSetUrls}
+      sizes="(max-width: 480px) 500px, (max-width: 800px) 800px, 1000px"
+      src={featuredPictureFormats.large.url}
+      alt={featuredPicture.data.attributes.caption} 
+      decoding="async" 
+      loading="lazy" 
+    />
+    </picture>
+    <figcaption class="text-xs text-gray-500">{featuredPicture.data.attributes.caption}</figcaption>
+  </figure>
+  <article class="lg:text-xl py-2 lg:pb-16 flex flex-col gap-y-6 lg:gap-y-8" set:html={parsedContent} />
 </Layout>
 

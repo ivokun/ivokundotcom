@@ -1,4 +1,37 @@
-import { type Static, Type } from '@sinclair/typebox';
+import { type Static, Type } from "@sinclair/typebox";
+
+const FormatSchema = Type.Object({
+  url: Type.String({ format: "uri" }),
+  ext: Type.String(),
+  hash: Type.String(),
+  mime: Type.String(),
+  name: Type.String(),
+  width: Type.Integer(),
+  height: Type.Integer(),
+});
+const ImageFormatsSchema = Type.Object({
+  large: FormatSchema,
+  medium: FormatSchema,
+  small: FormatSchema,
+  thumbnail: FormatSchema,
+});
+
+const FeaturedPictureSchema = Type.Object({
+  data: Type.Object({
+    id: Type.Integer(),
+    attributes: Type.Object({
+      name: Type.String(),
+      url: Type.String({ format: "uri" }),
+      alternativeText: Type.String(),
+      caption: Type.String(),
+      width: Type.Integer(),
+      height: Type.Integer(),
+      formats: ImageFormatsSchema,
+    }),
+    createdAt: Type.String({ format: "date-time" }),
+    updatedAt: Type.String({ format: "date-time" }),
+  }),
+});
 
 const PostSchema = Type.Object({
   id: Type.Integer(),
@@ -6,11 +39,11 @@ const PostSchema = Type.Object({
     title: Type.String(),
     content: Type.String(),
     slug: Type.String(),
-    featuredPicture: Type.String(),
+    featuredPicture: FeaturedPictureSchema,
     excerpt: Type.String(),
-    createdAt: Type.String({ format: 'date-time' }),
-    updatedAt: Type.String({ format: 'date-time' }),
-    publishedAt: Type.String({ format: 'date-time' }),
+    createdAt: Type.String({ format: "date-time" }),
+    updatedAt: Type.String({ format: "date-time" }),
+    publishedAt: Type.String({ format: "date-time" }),
   }),
 });
 
@@ -29,7 +62,7 @@ export async function fetchPosts<T>({
   wrappedByKey,
   wrappedByList,
 }: Props): Promise<T> {
-  if (endpoint.startsWith('/')) {
+  if (endpoint.startsWith("/")) {
     endpoint = endpoint.slice(1);
   }
 
@@ -42,7 +75,7 @@ export async function fetchPosts<T>({
   }
   const res = await fetch(url.toString(), {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `bearer ${import.meta.env.CMS_API_TOKEN}`,
     },
   });
