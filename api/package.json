@@ -1,7 +1,7 @@
 {
   "name": "api",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.9.0",
   "description": "A Strapi application",
   "scripts": {
     "develop": "strapi develop",
@@ -9,15 +9,18 @@
     "build": "strapi build",
     "strapi": "strapi"
   },
-  "devDependencies": {},
   "dependencies": {
-    "@strapi/plugin-i18n": "4.4.5",
-    "@strapi/plugin-users-permissions": "4.4.5",
-    "@strapi/strapi": "4.4.5",
-    "better-sqlite3": "7.4.6",
-    "pg": "^8.8.0",
-    "pg-connection-string": "^2.5.0",
-    "strapi-provider-upload-cloudflare-r2": "^1.0.2"
+    "@strapi/typescript-utils": "^4.16.2",
+    "@strapi/plugin-i18n": "4.16.2",
+    "@strapi/plugin-users-permissions": "4.16.2",
+    "@strapi/strapi": "4.16.2",
+    "pg": "^8.11.3",
+    "pg-connection-string": "^2.6.2",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^5.2.0",
+    "strapi-provider-upload-cloudflare-r2": "^1.0.2",
+    "styled-components": "^5.2.1"
   },
   "author": {
     "name": "A Strapi developer"
@@ -25,5 +28,8 @@
   "strapi": {
     "uuid": "46728b9b-cfb9-40f9-b81c-023a8e0d30ea"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  }
 }

@@ -15,9 +15,14 @@ variable "dns_zone_name" {
   default     = "ivokun.com"
 }
 
+variable "prod_cms_api_endpoint" {
+  description = "value"
+  default     = "helloworld.execute-api.ap-southeast-1.amazonaws.com"
+}
+
 variable "api_ecr_version" {
   description = "Latest API ECR Image"
-  default     = "202304010647"
+  default     = "202401290940"
 }
 
 variable "cloudflare_email" {

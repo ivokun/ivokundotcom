@@ -8,6 +8,12 @@ export async function getStaticPaths() {
     endpoint: 'posts?populate=*',
     wrappedByKey: 'data'
   });
+  if (!posts) {
+    return [];
+  }
+  if (posts.length === 0) {
+    return [];
+  }
   return posts.map((post) =>({
     params: { slug: post.attributes.slug },
     props: post

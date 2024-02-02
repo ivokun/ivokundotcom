@@ -1,4 +1,4 @@
-module.exports = ({ env }) => ([
+export default ({ env }) => [
   "strapi::errors",
   "strapi::cors",
   "strapi::poweredBy",
@@ -20,18 +20,18 @@ module.exports = ({ env }) => ([
             "data:",
             "blob:",
             "dl.airtable.com",
-            env('R2_PUBLIC_URL').replace(/^https?:\/\//, ""), // removes http or https from url
+            env("R2_PUBLIC_URL").replace(/^https?:\/\//, ""), // removes http or https from url
           ],
           "media-src": [
             "'self'",
             "data:",
             "blob:",
             "dl.airtable.com",
-            env('R2_PUBLIC_URL').replace(/^https?:\/\//, ""),
+            env("R2_PUBLIC_URL").replace(/^https?:\/\//, ""),
           ],
           upgradeInsecureRequests: null,
         },
       },
     },
   },
-]);
+];
