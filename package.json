@@ -12,11 +12,14 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^16.1.1",
-    "@types/node": "^20.10.6",
-    "aws-cdk-lib": "2.84.0",
-    "constructs": "10.1.156",
-    "sst": "^2.39.2",
+    "@tsconfig/node18": "^18.2.2",
+    "@types/node": "^20.11.10",
+    "aws-cdk-lib": "2.110.1",
+    "constructs": "10.3.0",
+    "sst": "2.39.13",
     "typescript": "^5.3.3"
+  },
+  "volta": {
+    "node": "18.19.0"
   }
 }

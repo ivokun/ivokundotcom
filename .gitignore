@@ -2,3 +2,16 @@ infra/.terraform*
 .env.local
 node_modules
 .sst
+
+############################
+# Strapi
+############################
+
+.strapi
+.env
+license.txt
+exports
+*.cache
+dist
+build
+.strapi-updater.json

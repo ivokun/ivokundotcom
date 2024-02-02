@@ -5,7 +5,7 @@ export default {
   config(_input) {
     return {
       name: "ivokun",
-      region: "ap-northeast-1",
+      region: "ap-southeast-1",
     };
   },
   stacks(app) {
