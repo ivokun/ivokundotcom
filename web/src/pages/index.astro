@@ -1,46 +1,54 @@
 ---
-import Layout from '@layouts/Layout.astro';
-import { marked } from 'marked';
-import type { Home } from '@api/home';
-import { type Post, fetchPosts } from '@api/post';
-import dayjs from 'dayjs';
+import Layout from "@layouts/Layout.astro";
+import type { Home } from "@api/home";
+import dayjs from "dayjs";
+import { type Post, fetchPosts } from "@api/post";
+import { marked } from "marked";
 
-const homeResponse = await fetch(`${import.meta.env.CMS_API_URL}/home?populate=*`, {
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `bearer ${import.meta.env.CMS_API_TOKEN}`,
-  },
-});
-const { data: homeData} = await homeResponse.json();
+const homeResponse = await fetch(
+  `${import.meta.env.CMS_API_URL}/home?populate=*`,
+  {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `bearer ${import.meta.env.CMS_API_TOKEN}`,
+    },
+  }
+);
+const { data: homeData } = await homeResponse.json();
 const home: Home = homeData.attributes;
-const parsedDescription = marked.parse(home.description ?? '');
+const parsedDescription = marked.parse(home.description ?? "");
 
 const posts = await fetchPosts<Post[]>({
-  endpoint: 'posts?populate=*',
-  wrappedByKey: 'data',
+  endpoint: "posts?populate=*",
+  wrappedByKey: "data",
 });
 function formatDate(date: string) {
-  return dayjs(date).format('YYYY-MM-DD');
+  return dayjs(date).format("YYYY-MM-DD");
 }
 ---
 
 <Layout title="Home" description={parsedDescription}>
   <ul class="flex flex-col gap-y-2">
     {
-    posts && posts.length > 0 ? (
-    posts.map((post) => (
-    <li>
-    <a href={`/posts/${post.attributes.slug}`} class="text-blue-600 hover:text-blue-800 text-xl">
-    {post.attributes.title}
-    </a>
-    <p class="text-gray-500 text-sm">{formatDate(post.attributes.updatedAt)}</p>
-    </li>
-    ))
-    ) : (
-    <li>
-    <p class="text-gray-500 text-sm">No posts yet</p>
-    </li>
-    )
+      posts && posts.length > 0 ? (
+        posts.map((post) => (
+          <li>
+            <a
+              href={`/posts/${post.attributes.slug}`}
+              class="text-blue-600 hover:text-blue-800 text-xl"
+            >
+              {post.attributes.title}
+            </a>
+            <p class="text-gray-500 text-sm">
+              {formatDate(post.attributes.updatedAt)}
+            </p>
+          </li>
+        ))
+      ) : (
+        <li>
+          <p class="text-gray-500 text-sm">No posts yet</p>
+        </li>
+      )
     }
   </ul>
 </Layout>
