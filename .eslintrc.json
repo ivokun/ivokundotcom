@@ -1,7 +1,7 @@
 {
   "root": true,
   "ignorePatterns": ["**/*"],
-  "plugins": ["simple-import-sort", "astro/recommended"],
+  "plugins": ["simple-import-sort", "astro"],
   "overrides": [
     {
       "files": ["*.ts", "*.js"],
