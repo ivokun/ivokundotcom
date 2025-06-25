@@ -14,6 +14,7 @@
       "@components/*": ["src/components/*"],
       "@layouts/*": ["src/layouts/*"],
       "@api/*": ["src/api/*"]
-    }
+    },
+    "typeRoots": []
   }
 }

@@ -1,0 +1,185 @@
+---
+import NewLayout from "@layouts/NewLayout.astro";
+import Navigation from "@components/Navigation.astro";
+import ArticleCard from "@components/ArticleCard.astro";
+import { fetchArticles, Article } from "@api/article";
+import { fetchCategories, Category, filterArticleCategories, formatCategoryName } from "@api/category";
+
+// Fetch articles
+const articles = await fetchArticles<Article[]>({
+  endpoint: "posts?populate=*",
+  wrappedByKey: "data",
+});
+
+// Fetch categories with their related posts
+const allCategories = await fetchCategories<Category[]>({
+  endpoint: "categories?populate=posts",
+  wrappedByKey: "data",
+});
+
+// Filter categories that have related articles
+const articleCategories = filterArticleCategories(allCategories);
+
+// Get the category from URL query parameter if available
+const { searchParams } = Astro.url;
+const selectedCategory = searchParams.get('category') || 'all';
+---
+
+<NewLayout title="ARTICLES - IVOKUN BLOG">
+  <Navigation />
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="article-filters">
+          <button 
+            class={`filter-btn ${selectedCategory === 'all' ? 'active' : ''}`} 
+            data-filter="all"
+          >
+            ALL
+          </button>
+          {articleCategories.map((category) => {
+            const categoryValue = formatCategoryName(category.attributes.name);
+            return (
+              <button 
+                class={`filter-btn ${selectedCategory === categoryValue ? 'active' : ''}`}
+                data-filter={categoryValue}
+              >
+                {formatCategoryName(category.attributes.name, true)}
+              </button>
+            );
+          })}
+        </div>
+
+        <div class="articles-grid">
+          {
+            articles.map((article: Article) => {
+              const articleCategory = article.attributes.category.data.attributes.name.toLowerCase();
+              const isVisible = selectedCategory === 'all' || selectedCategory === articleCategory;
+              return (
+                <div 
+                  class="article-wrapper" 
+                  data-category={articleCategory}
+                  style={isVisible ? '' : 'display: none;'}
+                >
+                  <ArticleCard article={article} />
+                </div>
+              );
+            })
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</NewLayout>
+
+<style>
+  .section {
+    padding: 4rem 0;
+  }
+
+  .article-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    background: var(--color-white);
+    color: var(--color-black);
+    border: 3px solid var(--color-black);
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .filter-btn:hover,
+  .filter-btn.active {
+    background: var(--color-black);
+    color: var(--color-white);
+  }
+
+  .filter-btn.active {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--color-blue);
+  }
+
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+  }
+
+  .article-wrapper {
+    transition: all 0.3s ease;
+  }
+
+  .article-wrapper.hidden {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .section {
+      padding: 2rem 0;
+    }
+
+    .article-filters {
+      margin-bottom: 2rem;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    .articles-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const filterBtns = document.querySelectorAll(".filter-btn");
+    const articleWrappers = document.querySelectorAll(".article-wrapper");
+
+    filterBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        // Get the filter value
+        const filter = btn.dataset.filter;
+        
+        // Update URL with the selected category
+        const url = new URL(window.location);
+        if (filter === "all") {
+          url.searchParams.delete("category");
+        } else {
+          url.searchParams.set("category", filter);
+        }
+        
+        // Update browser history without reloading the page
+        window.history.pushState({}, "", url);
+        
+        // Remove active class from all buttons
+        filterBtns.forEach((b) => b.classList.remove("active"));
+        // Add active class to clicked button
+        btn.classList.add("active");
+
+        // Show/hide articles based on filter
+        articleWrappers.forEach((wrapper) => {
+          if (filter === "all" || wrapper.dataset.category === filter) {
+            wrapper.style.display = "block";
+          } else {
+            wrapper.style.display = "none";
+          }
+        });
+      });
+    });
+  });
+</script>
