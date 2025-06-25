@@ -33,12 +33,23 @@ const FeaturedPictureSchema = Type.Object({
   }),
 });
 
-const PostSchema = Type.Object({
+const ArticleSchema = Type.Object({
   id: Type.Integer(),
   attributes: Type.Object({
     title: Type.String(),
     content: Type.String(),
     slug: Type.String(),
+    category: Type.Object({
+      data: Type.Object({
+        id: Type.Integer(),
+        attributes: Type.Object({
+          name: Type.String(),
+          description: Type.String(),
+          slug: Type.String(),
+        }),
+      }),
+    }),
+    readTimeMinute: Type.Integer(),
     featuredPicture: FeaturedPictureSchema,
     excerpt: Type.String(),
     createdAt: Type.String({ format: "date-time" }),
@@ -47,7 +58,7 @@ const PostSchema = Type.Object({
   }),
 });
 
-export type Post = Static<typeof PostSchema>;
+export type Article = Static<typeof ArticleSchema>;
 
 type Props = {
   endpoint: string;
@@ -56,7 +67,7 @@ type Props = {
   wrappedByList?: boolean;
 };
 
-export async function fetchPosts<T>({
+export async function fetchArticles<T>({
   endpoint,
   query,
   wrappedByKey,

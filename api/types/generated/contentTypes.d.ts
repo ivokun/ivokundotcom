@@ -768,6 +768,48 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
   };
 }
 
+export interface ApiCategoryCategory extends Schema.CollectionType {
+  collectionName: 'categories';
+  info: {
+    singularName: 'category';
+    pluralName: 'categories';
+    displayName: 'Category';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    name: Attribute.String;
+    description: Attribute.RichText;
+    slug: Attribute.UID<'api::category.category', 'name'>;
+    posts: Attribute.Relation<
+      'api::category.category',
+      'oneToMany',
+      'api::post.post'
+    >;
+    galleries: Attribute.Relation<
+      'api::category.category',
+      'oneToMany',
+      'api::gallery.gallery'
+    >;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    publishedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::category.category',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::category.category',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
 export interface ApiGalleryGallery extends Schema.CollectionType {
   collectionName: 'galleries';
   info: {
@@ -784,6 +826,11 @@ export interface ApiGalleryGallery extends Schema.CollectionType {
     title: Attribute.String;
     description: Attribute.RichText;
     slug: Attribute.UID<'api::gallery.gallery', 'title'>;
+    category: Attribute.Relation<
+      'api::gallery.gallery',
+      'manyToOne',
+      'api::category.category'
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
@@ -834,16 +881,59 @@ export interface ApiPostPost extends Schema.CollectionType {
     singularName: 'post';
     pluralName: 'posts';
     displayName: 'Post';
+    description: '';
   };
   options: {
     draftAndPublish: true;
   };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
   attributes: {
-    title: Attribute.String;
-    content: Attribute.RichText;
-    featuredPicture: Attribute.Media;
+    title: Attribute.String &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    content: Attribute.RichText &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    featuredPicture: Attribute.Media &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
     slug: Attribute.UID<'api::post.post', 'title'>;
-    excerpt: Attribute.String;
+    excerpt: Attribute.String &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    readTimeMinute: Attribute.Integer &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
+    category: Attribute.Relation<
+      'api::post.post',
+      'manyToOne',
+      'api::category.category'
+    >;
+    richContent: Attribute.Blocks &
+      Attribute.SetPluginOptions<{
+        i18n: {
+          localized: true;
+        };
+      }>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
@@ -851,6 +941,12 @@ export interface ApiPostPost extends Schema.CollectionType {
       Attribute.Private;
     updatedBy: Attribute.Relation<'api::post.post', 'oneToOne', 'admin::user'> &
       Attribute.Private;
+    localizations: Attribute.Relation<
+      'api::post.post',
+      'oneToMany',
+      'api::post.post'
+    >;
+    locale: Attribute.String;
   };
 }
 
@@ -872,6 +968,7 @@ declare module '@strapi/types' {
       'plugin::users-permissions.permission': PluginUsersPermissionsPermission;
       'plugin::users-permissions.role': PluginUsersPermissionsRole;
       'plugin::users-permissions.user': PluginUsersPermissionsUser;
+      'api::category.category': ApiCategoryCategory;
       'api::gallery.gallery': ApiGalleryGallery;
       'api::home.home': ApiHomeHome;
       'api::post.post': ApiPostPost;

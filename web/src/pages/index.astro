@@ -1,9 +1,10 @@
 ---
 import type { Home } from "@api/home";
-import dayjs from "dayjs";
-import Layout from "@layouts/Layout.astro";
-import { type Post, fetchPosts } from "@api/post";
+import NewLayout from "@layouts/NewLayout.astro";
 import { marked } from "marked";
+import Navigation from '@components/Navigation.astro';
+import HeroImage from '@components/HeroImage.astro';
+
 
 const homeResponse = await fetch(
   `${import.meta.env.CMS_API_URL}/home?populate=*`,
@@ -18,37 +19,15 @@ const { data: homeData } = await homeResponse.json();
 const home: Home = homeData.attributes;
 const parsedDescription = marked.parse(home.description ?? "");
 
-const posts = await fetchPosts<Post[]>({
-  endpoint: "posts?populate=*",
-  wrappedByKey: "data",
-});
-function formatDate(date: string) {
-  return dayjs(date).format("YYYY-MM-DD");
-}
 ---
 
-<Layout title="Home" description={parsedDescription}>
-  <ul class="flex flex-col gap-y-2">
-    {
-      posts && posts.length > 0 ? (
-        posts.map((post) => (
-          <li>
-            <a
-              href={`/posts/${post.attributes.slug}`}
-              class="text-blue-600 hover:text-blue-800 text-xl"
-            >
-              {post.attributes.title}
-            </a>
-            <p class="text-gray-500 text-sm">
-              {formatDate(post.attributes.updatedAt)}
-            </p>
-          </li>
-        ))
-      ) : (
-        <li>
-          <p class="text-gray-500 text-sm">No posts yet</p>
-        </li>
-      )
-    }
-  </ul>
+<NewLayout title="HOME - IVOKUN BLOG" description={parsedDescription}>
+  <Navigation />
+  <HeroImage 
+    title="IVOKUN BLOG"
+    subtitle="Raw. Bold. Unfiltered."
+    description={home.description ?? ""}
+    imageUrl="https://static.ivokun.com/large_Connection_6f16270cb4.JPG"
+    imageAlt="Two silhouetted figures standing against a brightly lit marble-patterned wall, creating dramatic contrast between dark figures and illuminated background"
+  />
 </Layout>

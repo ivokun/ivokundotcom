@@ -1,0 +1,476 @@
+---
+import NewLayout from "@layouts/NewLayout.astro";
+import Navigation from "@components/Navigation.astro";
+import { type Article, fetchArticles } from "@api/article";
+import { parse } from "marked";
+import dayjs from "dayjs";
+
+export async function getStaticPaths() {
+  const articles = await fetchArticles<Article[]>({
+    endpoint: "posts?populate=*",
+    wrappedByKey: "data",
+  });
+  if (!articles) {
+    return [];
+  }
+  if (articles.length === 0) {
+    return [];
+  }
+  return articles.map((article) => ({
+    params: { slug: article.attributes.slug },
+    props: article,
+  }));
+}
+
+const article = Astro.props;
+const { attributes: articleAttributes } = article;
+const { 
+  title, 
+  featuredPicture, 
+  content, 
+  excerpt, 
+  readTimeMinute, 
+  category,
+  publishedAt,
+  updatedAt 
+} = articleAttributes;
+
+// Parse markdown content
+const parsedContent = parse(content ?? "");
+console.log("Parsed content:", parsedContent);
+
+// Prepare image responsive srcset
+const featuredPictureFormats = featuredPicture.data.attributes.formats;
+const srcSetUrls = `${featuredPictureFormats.small.url} 500w, ${featuredPictureFormats.medium.url} 800w, ${featuredPictureFormats.large.url} 1000w`;
+
+// Format dates
+const publishDate = publishedAt ? dayjs(publishedAt).format("MMMM D, YYYY") : null;
+const updateDate = updatedAt ? dayjs(updatedAt).format("MMMM D, YYYY") : null;
+const displayDate = updateDate || publishDate;
+
+// Reading time
+const readTime = readTimeMinute ? `${readTimeMinute} min read` : "Quick read";
+
+// Category
+const categoryName = category?.data?.attributes?.name || "Uncategorized";
+---
+
+<NewLayout title={`${title} - IVOKUN BLOG`}>
+  <Navigation />
+  
+  <main class="article-page">
+    <div class="container">
+      <!-- Article Header -->
+      <header class="article-header">
+        <div class="article-meta">
+          <span class="article-category" data-category={categoryName.toLowerCase()}>
+            {categoryName.toUpperCase()}
+          </span>
+          <time class="article-date">{displayDate}</time>
+          <span class="article-readtime">{readTime}</span>
+        </div>
+        
+        <h1 class="article-title">{title}</h1>
+      </header>
+      
+      <!-- Featured Image -->
+      <figure class="article-featured-image">
+        <picture>
+          <source media="(min-width: 1200px)" srcset={featuredPictureFormats.large.url} />
+          <source media="(min-width: 768px)" srcset={featuredPictureFormats.medium.url} />
+          <source media="(max-width: 767px)" srcset={featuredPictureFormats.small.url} />
+          <img 
+            src={featuredPictureFormats.large.url}
+            alt={featuredPicture.data.attributes.caption || title}
+            width={featuredPictureFormats.large.width}
+            height={featuredPictureFormats.large.height}
+            loading="eager"
+          />
+        </picture>
+        {featuredPicture.data.attributes.caption && (
+          <figcaption class="image-caption">
+            {featuredPicture.data.attributes.caption}
+          </figcaption>
+        )}
+      </figure>
+      
+      <!-- Article Content -->
+      <div class="article-content-wrapper">
+        <article class="article-content" set:html={parsedContent} />
+        
+        <!-- Article Footer -->
+        <footer class="article-footer">
+          <div class="article-tags">
+            <a href={`/articles?category=${categoryName.toLowerCase()}`} class="article-tag">
+              {categoryName.toUpperCase()}
+            </a>
+          </div>
+          
+          <div class="article-share">
+            <span class="share-label">SHARE</span>
+            <div class="share-buttons">
+              <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(Astro.url.href)}`} target="_blank" rel="noopener noreferrer" class="share-button">
+                <span>X</span>
+              </a>
+              <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(Astro.url.href)}`} target="_blank" rel="noopener noreferrer" class="share-button">
+                <span>FB</span>
+              </a>
+              <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(Astro.url.href)}&title=${encodeURIComponent(title)}`} target="_blank" rel="noopener noreferrer" class="share-button">
+                <span>LI</span>
+              </a>
+            </div>
+          </div>
+        </footer>
+      </div>
+      
+      <!-- Back to Articles -->
+      <div class="back-to-articles">
+        <a href="/articles" class="back-link">
+          ← BACK TO ARTICLES
+        </a>
+      </div>
+    </div>
+  </main>
+</NewLayout>
+
+<style>
+  .article-page {
+    padding: 2rem 0 4rem;
+  }
+  
+  .container {
+    max-width: 900px;
+  }
+  
+  /* Article Header */
+  .article-header {
+    margin-bottom: 2rem;
+  }
+  
+  .article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+  }
+  
+  .article-category {
+    font-family: var(--font-sans);
+    font-weight: 900;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    border: 2px solid var(--color-blue);
+    padding: 0.25rem 0.5rem;
+    color: var(--color-blue);
+  }
+  
+  .article-category[data-category="tech"] {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+  }
+  
+  .article-category[data-category="photography"] {
+    border-color: var(--color-black);
+    color: var(--color-black);
+  }
+  
+  .article-date,
+  .article-readtime {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--color-gray);
+  }
+  
+  .article-title {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    line-height: 1;
+    margin-bottom: 1.5rem;
+    text-transform: none;
+  }
+  
+  .article-excerpt {
+    font-size: 1.25rem;
+    line-height: 1.4;
+    color: var(--color-gray);
+    margin-bottom: 2rem;
+    border-left: 4px solid var(--color-blue);
+    padding-left: 1rem;
+  }
+  
+  .article-excerpt p {
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  
+  /* Featured Image */
+  .article-featured-image {
+    margin-bottom: 3rem;
+    border: 4px solid var(--color-black);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 10px 10px 0 var(--color-blue);
+  }
+  
+  .article-featured-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  .image-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.75rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+  
+  /* Article Content */
+  .article-content-wrapper {
+    background: var(--color-white);
+    border: 4px solid var(--color-black);
+    padding: 3rem;
+    margin-bottom: 3rem;
+  }
+  
+  .article-content {
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--color-black);
+  }
+  
+  .article-content h2 {
+    font-size: 2rem;
+    margin: 2rem 0 1rem;
+    border-bottom: 2px solid var(--color-black);
+    padding-bottom: 0.5rem;
+    text-transform: none;
+  }
+  
+  .article-content h3 {
+    font-size: 1.5rem;
+    margin: 1.5rem 0 1rem;
+    text-transform: none;
+  }
+  
+  .article-content p {
+    margin-bottom: 1.5rem;
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+  }
+  
+  .article-content ul,
+  .article-content ol {
+    margin: 0 0 1.5rem 1.5rem;
+  }
+  
+  .article-content li {
+    margin-bottom: 0.5rem;
+    font-family: var(--font-sans);
+  }
+  
+  .article-content a {
+    color: var(--color-blue);
+    border-bottom: 2px solid var(--color-blue);
+  }
+  
+  .article-content a:hover {
+    background: var(--color-blue);
+    color: var(--color-white);
+  }
+  
+  .article-content blockquote {
+    border-left: 4px solid var(--color-blue);
+    padding-left: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    font-style: italic;
+    color: var(--color-gray);
+  }
+  
+  .article-content pre {
+    background: #f5f5f5;
+    border: 2px solid var(--color-black);
+    padding: 1rem;
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+  }
+  
+  .article-content code {
+    font-family: var(--font-mono);
+    background: #f5f5f5;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9rem;
+  }
+  
+  .article-content img {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid var(--color-black);
+    margin: 1.5rem 0;
+  }
+  
+  /* Article Footer */
+  .article-footer {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--color-black);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  
+  .article-tags {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .article-tag {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.4rem 0.8rem;
+    background: var(--color-black);
+    color: var(--color-white);
+    border: none;
+    transition: all 0.2s ease;
+  }
+  
+  .article-tag:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 3px 3px 0 var(--color-blue);
+  }
+  
+  .article-share {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .share-label {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-gray);
+  }
+  
+  .share-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .share-button {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-white);
+    border: 2px solid var(--color-black);
+    color: var(--color-black);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+  }
+  
+  .share-button:hover {
+    background: var(--color-blue);
+    color: var(--color-white);
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0 var(--color-black);
+  }
+  
+  /* Back to Articles */
+  .back-to-articles {
+    text-align: center;
+  }
+  
+  .back-link {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: var(--color-white);
+    color: var(--color-black);
+    border: 3px solid var(--color-black);
+    transition: all 0.2s ease;
+  }
+  
+  .back-link:hover {
+    background: var(--color-black);
+    color: var(--color-white);
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--color-blue);
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .article-page {
+      padding: 1rem 0 3rem;
+    }
+    
+    .article-content-wrapper {
+      padding: 1.5rem;
+    }
+    
+    .article-title {
+      font-size: 2rem;
+    }
+    
+    .article-excerpt {
+      font-size: 1rem;
+    }
+    
+    .article-excerpt p {
+      font-size: 1rem;
+    }
+    
+    .article-meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    
+    .article-featured-image {
+      box-shadow: 6px 6px 0 var(--color-blue);
+      margin-bottom: 2rem;
+    }
+    
+    .article-content {
+      font-size: 1rem;
+    }
+    
+    .article-content h2 {
+      font-size: 1.5rem;
+    }
+    
+    .article-content h3 {
+      font-size: 1.25rem;
+    }
+    
+    .article-content p {
+      font-size: 1rem;
+    }
+    
+    .article-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+  }
+</style>

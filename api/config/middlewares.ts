@@ -21,12 +21,16 @@ export default ({ env }) => [
             "blob:",
             "dl.airtable.com",
             env("R2_PUBLIC_URL").replace(/^https?:\/\//, ""), // removes http or https from url
+            "static.ivokun.com",
+            "strapi.io",
+            "market-assets.strapi.io",
           ],
           "media-src": [
             "'self'",
             "data:",
             "blob:",
             "dl.airtable.com",
+            "static.ivokun.com",
             env("R2_PUBLIC_URL").replace(/^https?:\/\//, ""),
           ],
           upgradeInsecureRequests: null,
