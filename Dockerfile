@@ -12,10 +12,10 @@ COPY . /usr/src/app
 WORKDIR /usr/src/app
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm --filter=api run build
-RUN pnpm deploy --filter=api --prod /prod/api
+RUN pnpm deploy --filter=api --prod /prod/api --legacy
 
 FROM --platform=linux/amd64 base
-COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.1-x86_64 /lambda-adapter /opt/extensions/lambda-adapter
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1-x86_64 /lambda-adapter /opt/extensions/lambda-adapter
 COPY --from=build /prod/api /prod/api
 WORKDIR /prod/api
 ENV PORT=1337 NODE_ENV=production

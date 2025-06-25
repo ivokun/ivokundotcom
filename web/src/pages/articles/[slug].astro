@@ -55,7 +55,11 @@ const readTime = readTimeMinute ? `${readTimeMinute} min read` : "Quick read";
 const categoryName = category?.data?.attributes?.name || "Uncategorized";
 ---
 
-<NewLayout title={`${title} - IVOKUN BLOG`}>
+<NewLayout 
+  title={`${title} - IVOKUN BLOG`}
+  description={excerpt || `Read ${title} on IVOKUN BLOG`}
+  ogImage={featuredPicture.data.attributes.formats.large.url}
+>
   <Navigation />
   
   <main class="article-page">

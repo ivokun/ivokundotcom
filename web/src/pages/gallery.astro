@@ -24,7 +24,10 @@ const allCategories = await fetchCategories<Category[]>({
 const galleryCategories = filterGalleryCategories(allCategories);
 ---
 
-<NewLayout title="GALLERY - IVOKUN BLOG">
+<NewLayout 
+  title="GALLERY - IVOKUN BLOG"
+  description="Explore IVOKUN's photo gallery - A collection of unique moments and perspectives"
+>
   <Navigation />
   
   <main>

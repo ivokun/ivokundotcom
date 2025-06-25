@@ -21,7 +21,11 @@ const parsedDescription = marked.parse(home.description ?? "");
 
 ---
 
-<NewLayout title="HOME - IVOKUN BLOG" description={parsedDescription}>
+<NewLayout 
+  title="HOME - IVOKUN BLOG" 
+  description={parsedDescription}
+  ogImage="https://static.ivokun.com/large_Connection_6f16270cb4.JPG"
+>
   <Navigation />
   <HeroImage 
     title="IVOKUN BLOG"
@@ -30,4 +34,4 @@ const parsedDescription = marked.parse(home.description ?? "");
     imageUrl="https://static.ivokun.com/large_Connection_6f16270cb4.JPG"
     imageAlt="Two silhouetted figures standing against a brightly lit marble-patterned wall, creating dramatic contrast between dark figures and illuminated background"
   />
-</Layout>
+</NewLayout>

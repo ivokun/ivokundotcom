@@ -9,9 +9,11 @@ const {
   title = "Ivokun",
   author = "Salahuddin Muhammad Iqbal",
   description = "Ivokun is a blog about web development, programming, and technology.",
-  ogImage = "https://worldinfreelance.ib-tec.co.jp/img/ogp.jpg",
+  ogImage = "/ivokun_logo.png",
 } = Astro.props;
 
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || "https://ivokun.com").href;
+const socialImageURL = new URL(ogImage, Astro.url.origin).href;
 ---
 
 <!doctype html>
@@ -23,6 +25,21 @@ const {
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <title>{title}</title>
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={socialImageURL} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={socialImageURL} />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
