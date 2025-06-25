@@ -25,7 +25,10 @@ const { searchParams } = Astro.url;
 const selectedCategory = searchParams.get('category') || 'all';
 ---
 
-<NewLayout title="ARTICLES - IVOKUN BLOG">
+<NewLayout 
+  title="ARTICLES - IVOKUN BLOG"
+  description="Browse all articles on IVOKUN BLOG - Tech, Photography, and more"
+>
   <Navigation />
 
   <main>

@@ -17,7 +17,11 @@ const home: Home = homeData.attributes;
 const parsedDescription = marked.parse(home.description ?? "");
 ---
 
-<Layout title="About Me">
+<Layout 
+  title="About Me"
+  description="Learn more about Salahuddin Muhammad Iqbal, the person behind IVOKUN BLOG"
+  ogImage="/ivokun_logo.png"
+>
   <div class="border-b-[1px]">
     <h1 class="text-5xl">{home.title}</h1>
     <!-- Introduction about myself -->

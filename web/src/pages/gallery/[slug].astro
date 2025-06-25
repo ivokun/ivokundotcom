@@ -40,7 +40,11 @@ const nextItem = currentIndex < allItems.length - 1 ? allItems[currentIndex + 1]
 console.log(nextItem, prevItem, currentItem);
 ---
 
-<NewLayout title={`${currentItem.title} - IVOKUN BLOG`}>
+<NewLayout 
+  title={`${currentItem.title} - IVOKUN BLOG`}
+  description={currentItem.description || `View ${currentItem.title} in IVOKUN's Gallery`}
+  ogImage={currentItem.formats.large}
+>
   <Navigation />
   
   <main class="photo-viewer">
