@@ -1,5 +1,5 @@
 # Dockerfile
-FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:18-slim as base
+FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:22-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV COREPACK_ENABLE_AUTO_PIN=0
@@ -11,12 +11,12 @@ ENV NODE_ENV=production
 RUN apt-get update && apt-get install libvips -y
 COPY . /usr/src/app
 WORKDIR /usr/src/app
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --no-frozen-lockfile
 RUN pnpm --filter=api run build
-RUN pnpm deploy --filter=api --prod /prod/api
+RUN pnpm deploy --filter=api --prod /prod/api --legacy
 
 FROM --platform=linux/amd64 base
-COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.1-x86_64 /lambda-adapter /opt/extensions/lambda-adapter
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1-x86_64 /lambda-adapter /opt/extensions/lambda-adapter
 COPY --from=build /prod/api /prod/api
 WORKDIR /prod/api
 ENV PORT=1337 NODE_ENV=production

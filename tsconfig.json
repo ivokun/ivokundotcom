@@ -1,8 +1,9 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
+  "extends": "@tsconfig/node22/tsconfig.json",
   "exclude": ["packages"],
   "compilerOptions": {
-    "moduleResolution": "node",
-    "typeRoots": []
+    "typeRoots": [],
+    "jsx": "react-jsx",
+    "noEmit": true
   }
 }
