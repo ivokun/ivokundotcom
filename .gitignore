@@ -1,4 +1,6 @@
 .terraform
+*.tfstate
+*.tfstate.*
 .env.local
 node_modules
 .sst
