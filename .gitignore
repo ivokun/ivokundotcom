@@ -1,4 +1,4 @@
-infra/.terraform*
+.terraform
 .env.local
 node_modules
 .sst
