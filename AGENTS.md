@@ -2,21 +2,22 @@
 
 ## Build/Lint/Test Commands
 
-- Root: `pnpm typecheck` - TypeScript type checking across all packages
-- Root: `pnpm dev` - Start SST development environment
-- Root: `pnpm build` - Build all services
-- Web: `pnpm -F web dev` - Start Astro dev server
-- Web: `pnpm -F web build` - Build Astro site
-- API Hono: `pnpm -F api-hono dev` - Start Hono API server with DynamoDB
-- API Hono: `pnpm -F api-hono test` - Run all tests with Vitest
-- API Hono: `pnpm -F api-hono test <filename>` - Run single test file
-- API Hono: `pnpm -F api-hono test:watch` - Run tests in watch mode
-- API Hono: `pnpm -F api-hono lint` - ESLint for TypeScript files
+- Root: `bun run typecheck` - TypeScript type checking across all packages
+- Root: `bun run dev` - Start SST development environment
+- Root: `bun run build` - Build all services
+- Web: `bun --filter web dev` - Start Astro dev server
+- Web: `bun --filter web build` - Build Astro site
+- API Hono: `bun --filter api-hono dev` - Start Hono API server with DynamoDB
+- API Hono: `bun --filter api-hono test` - Run all tests with Vitest
+- API Hono: `bun --filter api-hono test <filename>` - Run single test file
+- API Hono: `bun --filter api-hono test:watch` - Run tests in watch mode
+- API Hono: `bun --filter api-hono lint` - ESLint for TypeScript files
 
 ## Code Style Guidelines
 
-- **Package Manager**: Use pnpm (v10.12.4) exclusively, never npm or yarn
+- **Package Manager**: Use bun (v1.1.38+) exclusively, never npm, yarn, or pnpm
 - **Node Version**: Requires Node.js >=22.17.0 (specified in engines and volta)
+- **Bun Version**: Requires bun >=1.1.38
 - **Formatting**: Use Prettier with singleQuote enabled
 - **Imports**: MUST be sorted using `simple-import-sort` ESLint plugin - this is enforced
 - **TypeScript**: Strict typing, extends @tsconfig/node22, use `noEmit: true` for type checking

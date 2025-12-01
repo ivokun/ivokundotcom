@@ -5,18 +5,19 @@
   "main": "dist/index.js",
   "type": "module",
   "engines": {
-    "node": ">=22.17.0"
+    "node": ">=22.17.0",
+    "bun": ">=1.1.38"
   },
-  "packageManager": "pnpm@10.12.4",
+  "packageManager": "bun@1.1.38",
   "scripts": {
-    "dev": "concurrently \"pnpm:dev:db\" \"pnpm:dev:server\"",
+    "dev": "concurrently \"bun run dev:db\" \"bun run dev:server\"",
     "dev:db": "docker-compose up -d dynamodb-local dynamodb-admin",
     "dev:server": "tsx watch src/index.ts",
-    "dev:setup": "pnpm run db:create && pnpm run db:migrate && pnpm run db:seed",
-    "dev:clean": "docker-compose down -v && pnpm run clean",
-    "build": "pnpm run clean && pnpm run typecheck && pnpm run build:esbuild",
+    "dev:setup": "bun run db:create && bun run db:migrate && bun run db:seed",
+    "dev:clean": "docker-compose down -v && bun run clean",
+    "build": "bun run clean && bun run typecheck && bun run build:esbuild",
     "build:esbuild": "esbuild src/index.ts --bundle --platform=node --target=node22.17.0 --outfile=dist/index.js --external:sharp --sourcemap",
-    "build:production": "pnpm run build && pnpm run build:compress",
+    "build:production": "bun run build && bun run build:compress",
     "build:compress": "gzip -9 dist/index.js",
     "start": "node dist/index.js",
     "start:dev": "NODE_ENV=development node dist/index.js",
