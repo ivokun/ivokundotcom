@@ -7,7 +7,8 @@
   "workspaces": [
     "api",
     "web",
-    "api-hono"
+    "api-hono",
+    "cms"
   ],
   "scripts": {
     "build": "sst build",
@@ -16,7 +17,16 @@
     "dev": "sst dev",
     "remove": "sst remove",
     "sst": "sst",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:new": "dbmate -d ./db/migrations new",
+    "db:up": "dbmate -d ./db/migrations up",
+    "db:down": "dbmate -d ./db/migrations down",
+    "db:status": "dbmate -d ./db/migrations status",
+    "db:dump": "dbmate -d ./db/migrations dump",
+    "db:reset": "dbmate -d ./db/migrations drop && dbmate -d ./db/migrations up",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
   },
   "devDependencies": {
     "@tsconfig/node22": "22.0.0",

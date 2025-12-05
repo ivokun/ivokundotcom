@@ -1,0 +1,8 @@
+node_modules
+public
+dist
+db
+*.lock
+*.log
+.env
+.env.*

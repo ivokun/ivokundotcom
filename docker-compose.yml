@@ -1,20 +1,74 @@
-version: '3'
+version: '3.8'
+
 services:
+  # PostgreSQL database for CMS
+  postgres:
+    image: postgres:16-alpine
+    container_name: ivokundotcom-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ivokundotcom_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Strapi CMS (legacy)
   strapi:
     build: 
       context: ./api
     restart: unless-stopped
     env_file: ./api/.env
-    network_mode: "host"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "1338:1338"
     environment:
       PORT: 1338
-      # DATABASE_URL: ${DATABASE_URL}
-      # JWT_SECRET: ${JWT_SECRET}
-      # ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
-      # API_TOKEN_SALT: ${API_TOKEN_SALT}
-      # APP_KEYS: ${APP_KEYS}
-      # R2_PUBLIC_URL: R2_PUBLIC_URL
-      # R2_ACCOUNT_ID: R2_ACCOUNT_ID
-      # R2_BUCKET: R2_BUCKET
-      # R2_ACCESS_SECRET: R2_ACCESS_SECRET
-      # R2_ACCESS_KEY_ID: R2_ACCESS_KEY_ID
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/ivokundotcom_dev
+
+  # DynamoDB Local (for api-hono development)
+  dynamodb-local:
+    image: amazon/dynamodb-local:2.5.2
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data"]
+    volumes:
+      - dynamodb_data:/home/dynamodblocal/data
+    working_dir: /home/dynamodblocal
+    restart: unless-stopped
+
+  # DynamoDB Admin UI
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin:4.6.1
+    container_name: dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://dynamodb-local:8000
+    depends_on:
+      - dynamodb-local
+    restart: unless-stopped
+
+  # MailHog for email testing
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  dynamodb_data:

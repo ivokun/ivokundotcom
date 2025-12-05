@@ -1,0 +1,10 @@
+# devenv.yaml - Input configuration for devenv
+# See: https://devenv.sh/inputs/
+
+inputs:
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
+  
+  # Pre-commit hooks
+  pre-commit-hooks:
+    url: github:cachix/pre-commit-hooks.nix
