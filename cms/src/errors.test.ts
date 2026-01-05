@@ -5,7 +5,7 @@ import * as Errors from './errors';
 describe('Error System', () => {
   test('NotFound generates correct message', () => {
     const error = new Errors.NotFound({ resource: 'Post', id: 'abc123' });
-    expect(error.message).toBe("Post with id abc123 not found");
+    expect(error.message).toBe('Post with id abc123 not found');
     expect(error._tag).toBe('NotFound');
   });
 
@@ -46,25 +46,19 @@ describe('Error System', () => {
     expect(Errors.toHttpStatus(new Errors.InvalidApiKey({}))).toBe(401);
     expect(Errors.toHttpStatus(new Errors.Unauthorized({ action: 'test' }))).toBe(403);
     expect(Errors.toHttpStatus(new Errors.SlugConflict({ slug: 'x' }))).toBe(409);
-    expect(
-      Errors.toHttpStatus(new Errors.ValidationError({ errors: [] }))
-    ).toBe(400);
-    expect(
-      Errors.toHttpStatus(new Errors.DatabaseError({ cause: null, operation: 'test' }))
-    ).toBe(500);
-    expect(
-      Errors.toHttpStatus(new Errors.StorageError({ cause: null, operation: 'test' }))
-    ).toBe(500);
-    expect(
-      Errors.toHttpStatus(new Errors.ImageProcessingError({ cause: null }))
-    ).toBe(500);
+    expect(Errors.toHttpStatus(new Errors.ValidationError({ errors: [] }))).toBe(400);
+    expect(Errors.toHttpStatus(new Errors.DatabaseError({ cause: null, operation: 'test' }))).toBe(
+      500
+    );
+    expect(Errors.toHttpStatus(new Errors.StorageError({ cause: null, operation: 'test' }))).toBe(
+      500
+    );
+    expect(Errors.toHttpStatus(new Errors.ImageProcessingError({ cause: null }))).toBe(500);
     expect(Errors.toHttpStatus(new Errors.ConfigError({ message: 'test' }))).toBe(500);
   });
 
   test('toJsonResponse includes correct fields for NotFound', () => {
-    const response = Errors.toJsonResponse(
-      new Errors.NotFound({ resource: 'Post', id: 'xyz' })
-    );
+    const response = Errors.toJsonResponse(new Errors.NotFound({ resource: 'Post', id: 'xyz' }));
     expect(response).toEqual({
       error: 'NotFound',
       message: 'Post with id xyz not found',

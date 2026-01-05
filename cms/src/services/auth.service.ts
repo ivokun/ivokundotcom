@@ -81,9 +81,7 @@ export const makeAuthService = Effect.gen(function* () {
         expires_at: new Date(Date.now() + SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
       };
 
-      yield* query('create_session', (db) =>
-        db.insertInto('sessions').values(session).execute()
-      );
+      yield* query('create_session', (db) => db.insertInto('sessions').values(session).execute());
 
       return session as Session;
     });
@@ -102,9 +100,7 @@ export const makeAuthService = Effect.gen(function* () {
       );
 
       if (!session) {
-        return yield* Effect.fail(
-          new SessionExpired({ message: 'Session expired or invalid' })
-        );
+        return yield* Effect.fail(new SessionExpired({ message: 'Session expired or invalid' }));
       }
 
       return session;
@@ -129,17 +125,13 @@ export const makeAuthService = Effect.gen(function* () {
       );
 
       if (!user) {
-        return yield* Effect.fail(
-          new InvalidCredentials({ message: 'Invalid email or password' })
-        );
+        return yield* Effect.fail(new InvalidCredentials({ message: 'Invalid email or password' }));
       }
 
       const valid = yield* verifyPassword(user.password_hash, password);
 
       if (!valid) {
-        return yield* Effect.fail(
-          new InvalidCredentials({ message: 'Invalid email or password' })
-        );
+        return yield* Effect.fail(new InvalidCredentials({ message: 'Invalid email or password' }));
       }
 
       // Return user without password_hash
@@ -171,17 +163,13 @@ export const makeAuthService = Effect.gen(function* () {
       );
 
       if (!apiKey) {
-        return yield* Effect.fail(
-          new InvalidCredentials({ message: 'Invalid API key' })
-        );
+        return yield* Effect.fail(new InvalidCredentials({ message: 'Invalid API key' }));
       }
 
       const valid = yield* verifyPassword(apiKey.key_hash, providedKey);
 
       if (!valid) {
-        return yield* Effect.fail(
-          new InvalidCredentials({ message: 'Invalid API key' })
-        );
+        return yield* Effect.fail(new InvalidCredentials({ message: 'Invalid API key' }));
       }
 
       // Update last_used_at

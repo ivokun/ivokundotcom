@@ -20,6 +20,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noPropertyAccessFromIndexSignature": true,
+    "exactOptionalPropertyTypes": false,
 
     "skipLibCheck": true,
     "resolveJsonModule": true,
@@ -35,7 +36,12 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"]
-    }
+    },
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts"],
   "exclude": ["node_modules", "public", "dist"]

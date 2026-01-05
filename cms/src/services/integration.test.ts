@@ -42,9 +42,7 @@ describe('Service Integration', () => {
       return { hash, valid, invalid };
     });
 
-    const result = await Effect.runPromise(
-      program.pipe(Effect.provide(AllLayers), Effect.scoped)
-    );
+    const result = await Effect.runPromise(program.pipe(Effect.provide(AllLayers), Effect.scoped));
 
     expect(result.hash).toMatch(/^\$argon2/);
     expect(result.valid).toBe(true);
@@ -65,9 +63,7 @@ describe('Service Integration', () => {
       return result;
     });
 
-    const result = await Effect.runPromise(
-      program.pipe(Effect.provide(AllLayers), Effect.scoped)
-    );
+    const result = await Effect.runPromise(program.pipe(Effect.provide(AllLayers), Effect.scoped));
 
     expect(result.urls.original).toContain('original.webp');
     expect(result.urls.thumbnail).toContain('thumbnail.webp');
@@ -83,15 +79,13 @@ describe('Service Integration', () => {
 
       const testData = Buffer.from('Hello, World!');
       const url = yield* storage.upload('test/hello.txt', testData, 'text/plain');
-      
+
       yield* storage.delete('test/hello.txt');
-      
+
       return url;
     });
 
-    const result = await Effect.runPromise(
-      program.pipe(Effect.provide(AllLayers), Effect.scoped)
-    );
+    const result = await Effect.runPromise(program.pipe(Effect.provide(AllLayers), Effect.scoped));
 
     expect(result).toContain('test/hello.txt');
   });

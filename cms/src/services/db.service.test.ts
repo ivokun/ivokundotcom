@@ -29,16 +29,15 @@ describe('DbService', () => {
     const program = Effect.gen(function* () {
       const { query } = yield* DbService;
       return yield* query('invalid_query', (db) =>
-        db.selectFrom('nonexistent_table' as any).selectAll().execute()
+        db
+          .selectFrom('nonexistent_table' as any)
+          .selectAll()
+          .execute()
       );
     });
 
     const result = await Effect.runPromise(
-      program.pipe(
-        Effect.provide(DbServiceLive(TEST_DB_URL)),
-        Effect.scoped,
-        Effect.either
-      )
+      program.pipe(Effect.provide(DbServiceLive(TEST_DB_URL)), Effect.scoped, Effect.either)
     );
 
     expect(result._tag).toBe('Left');

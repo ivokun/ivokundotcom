@@ -68,10 +68,8 @@ export const makeDbService = (connectionString: string) =>
       fn: (trx: Kysely<Database>) => Effect.Effect<T, E>
     ): Effect.Effect<T, E | DatabaseError> =>
       Effect.tryPromise({
-        try: () =>
-          db.transaction().execute((trx) => Effect.runPromise(fn(trx))),
-        catch: (error) =>
-          new DatabaseError({ cause: error, operation: 'transaction' }),
+        try: () => db.transaction().execute((trx) => Effect.runPromise(fn(trx))),
+        catch: (error) => new DatabaseError({ cause: error, operation: 'transaction' }),
       });
 
     // Register cleanup

@@ -19,10 +19,7 @@ export const Status = Schema.Literal('draft', 'published');
 export type Status = typeof Status.Type;
 
 /** CUID2 identifier pattern */
-export const Cuid2 = Schema.String.pipe(
-  Schema.pattern(/^[a-z0-9]{24,}$/),
-  Schema.brand('Cuid2')
-);
+export const Cuid2 = Schema.String.pipe(Schema.pattern(/^[a-z0-9]{24,}$/), Schema.brand('Cuid2'));
 export type Cuid2 = typeof Cuid2.Type;
 
 /** URL-safe slug */
@@ -42,16 +39,10 @@ export const Email = Schema.String.pipe(
 export type Email = typeof Email.Type;
 
 /** Non-empty string */
-export const NonEmptyString = Schema.String.pipe(
-  Schema.minLength(1),
-  Schema.maxLength(10000)
-);
+export const NonEmptyString = Schema.String.pipe(Schema.minLength(1), Schema.maxLength(10000));
 
 /** Positive integer */
-export const PositiveInt = Schema.Number.pipe(
-  Schema.int(),
-  Schema.positive()
-);
+export const PositiveInt = Schema.Number.pipe(Schema.int(), Schema.positive());
 
 // =============================================================================
 // MEDIA SCHEMAS - PRD Section 3.2
