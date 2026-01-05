@@ -1,54 +1,98 @@
 # AGENTS.md - Guidance for Coding Agents
 
-## Build/Lint/Test Commands
+> **Context:** This is a monorepo built with Bun, SST, Astro, Hono, and Effect TS.
+> **Primary Goal:** Maintain high code quality, strict typing, and deployment stability.
 
-- Root: `bun run typecheck` - TypeScript type checking across all packages
-- Root: `bun run dev` - Start SST development environment
-- Root: `bun run build` - Build all services
-- Web: `bun --filter web dev` - Start Astro dev server
-- Web: `bun --filter web build` - Build Astro site
-- API Hono: `bun --filter api-hono dev` - Start Hono API server with DynamoDB
-- API Hono: `bun --filter api-hono test` - Run all tests with Vitest
-- API Hono: `bun --filter api-hono test <filename>` - Run single test file
-- API Hono: `bun --filter api-hono test:watch` - Run tests in watch mode
-- API Hono: `bun --filter api-hono lint` - ESLint for TypeScript files
+## 1. Build, Lint & Test Commands
 
-## Code Style Guidelines
+### Root / Global
+- **Type Check:** `bun run typecheck` (Checks all packages)
+- **Dev Environment:** `bun run dev` (Starts SST dev environment)
+- **Deploy:** `bun run deploy` (Deploys via SST)
+- **Database Migrations (Root):** `bun run db:up` (using dbmate)
 
-- **Package Manager**: Use bun (v1.1.38+) exclusively, never npm, yarn, or pnpm
-- **Node Version**: Requires Node.js >=22.17.0 (specified in engines and volta)
-- **Bun Version**: Requires bun >=1.1.38
-- **Formatting**: Use Prettier with singleQuote enabled
-- **Imports**: MUST be sorted using `simple-import-sort` ESLint plugin - this is enforced
-- **TypeScript**: Strict typing, extends @tsconfig/node22, use `noEmit: true` for type checking
-- **Error Handling**: Use try/catch blocks with typed errors; in api-hono, prefer Effect.ts error handling
-- **Naming**: camelCase for variables/functions, PascalCase for components/types/classes
-- **Astro Components**: Follow Astro patterns in web/src/components and web/src/pages
-- **React**: Only use within Astro components for interactive UI (not standalone React apps)
-- **API Structure**: api-hono uses Hono + Effect.ts + DynamoDB/ElectroDB patterns
+### Web (Astro + React)
+- **Dev Server:** `bun --filter web dev`
+- **Build:** `bun --filter web build`
+- **Check:** `bun --filter web astro check`
 
-## Landing the Plane (Session Completion)
+### API Hono (Hono + Effect TS + DynamoDB)
+- **Dev Server:** `bun --filter api-hono dev` (Starts DB + Server)
+- **Test All:** `bun --filter api-hono test` (Vitest)
+- **Test Single File:** `bun --filter api-hono test <filename>` (e.g., `tests/auth.test.ts`)
+- **Test Watch:** `bun --filter api-hono test:watch`
+- **Lint:** `bun --filter api-hono lint`
+- **Format:** `bun --filter api-hono format`
+- **Local DB:** `bun --filter api-hono dev:db` (Docker DynamoDB)
+
+### CMS (Effect TS + Kysely + SolidJS)
+- **Dev Server:** `cd cms && bun run dev` (Runs `src/server.ts`)
+- **Build Binary:** `cd cms && bun run build` (Compiles to single binary)
+- **Build SPA:** `cd cms && bun run build:spa` (Vite build)
+- **Test All:** `cd cms && bun test` (Bun native test runner)
+- **Test Single File:** `cd cms && bun test <filename>`
+- **Migrations:** `cd cms && bun run db:up`
+- **Seed Admin:** `cd cms && bun run seed:admin`
+
+## 2. Code Style & Conventions
+
+### General Guidelines
+- **Package Manager:** Use `bun` (v1.1.38+) exclusively. NEVER use npm/yarn/pnpm.
+- **Node Engine:** Requires Node.js >=22.17.0.
+- **Formatting:** Prettier with `singleQuote: true`.
+- **Linting:** ESLint is strict. Imports MUST be sorted using `simple-import-sort`.
+
+### TypeScript Rules
+- **Strict Mode:** enabled (extends `@tsconfig/node22`).
+- **No Emit:** `tsc --noEmit` is used for checking; Bun/Esbuild/Vite handles emission.
+- **Types:**
+  - Use `interface` for object definitions (extensible).
+  - Use `type` for unions/intersections.
+  - Avoid `any`. Use `unknown` or distinct types.
+
+### Effect TS Patterns (API Hono & CMS)
+- **Error Handling:** Avoid `try/catch`. Use `Effect.try`, `Effect.fail`, and `Effect.catchTag`.
+- **Services:** Define services using `Context.Tag`.
+- **Schemas:** Use `@effect/schema` for runtime validation (API requests/responses, DB models).
+- **Pipelines:** Use `pipe()` for composition.
+
+### Naming Conventions
+- **Variables/Functions:** `camelCase` (e.g., `getUser`, `isValid`).
+- **Components/Classes:** `PascalCase` (e.g., `UserProfile`, `AuthService`).
+- **Files:** `kebab-case` (e.g., `auth-service.ts`, `user-profile.tsx`).
+- **Constants:** `UPPER_SNAKE_CASE` (e.g., `MAX_RETRIES`).
+
+### Project Structure
+- **`web/`**: Astro frontend with React islands.
+- **`api-hono/`**: Serverless API using Hono, deployed via Lambda.
+- **`cms/`**: Standalone CMS binary using Kysely (Postgres) and SolidJS admin panel.
+- **`infra/`**: SST infrastructure definitions.
+
+## 3. Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
 
 **MANDATORY WORKFLOW:**
 
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+1.  **File Issues:** Create issues for any incomplete work or tech debt introduced.
+2.  **Quality Gates:**
+    - Run `bun run typecheck` at root.
+    - Run tests for modified packages (e.g., `bun --filter api-hono test`).
+    - Run lint checks (e.g., `bun --filter api-hono lint`).
+3.  **Commit & Push:**
+    - **Rebase First:** `git pull --rebase`
+    - **Sync Issues:** `bd sync` (if using beads)
+    - **Push:** `git push`
+    - **Verify:** `git status` must show "up to date with origin".
+4.  **Clean Up:** Remove temporary files, stashes, or dead branches.
 
 **CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+- **Never** stop before pushing. Local work is lost work.
+- **Never** say "ready to push" without doing it. YOU are the agent; YOU push.
+- **Retry** if push fails (network, conflicts). Resolve it.
+
+## 4. Dependencies & Security
+
+- **Secrets:** Never commit `.env` files. Use `sst-env.d.ts` for type-safe environment variables in SST apps.
+- **Dependencies:** Install new packages with `bun add` (or `bun add -d` for dev).
+- **Lockfile:** Always commit `bun.lockb`.
