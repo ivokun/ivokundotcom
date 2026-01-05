@@ -32,7 +32,7 @@ This document outlines the comprehensive migration from Strapi to Hono, implemen
 ## Phase 1: Foundation Setup ✅ COMPLETED
 
 ### 1. Project Structure & Dependencies
-- [x] Create new `api-hono/` directory
+- [x] Create new `api-hono/` directory (Deprecated, removed)
 - [x] Set up package.json with Hono, Effect.ts, and required dependencies
 - [x] Configure TypeScript with strict settings
 - [x] Set up development environment with hot reload
@@ -238,7 +238,7 @@ This document outlines the comprehensive migration from Strapi to Hono, implemen
 
 ### File Structure
 ```
-api-hono/
+api-hono/ (Removed)
 ├── src/
 │   ├── services/          # Effect.ts services
 │   ├── models/            # ElectroDB models

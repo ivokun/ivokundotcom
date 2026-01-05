@@ -16,15 +16,6 @@
 - **Build:** `bun --filter web build`
 - **Check:** `bun --filter web astro check`
 
-### API Hono (Hono + Effect TS + DynamoDB)
-- **Dev Server:** `bun --filter api-hono dev` (Starts DB + Server)
-- **Test All:** `bun --filter api-hono test` (Vitest)
-- **Test Single File:** `bun --filter api-hono test <filename>` (e.g., `tests/auth.test.ts`)
-- **Test Watch:** `bun --filter api-hono test:watch`
-- **Lint:** `bun --filter api-hono lint`
-- **Format:** `bun --filter api-hono format`
-- **Local DB:** `bun --filter api-hono dev:db` (Docker DynamoDB)
-
 ### CMS (Effect TS + Kysely + SolidJS)
 - **Dev Server:** `cd cms && bun run dev` (Runs `src/server.ts`)
 - **Build Binary:** `cd cms && bun run build` (Compiles to single binary)
@@ -50,7 +41,7 @@
   - Use `type` for unions/intersections.
   - Avoid `any`. Use `unknown` or distinct types.
 
-### Effect TS Patterns (API Hono & CMS)
+### Effect TS Patterns (CMS)
 - **Error Handling:** Avoid `try/catch`. Use `Effect.try`, `Effect.fail`, and `Effect.catchTag`.
 - **Services:** Define services using `Context.Tag`.
 - **Schemas:** Use `@effect/schema` for runtime validation (API requests/responses, DB models).
@@ -64,9 +55,19 @@
 
 ### Project Structure
 - **`web/`**: Astro frontend with React islands.
-- **`api-hono/`**: Serverless API using Hono, deployed via Lambda.
 - **`cms/`**: Standalone CMS binary using Kysely (Postgres) and SolidJS admin panel.
 - **`infra/`**: SST infrastructure definitions.
+
+<!-- effect-solutions:start -->
+## Effect Best Practices
+
+**Before implementing Effect features**, run `effect-solutions list` and read the relevant guide.
+
+Topics include: services and layers, data modeling, error handling, configuration, testing, HTTP clients, CLIs, observability, and project structure.
+
+**Effect Source Reference:** `~/.local/share/effect-solutions/effect`
+Search here for real implementations when docs aren't enough.
+<!-- effect-solutions:end -->
 
 ## 3. Landing the Plane (Session Completion)
 
@@ -77,8 +78,8 @@
 1.  **File Issues:** Create issues for any incomplete work or tech debt introduced.
 2.  **Quality Gates:**
     - Run `bun run typecheck` at root.
-    - Run tests for modified packages (e.g., `bun --filter api-hono test`).
-    - Run lint checks (e.g., `bun --filter api-hono lint`).
+    - Run tests for modified packages (e.g., `bun --filter cms test`).
+    - Run lint checks (e.g., `bun --filter cms lint`).
 3.  **Commit & Push:**
     - **Rebase First:** `git pull --rebase`
     - **Sync Issues:** `bd sync` (if using beads)
