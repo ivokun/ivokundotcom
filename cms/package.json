@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "bun run --watch src/server.ts",
     "build": "bun build src/server.ts --compile --outfile cms",
-    "build:spa": "vite build",
+    "build:spa": "vite build --config vite.config.ts",
     "start": "./cms",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
