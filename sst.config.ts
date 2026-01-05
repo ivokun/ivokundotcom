@@ -89,29 +89,5 @@ export default $config({
       });
       strapiAPI.route("ANY /{proxy+}", strapiFunction.arn)
     }
-
-
-    // API-HONO Section
-    const apiHonoTable = new sst.aws.Dynamo("apiHonoTable", {
-      fields: {
-        pk: "string",
-        sk: "string",
-        gsi1pk: "string",
-        gsi1sk: "string",
-      },
-      primaryIndex: { hashKey: "pk", rangeKey: "sk" },
-      globalIndexes: {
-        "gsi1pk-gsi1sk-index": { hashKey: "gsi1pk", rangeKey: "gsi1sk", projection: "all" },
-      }
-    })
-
-    const apiHonoFunction = new sst.aws.Function("apiHono", {
-      url: true,
-      handler: "api-hono/src/app.handler",
-      runtime: "nodejs22.x",
-      link: [apiHonoTable],
-    });
-
-
   },
 });

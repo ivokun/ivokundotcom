@@ -7,7 +7,6 @@
   "workspaces": [
     "api",
     "web",
-    "api-hono",
     "cms"
   ],
   "scripts": {
@@ -17,7 +16,7 @@
     "dev": "sst dev",
     "remove": "sst remove",
     "sst": "sst",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun --filter '*' typecheck",
     "db:new": "dbmate -d ./db/migrations new",
     "db:up": "dbmate -d ./db/migrations up",
     "db:down": "dbmate -d ./db/migrations down",
@@ -29,6 +28,7 @@
     "docker:logs": "docker-compose logs -f"
   },
   "devDependencies": {
+    "@effect/language-service": "^0.64.1",
     "@tsconfig/node22": "22.0.0",
     "@types/node": "24.0.8",
     "aws-cdk-lib": "2.110.1",
@@ -38,7 +38,6 @@
     "eslint-plugin-astro": "0.26.1",
     "eslint-plugin-jsx-a11y": "6.7.1",
     "eslint-plugin-simple-import-sort": "10.0.0",
-    "sst": "2.39.13",
     "typescript": "5.8.3"
   },
   "engines": {

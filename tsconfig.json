@@ -1,9 +1,14 @@
 {
   "extends": "@tsconfig/node22/tsconfig.json",
-  "exclude": ["packages"],
+  "exclude": ["packages", "api", "cms", "web", "node_modules", "dist", ".sst", ".turbo"],
   "compilerOptions": {
     "typeRoots": [],
     "jsx": "react-jsx",
-    "noEmit": true
+    "noEmit": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
   }
 }
