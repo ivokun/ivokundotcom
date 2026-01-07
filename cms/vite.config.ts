@@ -4,6 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [solidPlugin({ extensions: ['.tsx', '.ts'] })],
+  base: '/admin/',
   root: __dirname,
   resolve: {
     alias: {

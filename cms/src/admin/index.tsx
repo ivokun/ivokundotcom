@@ -25,7 +25,7 @@ function App() {
   });
   
   return (
-    <Router root={Layout}>
+    <Router base="/admin" root={Layout}>
       <Route path="/login" component={Login} />
       <Route
         path="/"
