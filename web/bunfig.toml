@@ -1,0 +1,5 @@
+[install]
+registry = "https://registry.npmjs.org"
+
+[resolve]
+conditions = ["import", "module", "node"]

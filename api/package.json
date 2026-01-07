@@ -12,7 +12,8 @@
     "develop": "strapi develop",
     "start": "strapi start",
     "build": "strapi build",
-    "strapi": "strapi"
+    "strapi": "strapi",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@strapi/typescript-utils": "5.16.1",

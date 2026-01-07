@@ -28,7 +28,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 
-    "types": ["bun-types"],
+    "types": ["@types/bun"],
 
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
