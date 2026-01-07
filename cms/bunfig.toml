@@ -1,0 +1,7 @@
+[install]
+# Force correct resolution for @effect/cluster subpath exports
+registry = "https://registry.npmjs.org"
+
+[resolve]
+# Help Bun resolve @effect/cluster subpath exports
+conditions = ["import", "module", "node"]
