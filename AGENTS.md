@@ -17,13 +17,19 @@
 - **Check:** `bun --filter web astro check`
 
 ### CMS (Effect TS + Kysely + SolidJS)
-- **Dev Server:** `cd cms && bun run dev` (Runs `src/server.ts`)
-- **Build Binary:** `cd cms && bun run build` (Compiles to single binary)
-- **Build SPA:** `cd cms && bun run build:spa` (Vite build)
-- **Test All:** `cd cms && bun test` (Bun native test runner)
+- **Dev Server:** `bun --filter '@ivokundotcom/cms' dev` (Runs `src/server.ts`)
+- **Build Binary:** `bun --filter '@ivokundotcom/cms' build` (Compiles to single binary)
+- **Build SPA:** `bun --filter '@ivokundotcom/cms' build:spa` (Vite build)
+- **Type Check:** `bun --filter '@ivokundotcom/cms' typecheck`
+- **Test All:** `bun --filter '@ivokundotcom/cms' test` (Bun native test runner)
 - **Test Single File:** `cd cms && bun test <filename>`
 - **Migrations:** `cd cms && bun run db:up`
 - **Seed Admin:** `cd cms && bun run seed:admin`
+
+### API (Strapi 5 - Legacy)
+- **Dev Server:** `bun --filter api develop`
+- **Build:** `bun --filter api build`
+- **Type Check:** `bun --filter api typecheck`
 
 ## 2. Code Style & Conventions
 
@@ -56,7 +62,19 @@
 ### Project Structure
 - **`web/`**: Astro frontend with React islands.
 - **`cms/`**: Standalone CMS binary using Kysely (Postgres) and SolidJS admin panel.
+- **`api/`**: Strapi 5 API (legacy, being replaced by cms).
 - **`infra/`**: SST infrastructure definitions.
+
+### Workspace Configuration
+Each package has its own `bunfig.toml` for proper module resolution:
+
+| Package | Name | Filter |
+|---------|------|--------|
+| api | `api` | `bun --filter api` |
+| web | `web` | `bun --filter web` |
+| cms | `@ivokundotcom/cms` | `bun --filter '@ivokundotcom/cms'` |
+
+See [ADR-006](./docs/adr/006-bun-workspace-configuration.md) for details.
 
 <!-- effect-solutions:start -->
 ## Effect Best Practices

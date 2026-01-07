@@ -1,13 +1,29 @@
 # API Documentation
 
+> **Note**: This Strapi 5 API is being replaced by a custom CMS. See [cms/README.md](../cms/README.md) for the new implementation.
+
 This is a Strapi 5 API for a content management system that powers a blog/portfolio website. The API provides content types for posts, categories, galleries, and home page content.
+
+## Monorepo Context
+
+This package is part of the `ivokundotcom` Bun monorepo. It can be managed from the root:
+
+```bash
+# From monorepo root
+bun --filter api develop    # Start Strapi dev server
+bun --filter api build      # Build for production
+bun --filter api typecheck  # Type check
+
+# Or from api directory
+cd api && bun run develop
+```
 
 ## Development Setup
 
 ### Prerequisites
 
 - Node.js >= 22.17.0
-- pnpm >= 9.5.0
+- Bun >= 1.1.38
 - PostgreSQL database
 
 ### Environment Variables
@@ -40,17 +56,17 @@ R2_PUBLIC_URL=https://your-public-url.com
 ### Installation & Development
 
 ```bash
-# Install dependencies
-pnpm install
+# Install dependencies (from monorepo root)
+bun install
 
 # Start development server
-pnpm run develop
+bun run develop
 
 # Build for production
-pnpm run build
+bun run build
 
 # Start production server
-pnpm run start
+bun run start
 ```
 
 The API will be available at `http://localhost:1337` by default.

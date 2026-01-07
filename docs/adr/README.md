@@ -15,6 +15,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [003](./003-admin-spa-technology.md) | SolidJS for Admin SPA | Accepted | 2025-01-06 |
 | [004](./004-image-processing-pipeline.md) | Image Processing Pipeline | Accepted | 2025-01-06 |
 | [005](./005-authentication-strategy.md) | Authentication Strategy | Accepted | 2025-01-06 |
+| [006](./006-bun-workspace-configuration.md) | Bun Workspace Configuration | Accepted | 2025-01-07 |
 
 ## Summary
 
@@ -67,6 +68,16 @@ An Architecture Decision Record captures an important architectural decision mad
 - Session revocation capability
 - API key tracking
 - CSRF/XSS protection
+
+### ADR-006: Bun Workspace Configuration
+
+**Decision:** Standardize on Bun workspaces with per-package `bunfig.toml` configuration.
+
+**Key Benefits:**
+- Single package manager across all packages
+- Parallel builds with `bun --filter`
+- Proper Effect TS module resolution
+- Independent package builds
 
 ## ADR Template
 

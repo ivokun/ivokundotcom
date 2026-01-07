@@ -1,14 +1,28 @@
 # Web Frontend Documentation
 
-This is an Astro 5 frontend application that serves as a blog/portfolio website, consuming content from the Strapi 5 API. The application features a modern stack with React components, TailwindCSS styling, and TypeScript support.
+This is an Astro 5 frontend application that serves as a blog/portfolio website, consuming content from the CMS API. The application features a modern stack with React components, TailwindCSS styling, and TypeScript support.
+
+## Monorepo Context
+
+This package is part of the `ivokundotcom` Bun monorepo. It can be managed from the root:
+
+```bash
+# From monorepo root
+bun --filter web dev        # Start Astro dev server
+bun --filter web build      # Build for production
+bun --filter web typecheck  # Type check (runs astro check)
+
+# Or from web directory
+cd web && bun run dev
+```
 
 ## Development Setup
 
 ### Prerequisites
 
 - Node.js >= 22.17.0
-- pnpm >= 9.5.0
-- Running Strapi API (see `../api/README.md`)
+- Bun >= 1.1.38
+- Running CMS API (see `../cms/README.md`) or Strapi API (see `../api/README.md`)
 
 ### Environment Variables
 
@@ -26,17 +40,17 @@ PUBLIC_GOOGLE_SITE_VERIFICATION=your-google-verification-code
 ### Installation & Development
 
 ```bash
-# Install dependencies
-pnpm install
+# Install dependencies (from monorepo root)
+bun install
 
 # Start development server
-pnpm run dev
+bun run dev
 
 # Build for production
-pnpm run build
+bun run build
 
 # Preview production build
-pnpm run preview
+bun run preview
 ```
 
 The application will be available at `http://localhost:4321` by default.
@@ -277,10 +291,10 @@ const ArticleSchema = Type.Object({
 - **Framework**: Astro 5.10.1
 - **UI Library**: React 18.0.0
 - **Styling**: TailwindCSS 3.0.24
-- **Language**: TypeScript 5.8.3
+- **Language**: TypeScript 5.x
 - **Build Tool**: Vite 5.x
-- **Package Manager**: pnpm
-- **Content Source**: Strapi 5 API
+- **Package Manager**: Bun 1.1.38+
+- **Content Source**: CMS API (custom) or Strapi 5 API (legacy)
 - **Deployment**: Static site generation
 
 ## Performance Features

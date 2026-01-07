@@ -18,8 +18,24 @@ A custom headless CMS built with Effect TS, Kysely, and Bun. Designed as a light
 - **Language**: TypeScript with strict mode
 - **Backend**: Effect TS for type-safe error handling and services
 - **Database**: PostgreSQL with Kysely query builder
-- **Admin UI**: SolidJS + TailwindCSS
+- **Admin UI**: SolidJS + TailwindCSS + TipTap 3.x
 - **Image Processing**: Sharp
+
+## Monorepo Context
+
+This package is part of the `ivokundotcom` monorepo. It uses Bun workspaces and can be managed from the root:
+
+```bash
+# From monorepo root
+bun --filter '@ivokundotcom/cms' dev        # Start dev server
+bun --filter '@ivokundotcom/cms' typecheck  # Type check
+bun --filter '@ivokundotcom/cms' test       # Run tests
+
+# Or from cms directory
+cd cms && bun run dev
+```
+
+See [ADR-006](../docs/adr/006-bun-workspace-configuration.md) for workspace configuration details.
 
 ## Prerequisites
 
@@ -296,6 +312,29 @@ bun test                    # Run all tests
 bun test src/services/      # Run service tests only
 bun test --watch            # Watch mode
 ```
+
+### Workspace Configuration
+
+The CMS uses `bunfig.toml` to configure module resolution for Effect TS packages:
+
+```toml
+[install]
+registry = "https://registry.npmjs.org"
+
+[resolve]
+conditions = ["import", "module", "node"]
+```
+
+This ensures proper resolution of Effect TS subpath exports and prevents version conflicts with hoisted dependencies.
+
+## Architecture Decision Records
+
+- [ADR-001: Custom CMS Architecture](../docs/adr/001-cms-architecture.md)
+- [ADR-002: Effect TS Adoption](../docs/adr/002-effect-ts-adoption.md)
+- [ADR-003: SolidJS for Admin SPA](../docs/adr/003-admin-spa-technology.md)
+- [ADR-004: Image Processing Pipeline](../docs/adr/004-image-processing-pipeline.md)
+- [ADR-005: Authentication Strategy](../docs/adr/005-authentication-strategy.md)
+- [ADR-006: Bun Workspace Configuration](../docs/adr/006-bun-workspace-configuration.md)
 
 ## License
 
