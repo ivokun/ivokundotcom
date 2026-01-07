@@ -30,6 +30,16 @@
     
     # AWS tools (for DynamoDB local testing)
     awscli2
+    
+    # Native dependencies for sharp (image processing)
+    vips
+    pkg-config
+  ];
+
+  # LD_LIBRARY_PATH for native modules (sharp, etc.)
+  env.LD_LIBRARY_PATH = lib.makeLibraryPath [
+    pkgs.stdenv.cc.cc.lib
+    pkgs.vips
   ];
 
   # Language-specific configurations
