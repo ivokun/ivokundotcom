@@ -87,15 +87,16 @@ export default function MediaPicker(props: MediaPickerProps) {
   }
   
   return (
-    <div class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-      <div class="flex min-h-full items-center justify-center p-4 text-center">
-        <div
-          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          onClick={props.onClose}
-          aria-hidden="true"
-        />
-        
-        <div class="relative w-full max-w-3xl bg-white rounded-lg shadow-xl">
+    <Show when={props.isOpen}>
+      <div class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4 text-center">
+          <div
+            class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            onClick={props.onClose}
+            aria-hidden="true"
+          />
+
+          <div class="relative w-full max-w-3xl bg-white rounded-lg shadow-xl">
           {/* Header */}
           <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900">Select Media</h3>
@@ -186,8 +187,9 @@ export default function MediaPicker(props: MediaPickerProps) {
               </Show>
             </Show>
           </div>
+          </div>
         </div>
       </div>
-    </div>
+    </Show>
   );
 }

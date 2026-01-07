@@ -1,5 +1,5 @@
-import { createSignal, createRoot, createEffect } from 'solid-js';
-import { api, setAuthToken, clearAuthToken } from './api';
+import { createSignal, createRoot } from 'solid-js';
+import { api } from './api';
 
 interface User {
   id: string;
@@ -42,10 +42,10 @@ function createAuthStore() {
   async function login(email: string, password: string) {
     setError(null);
     setState((s) => ({ ...s, isLoading: true }));
-    
+
     try {
-      const { token, user } = await api.auth.login(email, password);
-      setAuthToken(token);
+      // Server sets HttpOnly session cookie automatically
+      const { user } = await api.auth.login(email, password);
       setState({
         user,
         isAuthenticated: true,
@@ -62,11 +62,11 @@ function createAuthStore() {
   
   async function logout() {
     try {
+      // Server clears HttpOnly session cookie
       await api.auth.logout();
     } catch {
       // Continue with logout even if API call fails
     }
-    clearAuthToken();
     setState({
       user: null,
       isAuthenticated: false,

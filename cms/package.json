@@ -5,7 +5,9 @@
   "type": "module",
   "description": "ivokun CMS - Custom headless CMS built with Effect TS, Kysely, and Bun",
   "scripts": {
-    "dev": "bun run --watch src/server.ts",
+    "dev": "bun run --watch src/server.ts & vite dev --config vite.config.ts",
+    "dev:server": "bun run --watch src/server.ts",
+    "dev:spa": "vite dev --config vite.config.ts",
     "build": "bun run scripts/build-binary.ts",
     "build:quick": "bun build src/server.ts --compile --outfile dist/cms --external @effect/cluster --external sharp",
     "build:spa": "vite build --config vite.config.ts",

@@ -1,4 +1,4 @@
-export { api, setAuthToken, clearAuthToken };
+export { api };
 export type { ApiResponse, PaginatedResponse };
 
 const API_BASE = (import.meta.env['VITE_API_BASE'] as string | undefined) || '/admin/api';
@@ -15,60 +15,42 @@ interface PaginatedResponse<T> {
   pageSize: number;
 }
 
-let authToken: string | null = null;
-
-function setAuthToken(token: string | null) {
-  authToken = token;
-  if (token) {
-    document.cookie = `auth_token=${token}; path=/; SameSite=Lax`;
-  } else {
-    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-  }
-}
-
-function clearAuthToken() {
-  authToken = null;
-  document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-}
+// Authentication is handled by HttpOnly session cookies set by the server.
+// No client-side token management needed.
 
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
-  
+
   // Build headers properly without type assertions
   const baseHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  
+
   // Merge custom headers
   if (options.headers) {
     const customHeaders = options.headers as Record<string, string>;
     Object.assign(baseHeaders, customHeaders);
   }
-  
-  // Add auth token if present
-  if (authToken) {
-    baseHeaders['Authorization'] = `Bearer ${authToken}`;
-  }
-  
+
   try {
     const response = await fetch(url, {
       ...options,
       headers: baseHeaders,
       credentials: 'same-origin',
     });
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: response.statusText }));
       throw new Error(error.error || `HTTP ${response.status}`);
     }
-    
+
     if (response.status === 204) {
       return undefined as unknown as T;
     }
-    
+
     return response.json();
   } catch (error) {
     if (error instanceof Error) {
@@ -79,8 +61,9 @@ async function request<T>(
 }
 
 // Auth
+// Server returns { user, session_id } and sets HttpOnly session cookie
 async function login(email: string, password: string) {
-  return request<{ token: string; user: { id: string; email: string; name: string } }>('/login', {
+  return request<{ session_id: string; user: { id: string; email: string; name: string } }>('/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
@@ -172,9 +155,20 @@ async function createPost(data: {
   featuredImageId?: string;
   keywords?: string[];
 }) {
+  // Transform camelCase to snake_case for backend
+  // Parse content as TipTap JSON if it's a string
+  const payload = {
+    title: data.title,
+    slug: data.slug,
+    content: data.content ? (typeof data.content === 'string' ? JSON.parse(data.content) : data.content) : undefined,
+    excerpt: data.excerpt,
+    locale: data.locale,
+    category_id: data.categoryId,
+    featured_image: data.featuredImageId,
+  };
   return request('/posts', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -189,9 +183,21 @@ async function updatePost(id: string, data: Partial<{
   featuredImageId: string;
   keywords: string[];
 }>) {
+  // Transform camelCase to snake_case for backend
+  const payload: Record<string, unknown> = {};
+  if (data.title !== undefined) payload['title'] = data.title;
+  if (data.slug !== undefined) payload['slug'] = data.slug;
+  if (data.content !== undefined) {
+    payload['content'] = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+  }
+  if (data.excerpt !== undefined) payload['excerpt'] = data.excerpt;
+  if (data.locale !== undefined) payload['locale'] = data.locale;
+  if (data.categoryId !== undefined) payload['category_id'] = data.categoryId;
+  if (data.featuredImageId !== undefined) payload['featured_image'] = data.featuredImageId;
+
   return request(`/posts/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
+    method: 'PATCH',
+    body: JSON.stringify(payload),
   });
 }
 

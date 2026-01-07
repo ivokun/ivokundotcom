@@ -51,9 +51,10 @@ export default function RichTextEditor(props: RichTextEditorProps) {
           placeholder: props.placeholder || 'Write something...',
         }),
       ],
-      content: props.value,
+      content: props.value ? (typeof props.value === 'string' ? JSON.parse(props.value) : props.value) : undefined,
       onUpdate: ({ editor: ed }) => {
-        props.onChange(ed.getHTML());
+        // Send TipTap JSON format for backend compatibility
+        props.onChange(JSON.stringify(ed.getJSON()));
       },
     });
     

@@ -30,7 +30,7 @@ export default function PostForm() {
   const params = useParams() as { id?: string };
   const navigate = useNavigate();
   const isEditing = () => params.id !== undefined;
-  
+
   const [title, setTitle] = createSignal('');
   const [slug, setSlug] = createSignal('');
   const [content, setContent] = createSignal('');
@@ -41,17 +41,17 @@ export default function PostForm() {
   const [featuredImageId, setFeaturedImageId] = createSignal<string | null>(null);
   const [keywords, setKeywords] = createSignal<string[]>([]);
   const [keywordInput, setKeywordInput] = createSignal('');
-  
+
   const [saving, setSaving] = createSignal(false);
   const [error, setError] = createSignal('');
-  
+
   const [mediaPickerOpen, setMediaPickerOpen] = createSignal(false);
-  
+
   const [categories] = createResource(async () => {
     const result = await api.categories.list();
     return result.data as Category[];
   });
-  
+
   const [existingPost] = createResource(
     () => (isEditing() ? params.id : null) as string | null,
     async (id) => {
@@ -59,34 +59,35 @@ export default function PostForm() {
       return api.posts.get(id) as Promise<Post>;
     }
   );
-  
+
   createEffect(() => {
     const post = existingPost();
     if (post && !title()) {
       setTitle(post.title);
       setSlug(post.slug);
-      setContent(post.content);
+      // Content from backend is TipTap JSON object, stringify for editor
+      setContent(post.content ? JSON.stringify(post.content) : '');
       setExcerpt(post.excerpt);
       setLocale(post.locale);
       setStatus(post.status);
       setCategoryId(post.categoryId);
       setFeaturedImageId(post.featuredImageId);
-      setKeywords(post.keywords);
+      setKeywords(post.keywords || []);
     }
   });
-  
+
   createEffect(() => {
     if (!isEditing()) {
       const generated = slugify(title(), { lower: true, strict: true });
       setSlug(generated);
     }
   });
-  
+
   async function handleSubmit(e: Event) {
     e.preventDefault();
     setError('');
     setSaving(true);
-    
+
     try {
       const data = {
         title: title(),
@@ -99,7 +100,7 @@ export default function PostForm() {
         featuredImageId: featuredImageId() || undefined,
         keywords: keywords(),
       };
-      
+
       if (isEditing() && params.id) {
         await api.posts.update(params.id, data);
       } else {
@@ -112,7 +113,7 @@ export default function PostForm() {
       setSaving(false);
     }
   }
-  
+
   function addKeyword() {
     const kw = keywordInput().trim();
     if (kw && !keywords().includes(kw)) {
@@ -120,11 +121,11 @@ export default function PostForm() {
       setKeywordInput('');
     }
   }
-  
+
   function removeKeyword(kw: string) {
     setKeywords(keywords().filter((k) => k !== kw));
   }
-  
+
   return (
     <div class="p-8 max-w-4xl">
       <div class="page-header flex justify-between items-center">
@@ -143,13 +144,13 @@ export default function PostForm() {
           </button>
         </div>
       </div>
-      
+
       <Show when={error()}>
         <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-6">
           {error()}
         </div>
       </Show>
-      
+
       <form onSubmit={handleSubmit} class="space-y-6">
         <div class="grid grid-cols-3 gap-6">
           <div class="col-span-2 space-y-6">
@@ -166,7 +167,7 @@ export default function PostForm() {
                   placeholder="Post title"
                 />
               </div>
-              
+
               <div>
                 <label for="slug" class="label">Slug</label>
                 <div class="flex items-center">
@@ -184,7 +185,7 @@ export default function PostForm() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label class="label">Content</label>
                 <RichTextEditor
@@ -193,7 +194,7 @@ export default function PostForm() {
                   placeholder="Write your post content..."
                 />
               </div>
-              
+
               <div>
                 <label for="excerpt" class="label">Excerpt</label>
                 <textarea
@@ -207,7 +208,7 @@ export default function PostForm() {
               </div>
             </div>
           </div>
-          
+
           <div class="space-y-6">
             <div class="card p-6 space-y-4">
               <h3 class="font-semibold text-gray-900">Status</h3>
@@ -220,7 +221,7 @@ export default function PostForm() {
                 <option value="published">Published</option>
               </select>
             </div>
-            
+
             <div class="card p-6 space-y-4">
               <h3 class="font-semibold text-gray-900">Locale</h3>
               <select
@@ -229,10 +230,10 @@ export default function PostForm() {
                 class="input"
               >
                 <option value="en">English</option>
-                <option value="de">German</option>
+                <option value="id">Indonesian</option>
               </select>
             </div>
-            
+
             <div class="card p-6 space-y-4">
               <h3 class="font-semibold text-gray-900">Category</h3>
               <select
@@ -246,7 +247,7 @@ export default function PostForm() {
                 </For>
               </select>
             </div>
-            
+
             <div class="card p-6 space-y-4">
               <h3 class="font-semibold text-gray-900">Featured Image</h3>
               <Show when={featuredImageId()}>
@@ -275,7 +276,7 @@ export default function PostForm() {
                 {featuredImageId() ? 'Change Image' : 'Select Image'}
               </button>
             </div>
-            
+
             <div class="card p-6 space-y-4">
               <h3 class="font-semibold text-gray-900">Keywords</h3>
               <div class="flex gap-2">
@@ -309,7 +310,7 @@ export default function PostForm() {
           </div>
         </div>
       </form>
-      
+
       <MediaPicker
         isOpen={mediaPickerOpen()}
         onClose={() => setMediaPickerOpen(false)}
