@@ -6,9 +6,12 @@
   "description": "ivokun CMS - Custom headless CMS built with Effect TS, Kysely, and Bun",
   "scripts": {
     "dev": "bun run --watch src/server.ts",
-    "build": "bun build src/server.ts --compile --outfile cms",
+    "build": "bun run scripts/build-binary.ts",
+    "build:quick": "bun build src/server.ts --compile --outfile dist/cms --external @effect/cluster --external sharp",
     "build:spa": "vite build --config vite.config.ts",
-    "start": "./cms",
+    "build:linux": "bun run scripts/build-binary.ts linux-x64",
+    "build:all": "bun run scripts/build-binary.ts --all",
+    "start": "./dist/cms",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
@@ -18,10 +21,11 @@
     "db:status": "dbmate -d ./db/migrations status",
     "db:dump": "dbmate -d ./db/migrations dump",
     "seed:admin": "bun run scripts/seed-admin.ts",
+    "migrate:strapi": "bun run scripts/migrate-strapi.ts",
     "test": "bun test"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.700.0",
+    "@aws-sdk/client-s3": "^3.962.0",
     "@effect/platform": "0.93.6",
     "@effect/platform-bun": "0.86.0",
     "@node-rs/argon2": "2.0.2",

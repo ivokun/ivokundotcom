@@ -757,6 +757,75 @@ const adminRouter = HttpRouter.empty.pipe(
 );
 
 // =============================================================================
+// STATIC FILE SERVING
+// =============================================================================
+
+// Resolve paths for static files and migrations
+// Supports NixOS deployment via environment variables
+const getPublicPath = (relativePath: string): string => {
+  // Check for NixOS environment variable first
+  const publicDir = process.env['CMS_PUBLIC_DIR'];
+  if (publicDir) {
+    // relativePath is like "public/admin/index.html", strip "public/" prefix
+    return `${publicDir}/${relativePath.replace(/^public\//, '')}`;
+  }
+  // In production (compiled binary), use import.meta.dir
+  // In development, use process.cwd()
+  const basePath = process.env['NODE_ENV'] === 'production' ? import.meta.dir : process.cwd();
+  return `${basePath}/${relativePath}`;
+};
+
+// For uploads in development mode
+const getUploadsPath = (relativePath: string): string => {
+  const basePath = process.cwd();
+  return `${basePath}/${relativePath}`;
+};
+
+// Serve admin SPA
+const adminStaticRouter = HttpRouter.empty.pipe(
+  // Serve index.html for the admin root
+  HttpRouter.get(
+    '/admin',
+    HttpServerResponse.file(getPublicPath('public/admin/index.html'), {
+      contentType: 'text/html',
+    })
+  ),
+  // Serve static assets (js, css, etc.)
+  HttpRouter.get(
+    '/admin/assets/*',
+    Effect.gen(function* () {
+      const req = yield* HttpServerRequest.HttpServerRequest;
+      const url = new URL(req.url, 'http://localhost');
+      const filePath = url.pathname.replace('/admin/', 'public/admin/');
+      return yield* HttpServerResponse.file(getPublicPath(filePath));
+    })
+  ),
+  // SPA fallback - serve index.html for all other /admin/* routes
+  HttpRouter.get(
+    '/admin/*',
+    HttpServerResponse.file(getPublicPath('public/admin/index.html'), {
+      contentType: 'text/html',
+    })
+  )
+);
+
+// Serve local uploads in development
+const uploadsRouter =
+  process.env.NODE_ENV !== 'production'
+    ? HttpRouter.empty.pipe(
+        HttpRouter.get(
+          '/uploads/*',
+          Effect.gen(function* () {
+            const req = yield* HttpServerRequest.HttpServerRequest;
+            const url = new URL(req.url, 'http://localhost');
+            const filePath = url.pathname.slice(1); // Remove leading /
+            return yield* HttpServerResponse.file(getUploadsPath(filePath));
+          })
+        )
+      )
+    : HttpRouter.empty;
+
+// =============================================================================
 // APP ASSEMBLY
 // =============================================================================
 
@@ -766,13 +835,23 @@ const healthRouter = HttpRouter.empty.pipe(
     Effect.gen(function* () {
       return yield* HttpServerResponse.json({ status: 'ok' });
     })
+  ),
+  HttpRouter.get(
+    '/health/db',
+    Effect.gen(function* () {
+      const { query } = yield* DbService;
+      yield* query('health_check', (db) => db.selectFrom('users').select('id').limit(1).execute());
+      return yield* HttpServerResponse.json({ status: 'ok', database: 'connected' });
+    })
   )
 );
 
 const appRouter = healthRouter.pipe(
   HttpRouter.concat(authRouter),
   HttpRouter.concat(publicRouter),
-  HttpRouter.concat(adminRouter)
+  HttpRouter.concat(adminRouter),
+  HttpRouter.concat(adminStaticRouter),
+  HttpRouter.concat(uploadsRouter)
 );
 
 // =============================================================================
