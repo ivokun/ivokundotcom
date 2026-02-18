@@ -10,6 +10,7 @@ import { useHome, useUpdateHome } from '~/admin/hooks/use-home'
 import { Save, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '~/admin/components/ui/badge'
+import { getMediaUrl } from '~/admin/lib/utils'
 
 export function HomePageEditor() {
   const { data: home, isLoading } = useHome()
@@ -18,6 +19,7 @@ export function HomePageEditor() {
   const [formData, setFormData] = useState({
     description: '',
     heroImageId: '',
+    heroImageFilename: '',
     keywords: [] as string[]
   })
   const [newKeyword, setNewKeyword] = useState('')
@@ -27,6 +29,7 @@ export function HomePageEditor() {
       setFormData({
         description: home.description || '',
         heroImageId: home.heroImageId || '',
+        heroImageFilename: home.heroImage?.filename || '',
         keywords: home.keywords || []
       })
     }
@@ -73,7 +76,7 @@ export function HomePageEditor() {
               {formData.heroImageId ? (
                 <div className="relative aspect-[21/9] overflow-hidden rounded-md border bg-muted">
                   <img 
-                    src={`/uploads/media-${formData.heroImageId}`} 
+                    src={getMediaUrl(formData.heroImageFilename || formData.heroImageId)}
                     className="h-full w-full object-cover" 
                     alt="Hero"
                   />
@@ -81,13 +84,13 @@ export function HomePageEditor() {
                     variant="destructive" 
                     size="icon" 
                     className="absolute top-2 right-2 h-8 w-8"
-                    onClick={() => setFormData(prev => ({ ...prev, heroImageId: '' }))}
+                    onClick={() => setFormData(prev => ({ ...prev, heroImageId: '', heroImageFilename: '' }))}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
-                <MediaPicker onSelect={(m) => setFormData(prev => ({ ...prev, heroImageId: m.id }))} />
+                <MediaPicker onSelect={(m) => setFormData(prev => ({ ...prev, heroImageId: m.id, heroImageFilename: m.filename }))} />
               )}
             </div>
           </CardContent>

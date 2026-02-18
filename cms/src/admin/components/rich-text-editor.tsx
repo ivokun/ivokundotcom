@@ -19,6 +19,7 @@ import {
 import { Button } from '~/admin/components/ui/button'
 import { MediaPicker } from '~/admin/components/media-picker'
 import { useEffect } from 'react'
+import { parseEditorContent, getMediaUrl } from '~/admin/lib/utils'
 
 interface RichTextEditorProps {
   content: string
@@ -34,7 +35,7 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
       Image,
       Placeholder.configure({ placeholder: placeholder || 'Write something...' }),
     ],
-    content: content ? (typeof content === 'string' ? JSON.parse(content) : content) : '',
+    content: parseEditorContent(content),
     onUpdate: ({ editor }) => {
       onChange(JSON.stringify(editor.getJSON()))
     },
@@ -45,11 +46,8 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
     if (editor && content) {
       const currentContent = JSON.stringify(editor.getJSON())
       if (content !== currentContent) {
-        try {
-          editor.commands.setContent(JSON.parse(content))
-        } catch (e) {
-          editor.commands.setContent(content)
-        }
+        const parsedContent = parseEditorContent(content)
+        editor.commands.setContent(parsedContent)
       }
     }
   }, [content, editor])
@@ -89,7 +87,7 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
   }
 
   const addImage = (media: { filename: string }) => {
-    editor.chain().focus().setImage({ src: `/uploads/${media.filename}` }).run()
+    editor.chain().focus().setImage({ src: getMediaUrl(media) }).run()
   }
 
   return (

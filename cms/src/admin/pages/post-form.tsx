@@ -15,6 +15,7 @@ import { Save, Send, Eye, ArrowLeft, Trash, Globe, X } from 'lucide-react'
 import { toast } from 'sonner'
 import slugify from 'slugify'
 import { Badge } from '~/admin/components/ui/badge'
+import { getMediaUrl } from '~/admin/lib/utils'
 
 export function PostFormPage() {
   const { id } = useParams({ strict: false }) as { id?: string }
@@ -37,6 +38,7 @@ export function PostFormPage() {
     locale: 'en',
     categoryId: '',
     featuredImageId: '',
+    featuredImageFilename: '',
     status: 'draft',
     keywords: [] as string[]
   })
@@ -53,6 +55,7 @@ export function PostFormPage() {
         locale: post.locale || 'en',
         categoryId: post.categoryId || '',
         featuredImageId: post.featuredImageId || '',
+        featuredImageFilename: post.featuredImage?.filename || '',
         status: post.status || 'draft',
         keywords: post.keywords || []
       })
@@ -217,7 +220,7 @@ export function PostFormPage() {
                 {formData.featuredImageId ? (
                   <div className="relative aspect-video overflow-hidden rounded-md border">
                     <img 
-                      src={`/uploads/media-${formData.featuredImageId}`} // Simple mapping for now
+                      src={getMediaUrl(formData.featuredImageFilename || formData.featuredImageId)}
                       className="h-full w-full object-cover"
                       alt="Featured"
                     />
@@ -225,13 +228,13 @@ export function PostFormPage() {
                       variant="destructive" 
                       size="icon" 
                       className="absolute top-2 right-2 h-6 w-6"
-                      onClick={() => setFormData(prev => ({ ...prev, featuredImageId: '' }))}
+                      onClick={() => setFormData(prev => ({ ...prev, featuredImageId: '', featuredImageFilename: '' }))}
                     >
                       <Trash className="h-3 w-3" />
                     </Button>
                   </div>
                 ) : (
-                  <MediaPicker onSelect={(m) => setFormData(prev => ({ ...prev, featuredImageId: m.id }))} />
+                  <MediaPicker onSelect={(m) => setFormData(prev => ({ ...prev, featuredImageId: m.id, featuredImageFilename: m.filename }))} />
                 )}
               </div>
 

@@ -5,7 +5,7 @@ import { Upload, Trash, Search, Copy, Check, Filter } from 'lucide-react'
 import { useMedia, useUploadMedia, useDeleteMedia, useUpdateMedia } from '~/admin/hooks/use-media'
 import { Card, CardContent } from '~/admin/components/ui/card'
 import { Input } from '~/admin/components/ui/input'
-import { cn, formatFileSize, formatDate } from '~/admin/lib/utils'
+import { cn, formatFileSize, formatDate, getMediaUrl } from '~/admin/lib/utils'
 import {
   Dialog,
   DialogContent,
@@ -61,10 +61,10 @@ export function MediaLibraryPage() {
     })
   }
 
-  const copyUrl = (filename: string) => {
-    const url = `${window.location.origin}/uploads/${filename}`
+  const copyUrl = (item: { id: string; filename: string }) => {
+    const url = `${window.location.origin}${getMediaUrl(item)}`
     navigator.clipboard.writeText(url)
-    setCopiedId(filename)
+    setCopiedId(item.id)
     toast.success('URL copied to clipboard')
     setTimeout(() => setCopiedId(null), 2000)
   }
@@ -119,7 +119,7 @@ export function MediaLibraryPage() {
               onClick={() => setSelectedItem(item)}
             >
               <img 
-                src={`/uploads/${item.filename}`} 
+                src={getMediaUrl(item)}
                 alt={item.alt || ''} 
                 className="h-full w-full object-cover transition-transform group-hover:scale-105"
               />
@@ -142,7 +142,7 @@ export function MediaLibraryPage() {
             <div className="grid gap-6 md:grid-cols-2">
               <div className="overflow-hidden rounded-md border bg-muted flex items-center justify-center aspect-square">
                 <img 
-                  src={`/uploads/${selectedItem.filename}`} 
+                  src={getMediaUrl(selectedItem)}
                   alt={selectedItem.alt || ''} 
                   className="max-h-full max-w-full object-contain"
                 />
@@ -157,8 +157,8 @@ export function MediaLibraryPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => copyUrl(selectedItem.filename)}>
-                    {copiedId === selectedItem.filename ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => copyUrl(selectedItem)}>
+                    {copiedId === selectedItem.id ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
                     Copy URL
                   </Button>
                 </div>

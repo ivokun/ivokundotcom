@@ -12,6 +12,7 @@ import { Save, Send, ArrowLeft, Trash, GripVertical, X, Plus } from 'lucide-reac
 import { toast } from 'sonner'
 import slugify from 'slugify'
 import { Badge } from '~/admin/components/ui/badge'
+import { getMediaUrl, cn } from '~/admin/lib/utils'
 
 export function GalleryFormPage() {
   const { id } = useParams({ strict: false }) as { id?: string }
@@ -30,7 +31,7 @@ export function GalleryFormPage() {
     slug: '',
     description: '',
     status: 'draft',
-    images: [] as Array<{ id?: string; mediaId: string; order: number }>
+    images: [] as Array<{ id?: string; mediaId: string; mediaFilename?: string; order: number }>
   })
 
   useEffect(() => {
@@ -40,7 +41,10 @@ export function GalleryFormPage() {
         slug: gallery.slug || '',
         description: gallery.description || '',
         status: gallery.status || 'draft',
-        images: gallery.images || []
+        images: gallery.images?.map((img: any) => ({
+          ...img,
+          mediaFilename: img.media?.filename || ''
+        })) || []
       })
     }
   }, [gallery])
@@ -86,10 +90,10 @@ export function GalleryFormPage() {
     })
   }
 
-  const addImage = (media: { id: string }) => {
+  const addImage = (media: { id: string; filename: string }) => {
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, { mediaId: media.id, order: prev.images.length }]
+      images: [...prev.images, { mediaId: media.id, mediaFilename: media.filename, order: prev.images.length }]
     }))
   }
 
@@ -164,7 +168,7 @@ export function GalleryFormPage() {
               {formData.images.map((img, index) => (
                 <div key={img.mediaId} className="group relative aspect-square rounded-md border overflow-hidden bg-muted">
                   <img 
-                    src={`/uploads/media-${img.mediaId}`} 
+                    src={getMediaUrl(img.mediaFilename || img.mediaId)}
                     className="h-full w-full object-cover"
                     alt={`Gallery item ${index}`}
                   />
@@ -193,8 +197,4 @@ export function GalleryFormPage() {
 
 function CardHeader({ children, className }: { children: React.ReactNode, className?: string }) {
   return <div className={cn("p-6 flex items-center justify-between", className)}>{children}</div>
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ')
 }

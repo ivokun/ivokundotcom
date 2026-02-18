@@ -10,7 +10,7 @@ import {
 import { Button } from '~/admin/components/ui/button'
 import { useMedia, useUploadMedia } from '~/admin/hooks/use-media'
 import { Upload, Check, ImageIcon } from 'lucide-react'
-import { cn, formatFileSize } from '~/admin/lib/utils'
+import { cn, formatFileSize, getMediaUrl } from '~/admin/lib/utils'
 
 interface MediaPickerProps {
   onSelect: (media: { id: string; filename: string }) => void
@@ -82,7 +82,7 @@ export function MediaPicker({ onSelect, selectedId, trigger }: MediaPickerProps)
                   }}
                 >
                   <img
-                    src={`/uploads/${item.filename}`}
+                    src={getMediaUrl(item)}
                     alt={item.alt || ''}
                     className="h-full w-full object-cover"
                   />
