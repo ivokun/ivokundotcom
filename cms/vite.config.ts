@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
-import solidPlugin from 'vite-plugin-solid';
+import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [solidPlugin({ extensions: ['.tsx', '.ts'] })],
+  plugins: [react()],
   base: '/admin/',
   root: __dirname,
   resolve: {
