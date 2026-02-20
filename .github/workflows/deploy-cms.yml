@@ -70,6 +70,7 @@ jobs:
       - name: Deploy to orbit001
         run: |
           rsync -avz --delete \
+            --chown=cms:cms \
             -e "ssh -i ~/.ssh/deploy_key" \
             dist/ \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ env.DEPLOY_DIR }}/
