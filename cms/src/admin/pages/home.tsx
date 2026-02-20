@@ -19,7 +19,6 @@ export function HomePageEditor() {
   const [formData, setFormData] = useState({
     description: '',
     heroImageId: '',
-    heroImageFilename: '',
     keywords: [] as string[]
   })
   const [newKeyword, setNewKeyword] = useState('')
@@ -29,7 +28,6 @@ export function HomePageEditor() {
       setFormData({
         description: home.description || '',
         heroImageId: home.heroImageId || '',
-        heroImageFilename: home.heroImage?.filename || '',
         keywords: home.keywords || []
       })
     }
@@ -75,22 +73,20 @@ export function HomePageEditor() {
               <Label>Hero Image</Label>
               {formData.heroImageId ? (
                 <div className="relative aspect-[21/9] overflow-hidden rounded-md border bg-muted">
-                  <img 
-                    src={getMediaUrl(formData.heroImageFilename || formData.heroImageId)}
-                    className="h-full w-full object-cover" 
-                    alt="Hero"
-                  />
-                  <Button 
-                    variant="destructive" 
-                    size="icon" 
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span className="text-sm text-muted-foreground">Image ID: {formData.heroImageId.slice(0, 8)}...</span>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="icon"
                     className="absolute top-2 right-2 h-8 w-8"
-                    onClick={() => setFormData(prev => ({ ...prev, heroImageId: '', heroImageFilename: '' }))}
+                    onClick={() => setFormData(prev => ({ ...prev, heroImageId: '' }))}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
-                <MediaPicker onSelect={(m) => setFormData(prev => ({ ...prev, heroImageId: m.id, heroImageFilename: m.filename }))} />
+                <MediaPicker onSelect={(m) => setFormData(prev => ({ ...prev, heroImageId: m.id }))} />
               )}
             </div>
           </CardContent>

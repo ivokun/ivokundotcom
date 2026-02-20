@@ -31,7 +31,7 @@ export function GalleryFormPage() {
     slug: '',
     description: '',
     status: 'draft',
-    images: [] as Array<{ id?: string; mediaId: string; mediaFilename?: string; order: number }>
+    images: [] as Array<{ id: string; mediaId: string; order: number }>
   })
 
   useEffect(() => {
@@ -42,8 +42,9 @@ export function GalleryFormPage() {
         description: gallery.description || '',
         status: gallery.status || 'draft',
         images: gallery.images?.map((img: any) => ({
-          ...img,
-          mediaFilename: img.media?.filename || ''
+          id: img.id,
+          mediaId: img.mediaId,
+          order: img.order
         })) || []
       })
     }
@@ -93,7 +94,7 @@ export function GalleryFormPage() {
   const addImage = (media: { id: string; filename: string }) => {
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, { mediaId: media.id, mediaFilename: media.filename, order: prev.images.length }]
+      images: [...prev.images, { id: crypto.randomUUID(), mediaId: media.id, order: prev.images.length }]
     }))
   }
 
@@ -167,11 +168,9 @@ export function GalleryFormPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {formData.images.map((img, index) => (
                 <div key={img.mediaId} className="group relative aspect-square rounded-md border overflow-hidden bg-muted">
-                  <img 
-                    src={getMediaUrl(img.mediaFilename || img.mediaId)}
-                    className="h-full w-full object-cover"
-                    alt={`Gallery item ${index}`}
-                  />
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span className="text-xs text-muted-foreground">ID: {img.mediaId.slice(0, 6)}...</span>
+                  </div>
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => removeImage(img.mediaId)}>
                       <X className="h-4 w-4" />
