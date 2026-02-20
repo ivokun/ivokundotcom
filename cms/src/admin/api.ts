@@ -24,10 +24,11 @@ async function request<T>(
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
 
-  // Build headers properly without type assertions
-  const baseHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  // Build headers — skip Content-Type for FormData (browser sets multipart boundary)
+  const isFormData = options.body instanceof FormData;
+  const baseHeaders: Record<string, string> = isFormData
+    ? {}
+    : { 'Content-Type': 'application/json' };
 
   // Merge custom headers
   if (options.headers) {
@@ -287,29 +288,85 @@ async function getMedia() {
   return request<PaginatedResponse<{
     id: string;
     filename: string;
-    mimeType: string;
+    mime_type: string;
     size: number;
     alt: string | null;
-    createdAt: string;
+    urls: { original: string; thumbnail: string; small: string; large: string } | null;
+    status: 'uploading' | 'processing' | 'ready' | 'failed';
+    created_at: string;
   }>>('/media');
 }
 
-async function uploadMedia(file: File, alt?: string) {
-  const formData = new FormData();
-  formData.append('file', file);
-  if (alt) formData.append('alt', alt);
-  
+async function getMediaById(id: string) {
   return request<{
     id: string;
     filename: string;
-    mimeType: string;
+    mime_type: string;
     size: number;
     alt: string | null;
-  }>('/media', {
+    urls: { original: string; thumbnail: string; small: string; large: string } | null;
+    status: 'uploading' | 'processing' | 'ready' | 'failed';
+    created_at: string;
+  }>(`/media/${id}`);
+}
+
+/**
+ * Upload a file via presigned URL:
+ * 1. POST /media/upload → get presignedUrl + mediaId
+ * 2. PUT file directly to presigned URL (browser → R2)
+ * 3. POST /media/:id/uploaded → confirm + kick off processing
+ */
+async function uploadMedia(
+  file: File,
+  alt?: string,
+  onProgress?: (pct: number) => void
+): Promise<{ id: string; status: string }> {
+  // Step 1: Get presigned URL
+  const { uploadUrl, mediaId } = await request<{
+    mediaId: string;
+    uploadUrl: string;
+    uploadKey: string;
+  }>('/media/upload', {
     method: 'POST',
-    body: formData,
-    headers: {},
+    body: JSON.stringify({
+      filename: file.name,
+      contentType: file.type || 'application/octet-stream',
+      size: file.size,
+      alt,
+    }),
   });
+
+  // Step 2: Upload directly to R2 via presigned URL
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`Upload failed: HTTP ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Upload failed: network error'));
+    xhr.send(file);
+  });
+
+  // Step 3: Confirm upload, trigger processing
+  const media = await request<{ id: string; status: string }>(`/media/${mediaId}/uploaded`, {
+    method: 'POST',
+  });
+
+  return media;
 }
 
 async function updateMedia(id: string, data: { alt?: string }) {
@@ -401,6 +458,7 @@ const api = {
   },
   media: {
     list: getMedia,
+    get: getMediaById,
     upload: uploadMedia,
     update: updateMedia,
     delete: deleteMedia,

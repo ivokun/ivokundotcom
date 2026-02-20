@@ -92,6 +92,8 @@ export const makePostService = Effect.gen(function* () {
           'media.urls as media_urls',
           'media.width as media_width',
           'media.height as media_height',
+          'media.status as media_status',
+          'media.upload_key as media_upload_key',
           'media.created_at as media_created_at',
         ])
         .where('posts.id', '=', id)
@@ -118,9 +120,11 @@ export const makePostService = Effect.gen(function* () {
               mime_type: result.media_mime_type!,
               size: result.media_size!,
               alt: result.media_alt ?? null,
-              urls: result.media_urls!,
+              urls: result.media_urls ?? null,
               width: result.media_width ?? null,
               height: result.media_height ?? null,
+              status: (result as any).media_status ?? 'ready',
+              upload_key: (result as any).media_upload_key ?? null,
               created_at: result.media_created_at!,
             }
           : null;
@@ -183,6 +187,8 @@ export const makePostService = Effect.gen(function* () {
           'media.urls as media_urls',
           'media.width as media_width',
           'media.height as media_height',
+          'media.status as media_status',
+          'media.upload_key as media_upload_key',
           'media.created_at as media_created_at',
         ])
         .where('posts.slug', '=', slug)
@@ -210,9 +216,11 @@ export const makePostService = Effect.gen(function* () {
               mime_type: result.media_mime_type!,
               size: result.media_size!,
               alt: result.media_alt ?? null,
-              urls: result.media_urls!,
+              urls: result.media_urls ?? null,
               width: result.media_width ?? null,
               height: result.media_height ?? null,
+              status: (result as any).media_status ?? 'ready',
+              upload_key: (result as any).media_upload_key ?? null,
               created_at: result.media_created_at!,
             }
           : null;

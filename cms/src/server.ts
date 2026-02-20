@@ -49,11 +49,11 @@ import { HomeService, HomeServiceLive } from './services/home.service';
 import { ImageServiceLive } from './services/image.service';
 import { MediaService, MediaServiceLive } from './services/media.service';
 import { PostService, PostServiceLive } from './services/post.service';
+import { makeR2StorageService, StorageService } from './services/storage.service';
 import {
-  makeLocalStorageService,
-  makeR2StorageService,
-  StorageService,
-} from './services/storage.service';
+  MediaProcessorQueue,
+  MediaProcessorQueueLive,
+} from './services/media-processor';
 
 // =============================================================================
 // HELPERS
@@ -646,51 +646,43 @@ const adminMiscRouter = HttpRouter.empty.pipe(
       return yield* HttpServerResponse.empty();
     })
   ),
+  // Presigned upload: step 1 — get a presigned URL
   HttpRouter.post(
-    '/admin/api/media',
+    '/admin/api/media/upload',
     Effect.gen(function* () {
       const req = yield* HttpServerRequest.HttpServerRequest;
-      const formData = yield* req.multipart;
-
-      const file = formData['file'];
-
-      if (!file || Array.isArray(file)) {
-        return yield* Effect.fail(
-          new ValidationError({ errors: [{ path: 'file', message: 'File is required and must be single' }] })
-        );
-      }
-
-      // Handle file data - the type depends on platform implementation
-      const f = file as { path?: string; name?: string; filename?: string; type?: string; contentType?: string } | Blob;
-
-      let buffer: Buffer;
-      if (f instanceof Blob) {
-        buffer = Buffer.from(yield* Effect.promise(() => f.arrayBuffer()));
-      } else if (typeof f === 'object' && f.path) {
-        const bunFile = Bun.file(f.path);
-        buffer = Buffer.from(yield* Effect.promise(() => bunFile.arrayBuffer()));
-      } else {
-        return yield* Effect.fail(
-          new ValidationError({ errors: [{ path: 'file', message: 'Unsupported file format' }] })
-        );
-      }
-
-      const altField = formData['alt'];
-      const alt = Array.isArray(altField) ? altField[0] : altField;
-      const filename =
-        (f instanceof Blob ? undefined : f.name || f.filename) || 'upload.jpg';
-      const mimetype =
-        (f instanceof Blob ? f.type : f.type || f.contentType) || 'application/octet-stream';
+      const body = yield* Effect.flatMap(
+        req.json,
+        Schema.decodeUnknown(
+          Schema.Struct({
+            filename: Schema.String,
+            contentType: Schema.String,
+            size: Schema.Number,
+            alt: Schema.optional(Schema.String),
+          })
+        )
+      );
 
       const mediaService = yield* MediaService;
-      const media = yield* mediaService.create(
-        {
-          buffer,
-          filename: typeof filename === 'string' ? filename : 'upload',
-          mimetype: typeof mimetype === 'string' ? mimetype : 'application/octet-stream',
-        },
-        typeof alt === 'string' ? alt : undefined
-      );
+      const result = yield* mediaService.initUpload({
+        filename: body.filename,
+        contentType: body.contentType,
+        size: body.size,
+        alt: body.alt,
+      });
+
+      return yield* HttpServerResponse.json(result);
+    })
+  ),
+  // Presigned upload: step 2 — confirm upload complete, kick off processing
+  HttpRouter.post(
+    '/admin/api/media/:id/uploaded',
+    Effect.gen(function* () {
+      const req = yield* HttpServerRequest.HttpServerRequest;
+      const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
+
+      const mediaService = yield* MediaService;
+      const media = yield* mediaService.confirmUpload(id);
 
       return yield* HttpServerResponse.json(media);
     })
@@ -775,12 +767,6 @@ const getPublicPath = (relativePath: string): string => {
   return `${basePath}/${relativePath}`;
 };
 
-// For uploads in development mode
-const getUploadsPath = (relativePath: string): string => {
-  const basePath = process.cwd();
-  return `${basePath}/${relativePath}`;
-};
-
 // Serve admin SPA
 const adminStaticRouter = HttpRouter.empty.pipe(
   // Serve index.html for the admin root
@@ -809,21 +795,8 @@ const adminStaticRouter = HttpRouter.empty.pipe(
   )
 );
 
-// Serve local uploads in development
-const uploadsRouter =
-  process.env.NODE_ENV !== 'production'
-    ? HttpRouter.empty.pipe(
-        HttpRouter.get(
-          '/uploads/*',
-          Effect.gen(function* () {
-            const req = yield* HttpServerRequest.HttpServerRequest;
-            const url = new URL(req.url, 'http://localhost');
-            const filePath = url.pathname.slice(1); // Remove leading /
-            return yield* HttpServerResponse.file(getUploadsPath(filePath));
-          })
-        )
-      )
-    : HttpRouter.empty;
+// No local uploads router — all media is served from R2 via public URL
+const uploadsRouter = HttpRouter.empty;
 
 // =============================================================================
 // APP ASSEMBLY
@@ -858,23 +831,20 @@ const appRouter = healthRouter.pipe(
 // LAYER COMPOSITION
 // =============================================================================
 
-// Storage layer - local for dev, R2 for prod
-const StorageLive =
-  process.env.NODE_ENV === 'production'
-    ? Layer.effect(
-        StorageService,
-        Effect.gen(function* () {
-          const config = yield* AppConfig;
-          return yield* makeR2StorageService({
-            accessKeyId: config.r2.accessKeyId,
-            secretAccessKey: config.r2.secretAccessKey,
-            endpoint: config.r2.endpoint,
-            bucket: config.r2.bucket,
-            publicUrl: config.r2.publicUrl,
-          });
-        })
-      )
-    : Layer.effect(StorageService, makeLocalStorageService('./uploads', 'http://localhost:3000/uploads'));
+// Storage layer - always R2 (dev bucket in dev, prod bucket in prod)
+const StorageLive = Layer.effect(
+  StorageService,
+  Effect.gen(function* () {
+    const config = yield* AppConfig;
+    return yield* makeR2StorageService({
+      accessKeyId: config.r2.accessKeyId,
+      secretAccessKey: config.r2.secretAccessKey,
+      endpoint: config.r2.endpoint,
+      bucket: config.r2.bucket,
+      publicUrl: config.r2.publicUrl,
+    });
+  })
+);
 
 // Database layer with config
 const DbLive = Layer.scoped(
@@ -903,8 +873,20 @@ const StorageWithConfig = StorageLive.pipe(Layer.provide(AppConfigLive));
 // ImageServiceLive needs StorageService
 const ImageWithStorage = ImageServiceLive.pipe(Layer.provide(StorageWithConfig));
 
-// MediaServiceLive needs DbService and ImageService
-const MediaWithDeps = MediaServiceLive.pipe(Layer.provide(DbWithConfig), Layer.provide(ImageWithStorage));
+// MediaProcessorQueueLive needs DbService, ImageService, StorageService
+const ProcessorQueueWithDeps = MediaProcessorQueueLive.pipe(
+  Layer.provide(DbWithConfig),
+  Layer.provide(ImageWithStorage),
+  Layer.provide(StorageWithConfig)
+);
+
+// MediaServiceLive needs DbService, ImageService, StorageService, MediaProcessorQueue
+const MediaWithDeps = MediaServiceLive.pipe(
+  Layer.provide(DbWithConfig),
+  Layer.provide(ImageWithStorage),
+  Layer.provide(StorageWithConfig),
+  Layer.provide(ProcessorQueueWithDeps)
+);
 
 // Content services need DbService
 const CategoryWithDb = CategoryServiceLive.pipe(Layer.provide(DbWithConfig));
@@ -921,6 +903,7 @@ const AllServices = Layer.mergeAll(
   DbWithConfig,
   StorageWithConfig,
   ImageWithStorage,
+  ProcessorQueueWithDeps,
   MediaWithDeps,
   CategoryWithDb,
   PostWithDb,
