@@ -78,6 +78,11 @@ export type NewCategory = Insertable<CategoriesTable>;
 export type CategoryUpdate = Updateable<CategoriesTable>;
 
 /**
+ * Media upload/processing status
+ */
+export type MediaStatus = 'uploading' | 'processing' | 'ready' | 'failed';
+
+/**
  * Media table - PRD Section 6.2.6
  * Uploaded media files with processed variants
  */
@@ -87,9 +92,11 @@ export interface MediaTable {
   mime_type: string;
   size: number;
   alt: string | null;
-  urls: ColumnType<MediaUrls, MediaUrls, MediaUrls>;
+  urls: ColumnType<MediaUrls | null, MediaUrls | null, MediaUrls | null>;
   width: number | null;
   height: number | null;
+  status: ColumnType<MediaStatus, MediaStatus, MediaStatus>;
+  upload_key: string | null;
   created_at: Generated<Date>;
 }
 
