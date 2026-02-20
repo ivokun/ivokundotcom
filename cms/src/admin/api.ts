@@ -164,8 +164,10 @@ async function createPost(data: {
     content: data.content ? (typeof data.content === 'string' ? JSON.parse(data.content) : data.content) : undefined,
     excerpt: data.excerpt,
     locale: data.locale,
+    status: data.status,
     category_id: data.categoryId,
     featured_image: data.featuredImageId,
+    keywords: data.keywords,
   };
   return request('/posts', {
     method: 'POST',
@@ -195,6 +197,8 @@ async function updatePost(id: string, data: Partial<{
   if (data.locale !== undefined) payload['locale'] = data.locale;
   if (data.categoryId !== undefined) payload['category_id'] = data.categoryId;
   if (data.featuredImageId !== undefined) payload['featured_image'] = data.featuredImageId;
+  if (data.status !== undefined) payload['status'] = data.status;
+  if (data.keywords !== undefined) payload['keywords'] = data.keywords;
 
   return request(`/posts/${id}`, {
     method: 'PATCH',
