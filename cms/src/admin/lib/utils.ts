@@ -5,10 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDate(date: string | Date) {
+export function formatDate(date: string | Date | null | undefined) {
+  if (!date) return '-'
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return '-'
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric', month: 'short', day: 'numeric'
-  }).format(new Date(date))
+  }).format(d)
 }
 
 export function formatFileSize(bytes: number) {
@@ -52,29 +55,39 @@ export function parseEditorContent(content: string | null | undefined): object |
 export interface MediaItem {
   id: string
   filename: string
-  mimeType?: string
+  mime_type?: string
   size?: number
   alt?: string | null
-  createdAt?: string
+  urls?: { original: string; thumbnail: string; small: string; large: string } | null
+  status?: string
+  created_at?: string
 }
 
 /**
  * Get the URL for a media item
- * Accepts either a MediaItem object or a filename string
- * Returns consistent /uploads/ path
+ * Uses the `urls` field from the API (R2 public URLs).
+ * Falls back to empty string if media is not ready.
  */
 export function getMediaUrl(media: MediaItem | string | null | undefined): string {
   if (!media) return ''
-  
-  // If it's a string, use it directly (assume it's a filename)
+
+  // If it's a string (legacy / URL), use as-is
   if (typeof media === 'string') {
-    return `/uploads/${media}`
+    return media
   }
-  
-  // If it's a MediaItem, use the filename
-  if (media.filename) {
-    return `/uploads/${media.filename}`
+
+  // Use thumbnail from urls if available
+  if (media.urls) {
+    return media.urls.thumbnail || media.urls.small || media.urls.original || ''
   }
-  
+
   return ''
+}
+
+/**
+ * Get the full-size original URL for a media item
+ */
+export function getMediaOriginalUrl(media: MediaItem | null | undefined): string {
+  if (!media?.urls) return ''
+  return media.urls.original || ''
 }

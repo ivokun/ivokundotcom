@@ -69,7 +69,7 @@ export function MediaPicker({ onSelect, selectedId, trigger }: MediaPickerProps)
             <div className="flex h-64 items-center justify-center">Loading...</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {media?.data.map((item) => (
+              {media?.data.filter((item) => (item as any).status === 'ready').map((item) => (
                 <div
                   key={item.id}
                   className={cn(
