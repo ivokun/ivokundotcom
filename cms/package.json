@@ -27,7 +27,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.962.0",
+    "@aws-sdk/client-s3": "^3.994.0",
+    "@aws-sdk/s3-request-presigner": "^3.994.0",
     "@effect/cluster": "0.55.0",
     "@effect/platform": "0.93.6",
     "@effect/platform-bun": "0.86.0",

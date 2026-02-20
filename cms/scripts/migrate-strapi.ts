@@ -770,6 +770,8 @@ async function migrateMedia(db: Kysely<Database>): Promise<void> {
           urls: urls,
           width: media.width,
           height: media.height,
+          status: 'ready' as const,
+          upload_key: null,
           created_at: new Date(),
         })
         .execute();

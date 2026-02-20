@@ -1,37 +1,44 @@
-import { Effect, Layer } from 'effect';
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { join } from 'node:path';
-import { rmSync } from 'node:fs';
+import { Effect, Layer, Redacted } from 'effect';
+import { describe, expect, test } from 'bun:test';
 
 import {
   AuthService,
   AuthServiceLive,
-  DbService,
   DbServiceLive,
   ImageService,
   ImageServiceLive,
-  LocalStorageServiceLive,
+  R2StorageServiceLive,
   StorageService,
+  type StorageConfig,
 } from './index';
 
 const TEST_DB_URL =
   process.env['DATABASE_URL'] ?? 'postgres://cms_user:cms_password@localhost:5432/ivokun_cms';
-const TEST_STORAGE_PATH = join(import.meta.dir, '../../.test-storage');
+
+// R2 config from env — tests requiring storage will be skipped without real config
+const hasR2Config =
+  !!process.env['R2_ACCESS_KEY_ID'] &&
+  !!process.env['R2_ACCESS_SECRET'] &&
+  !!process.env['R2_ENDPOINT'] &&
+  !process.env['R2_ENDPOINT']?.includes('your-account-id') &&
+  !!process.env['R2_BUCKET'] &&
+  !!process.env['R2_PUBLIC_URL'];
+
+const r2Config: StorageConfig = {
+  accessKeyId: Redacted.make(process.env['R2_ACCESS_KEY_ID'] ?? ''),
+  secretAccessKey: Redacted.make(process.env['R2_ACCESS_SECRET'] ?? ''),
+  endpoint: process.env['R2_ENDPOINT'] ?? '',
+  bucket: process.env['R2_BUCKET'] ?? '',
+  publicUrl: process.env['R2_PUBLIC_URL'] ?? '',
+};
 
 describe('Service Integration', () => {
   const DbLayer = DbServiceLive(TEST_DB_URL);
-  const StorageLayer = LocalStorageServiceLive(TEST_STORAGE_PATH, 'http://localhost:3000/storage');
+  const StorageLayer = R2StorageServiceLive(r2Config);
   const AuthLayer = AuthServiceLive.pipe(Layer.provide(DbLayer));
   const ImageLayer = ImageServiceLive.pipe(Layer.provide(StorageLayer));
 
   const AllLayers = Layer.mergeAll(DbLayer, StorageLayer, AuthLayer, ImageLayer);
-
-  afterAll(() => {
-    // Cleanup test storage
-    try {
-      rmSync(TEST_STORAGE_PATH, { recursive: true, force: true });
-    } catch {}
-  });
 
   test('AuthService hashes and verifies passwords', async () => {
     const program = Effect.gen(function* () {
@@ -42,14 +49,16 @@ describe('Service Integration', () => {
       return { hash, valid, invalid };
     });
 
-    const result = await Effect.runPromise(program.pipe(Effect.provide(AllLayers), Effect.scoped));
+    const result = await Effect.runPromise(
+      program.pipe(Effect.provide(AllLayers), Effect.scoped)
+    );
 
     expect(result.hash).toMatch(/^\$argon2/);
     expect(result.valid).toBe(true);
     expect(result.invalid).toBe(false);
   });
 
-  test('ImageService processes images into variants', async () => {
+  test.skipIf(!hasR2Config)('ImageService processes images into variants', async () => {
     const program = Effect.gen(function* () {
       const image = yield* ImageService;
 
@@ -63,7 +72,9 @@ describe('Service Integration', () => {
       return result;
     });
 
-    const result = await Effect.runPromise(program.pipe(Effect.provide(AllLayers), Effect.scoped));
+    const result = await Effect.runPromise(
+      program.pipe(Effect.provide(AllLayers), Effect.scoped)
+    );
 
     expect(result.urls.original).toContain('original.webp');
     expect(result.urls.thumbnail).toContain('thumbnail.webp');
@@ -73,7 +84,7 @@ describe('Service Integration', () => {
     expect(result.height).toBe(1);
   });
 
-  test('StorageService uploads and deletes files', async () => {
+  test.skipIf(!hasR2Config)('StorageService uploads and deletes files', async () => {
     const program = Effect.gen(function* () {
       const storage = yield* StorageService;
 
@@ -85,7 +96,9 @@ describe('Service Integration', () => {
       return url;
     });
 
-    const result = await Effect.runPromise(program.pipe(Effect.provide(AllLayers), Effect.scoped));
+    const result = await Effect.runPromise(
+      program.pipe(Effect.provide(AllLayers), Effect.scoped)
+    );
 
     expect(result).toContain('test/hello.txt');
   });
