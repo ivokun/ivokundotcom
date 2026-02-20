@@ -54,9 +54,9 @@ jobs:
           mkdir -p dist/db
           cp -r db/migrations dist/db/migrations
 
-          # Install external native deps for linux target
+          # Install external deps marked with --external in the compile step
           cd dist
-          echo '{"dependencies":{"sharp":"^0.34.5"}}' > package.json
+          echo '{"dependencies":{"sharp":"^0.34.5","@effect/cluster":"0.55.0"}}' > package.json
           bun install --production
           rm -f package.json bun.lock
 
