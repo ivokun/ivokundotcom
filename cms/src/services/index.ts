@@ -11,10 +11,9 @@ export {
   type ProcessedImage,
 } from './image.service';
 export {
-  LocalStorageServiceLive,
-  makeLocalStorageService,
   makeR2StorageService,
   R2StorageServiceLive,
   StorageService,
   type StorageConfig,
 } from './storage.service';
+export { MediaProcessorQueue, MediaProcessorQueueLive } from './media-processor';
