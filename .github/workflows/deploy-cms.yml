@@ -75,6 +75,31 @@ jobs:
             dist/ \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ env.DEPLOY_DIR }}/
 
+      - name: Fix database ownership
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+          sudo -u postgres psql -d cms -c "
+            DO \$\$ 
+            DECLARE 
+              r RECORD; 
+            BEGIN 
+              FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP 
+                EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' OWNER TO cms'; 
+              END LOOP; 
+              FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = 'public' LOOP 
+                EXECUTE 'ALTER SEQUENCE public.' || quote_ident(r.sequencename) || ' OWNER TO cms'; 
+              END LOOP;
+              FOR r IN SELECT typname FROM pg_type JOIN pg_namespace ON pg_namespace.oid = pg_type.typnamespace WHERE nspname = 'public' LOOP
+                BEGIN
+                  EXECUTE 'ALTER TYPE public.' || quote_ident(r.typname) || ' OWNER TO cms';
+                EXCEPTION WHEN OTHERS THEN
+                  -- Ignore types that can't have ownership changed (e.g. built-ins)
+                END;
+              END LOOP;
+            END \$\$;
+          "
+          EOF
+
       - name: Run database migrations
         run: |
           # Install dbmate on CI runner
