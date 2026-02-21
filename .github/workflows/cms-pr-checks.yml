@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - 'cms/**'
+      - 'devenv.nix'
       - '.github/workflows/cms-pr-checks.yml'
   push:
     branches: [main]
     paths:
       - 'cms/**'
+      - 'devenv.nix'
       - '.github/workflows/cms-pr-checks.yml'
 
 jobs:
