@@ -75,6 +75,12 @@ jobs:
             dist/ \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ env.DEPLOY_DIR }}/
 
+      - name: Run database migrations
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "DATABASE_URL='${{ secrets.DATABASE_URL }}' dbmate -d /opt/cms/db/migrations up"
+
       - name: Restart CMS service
         run: |
           ssh -i ~/.ssh/deploy_key \
