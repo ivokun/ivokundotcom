@@ -3,7 +3,6 @@ import { Context, Effect, Layer } from 'effect';
 
 import { DatabaseError, NotFound, StorageError, ValidationError } from '../errors';
 import type { Media, MediaStatus, MediaUpdate, PaginatedResponse } from '../types';
-
 import { DbService } from './db.service';
 import { ImageService } from './image.service';
 import { MediaProcessorQueue } from './media-processor';

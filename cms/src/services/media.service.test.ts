@@ -2,11 +2,10 @@ import { describe, expect, it, mock } from 'bun:test';
 import { Effect, Layer } from 'effect';
 
 import type { Media } from '../types';
-
 import { DbService } from './db.service';
 import { ImageService } from './image.service';
+import { makeMediaService,MediaService } from './media.service';
 import { MediaProcessorQueue } from './media-processor';
-import { MediaService, makeMediaService } from './media.service';
 import { StorageService } from './storage.service';
 
 const mockDbService = (queryFn: (op: string, fn: any) => Effect.Effect<any, any>) =>

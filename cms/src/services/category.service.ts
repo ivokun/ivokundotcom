@@ -1,10 +1,9 @@
-import slugify from 'slugify';
 import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
+import slugify from 'slugify';
 
 import { DatabaseError, NotFound, SlugConflict } from '../errors';
 import type { Category, CategoryUpdate, NewCategory, PaginatedResponse } from '../types';
-
 import { DbService } from './db.service';
 
 export class CategoryService extends Context.Tag('CategoryService')<

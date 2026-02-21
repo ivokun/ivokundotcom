@@ -7,7 +7,6 @@ import { Context, Effect, Layer, Queue } from 'effect';
 
 import { DatabaseError, ImageProcessingError, StorageError } from '../errors';
 import type { MediaUrls } from '../types';
-
 import { DbService } from './db.service';
 import { ImageService } from './image.service';
 import { StorageService } from './storage.service';
@@ -51,7 +50,7 @@ export const makeMediaProcessorQueue = Effect.gen(function* () {
     extra?: { urls?: MediaUrls; width?: number; height?: number; size?: number }
   ) =>
     query('update_media_status', (db) => {
-      let q = db
+      const q = db
         .updateTable('media')
         .set({ status, ...extra })
         .where('id', '=', mediaId);

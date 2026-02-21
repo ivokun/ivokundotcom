@@ -2,7 +2,6 @@ import { describe, expect, it, mock } from 'bun:test';
 import { Effect, Layer } from 'effect';
 
 import type { Gallery } from '../types';
-
 import { DbService } from './db.service';
 import { GalleryService, makeGalleryService } from './gallery.service';
 

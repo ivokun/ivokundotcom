@@ -1,9 +1,10 @@
+import { HttpServerRequest, HttpServerResponse } from '@effect/platform';
 import { describe, expect, it } from 'bun:test';
 import { Effect, Exit, Layer } from 'effect';
-import { HttpServerRequest, HttpServerResponse } from '@effect/platform';
-import { sessionMiddleware, apiKeyMiddleware, UserContext } from './middleware';
+
+import { InvalidApiKey,InvalidCredentials, SessionExpired } from './errors';
+import { apiKeyMiddleware, sessionMiddleware, UserContext } from './middleware';
 import { AuthService } from './services/auth.service';
-import { InvalidCredentials, SessionExpired, InvalidApiKey } from './errors';
 
 // Mock AuthService
 const makeMockAuthService = (

@@ -1,5 +1,5 @@
-import { Schema } from 'effect';
 import { describe, expect, test } from 'bun:test';
+import { Schema } from 'effect';
 
 import * as S from './schemas';
 

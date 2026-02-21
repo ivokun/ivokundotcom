@@ -5,16 +5,17 @@ import {
   Outlet,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/router-devtools'
+
 import { Layout } from '~/admin/components/layout'
-import { LoginPage } from '~/admin/pages/login'
-import { DashboardPage } from '~/admin/pages/dashboard'
-import { PostsListPage } from '~/admin/pages/posts-list'
-import { PostFormPage } from '~/admin/pages/post-form'
-import { MediaLibraryPage } from '~/admin/pages/media'
 import { CategoriesPage } from '~/admin/pages/categories'
+import { DashboardPage } from '~/admin/pages/dashboard'
 import { GalleriesListPage } from '~/admin/pages/galleries-list'
 import { GalleryFormPage } from '~/admin/pages/gallery-form'
 import { HomePageEditor } from '~/admin/pages/home'
+import { LoginPage } from '~/admin/pages/login'
+import { MediaLibraryPage } from '~/admin/pages/media'
+import { PostFormPage } from '~/admin/pages/post-form'
+import { PostsListPage } from '~/admin/pages/posts-list'
 import { SettingsPage } from '~/admin/pages/settings'
 import { UsersPage } from '~/admin/pages/users'
 

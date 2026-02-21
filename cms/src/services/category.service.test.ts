@@ -2,7 +2,6 @@ import { describe, expect, it, mock } from 'bun:test';
 import { Effect, Layer } from 'effect';
 
 import type { Category } from '../types';
-
 import { CategoryService, makeCategoryService } from './category.service';
 import { DbService } from './db.service';
 

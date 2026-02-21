@@ -8,7 +8,6 @@ import sharp from 'sharp';
 
 import { ImageProcessingError } from '../errors';
 import type { MediaUrls } from '../types';
-
 import { StorageService } from './storage.service';
 
 // =============================================================================

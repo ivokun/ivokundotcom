@@ -1,8 +1,25 @@
+import { FileEdit, MoreHorizontal, Plus, Trash } from 'lucide-react'
 import { useState } from 'react'
+import slugify from 'slugify'
+import { toast } from 'sonner'
+
 import { PageHeader } from '~/admin/components/page-header'
 import { Button } from '~/admin/components/ui/button'
-import { Plus, MoreHorizontal, FileEdit, Trash } from 'lucide-react'
-import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '~/admin/hooks/use-categories'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '~/admin/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/admin/components/ui/dropdown-menu'
+import { Input } from '~/admin/components/ui/input'
+import { Label } from '~/admin/components/ui/label'
 import {
   Table,
   TableBody,
@@ -11,24 +28,8 @@ import {
   TableHeader,
   TableRow,
 } from '~/admin/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '~/admin/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '~/admin/components/ui/dialog'
-import { Input } from '~/admin/components/ui/input'
-import { Label } from '~/admin/components/ui/label'
+import { useCategories, useCreateCategory, useDeleteCategory,useUpdateCategory } from '~/admin/hooks/use-categories'
 import { formatDate } from '~/admin/lib/utils'
-import { toast } from 'sonner'
-import slugify from 'slugify'
 
 export function CategoriesPage() {
   const { data: categories, isLoading } = useCategories()

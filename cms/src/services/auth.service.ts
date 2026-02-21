@@ -8,9 +8,8 @@ import { hash, verify } from '@node-rs/argon2';
 import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
 
-import { InvalidCredentials, SessionExpired, DatabaseError } from '../errors';
+import { DatabaseError,InvalidCredentials, SessionExpired } from '../errors';
 import type { NewSession, NewUser, Session, User } from '../types';
-
 import { DbService } from './db.service';
 
 // =============================================================================

@@ -2,7 +2,6 @@ import { Context, Effect, Layer } from 'effect';
 
 import { DatabaseError, NotFound } from '../errors';
 import type { Home, HomeUpdate } from '../types';
-
 import { DbService } from './db.service';
 
 const HOME_ID = 'singleton';

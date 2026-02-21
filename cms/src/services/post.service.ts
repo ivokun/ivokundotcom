@@ -1,6 +1,6 @@
-import slugify from 'slugify';
 import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
+import slugify from 'slugify';
 
 import { DatabaseError, NotFound, SlugConflict } from '../errors';
 import type {
@@ -13,7 +13,6 @@ import type {
   PostWithMedia,
   Status,
 } from '../types';
-
 import { DbService } from './db.service';
 
 export interface PostFilter {

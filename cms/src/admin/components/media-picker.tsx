@@ -1,15 +1,16 @@
+import { Check, ImageIcon,Upload } from 'lucide-react'
 import React, { useState } from 'react'
+
+import { Button } from '~/admin/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from '~/admin/components/ui/dialog'
-import { Button } from '~/admin/components/ui/button'
 import { useMedia, useUploadMedia } from '~/admin/hooks/use-media'
-import { Upload, Check, ImageIcon } from 'lucide-react'
 import { cn, formatFileSize, getMediaUrl } from '~/admin/lib/utils'
 
 interface MediaPickerProps {

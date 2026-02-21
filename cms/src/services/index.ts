@@ -10,10 +10,10 @@ export {
   makeImageService,
   type ProcessedImage,
 } from './image.service';
+export { MediaProcessorQueue, MediaProcessorQueueLive } from './media-processor';
 export {
   makeR2StorageService,
   R2StorageServiceLive,
-  StorageService,
   type StorageConfig,
+  StorageService,
 } from './storage.service';
-export { MediaProcessorQueue, MediaProcessorQueueLive } from './media-processor';

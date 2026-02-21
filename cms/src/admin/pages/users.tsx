@@ -1,10 +1,11 @@
+import { MoreHorizontal, Plus, Shield, Trash,UserCheck } from 'lucide-react'
+
 import { PageHeader } from '~/admin/components/page-header'
-import { Card, CardContent } from '~/admin/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/admin/components/ui/table'
 import { Badge } from '~/admin/components/ui/badge'
 import { Button } from '~/admin/components/ui/button'
-import { Plus, MoreHorizontal, UserCheck, Shield, Trash } from 'lucide-react'
+import { Card, CardContent } from '~/admin/components/ui/card'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '~/admin/components/ui/dropdown-menu'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/admin/components/ui/table'
 
 export function UsersPage() {
   // Simple static list for now as per reference

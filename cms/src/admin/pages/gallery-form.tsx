@@ -1,18 +1,19 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from '@tanstack/react-router'
+import { useNavigate,useParams } from '@tanstack/react-router'
+import { ArrowLeft, GripVertical, Plus,Save, Send, Trash, X } from 'lucide-react'
+import { useEffect,useState } from 'react'
+import slugify from 'slugify'
+import { toast } from 'sonner'
+
+import { MediaPicker } from '~/admin/components/media-picker'
 import { PageHeader } from '~/admin/components/page-header'
+import { Badge } from '~/admin/components/ui/badge'
 import { Button } from '~/admin/components/ui/button'
 import { Card, CardContent } from '~/admin/components/ui/card'
 import { Input } from '~/admin/components/ui/input'
 import { Label } from '~/admin/components/ui/label'
 import { Textarea } from '~/admin/components/ui/textarea'
-import { MediaPicker } from '~/admin/components/media-picker'
-import { useGallery, useCreateGallery, useUpdateGallery, usePublishGallery, useUnpublishGallery } from '~/admin/hooks/use-galleries'
-import { Save, Send, ArrowLeft, Trash, GripVertical, X, Plus } from 'lucide-react'
-import { toast } from 'sonner'
-import slugify from 'slugify'
-import { Badge } from '~/admin/components/ui/badge'
-import { getMediaUrl, cn } from '~/admin/lib/utils'
+import { useCreateGallery, useGallery, usePublishGallery, useUnpublishGallery,useUpdateGallery } from '~/admin/hooks/use-galleries'
+import { cn,getMediaUrl } from '~/admin/lib/utils'
 
 export function GalleryFormPage() {
   const { id } = useParams({ strict: false }) as { id?: string }

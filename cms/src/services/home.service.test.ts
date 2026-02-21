@@ -2,7 +2,6 @@ import { describe, expect, it, mock } from 'bun:test';
 import { Effect, Layer } from 'effect';
 
 import type { Home } from '../types';
-
 import { DbService } from './db.service';
 import { HomeService, makeHomeService } from './home.service';
 

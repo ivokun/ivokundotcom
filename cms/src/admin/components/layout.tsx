@@ -1,25 +1,26 @@
-import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import {
-  LayoutDashboard,
-  FileText,
-  Image as ImageIcon,
-  Tags,
-  Images,
-  Home,
-  Settings,
-  Users,
-  LogOut,
-  Menu,
-  X,
   ChevronLeft,
   ChevronRight,
+  FileText,
+  Home,
+  Image as ImageIcon,
+  Images,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Settings,
+  Tags,
+  Users,
+  X,
 } from 'lucide-react'
-import { cn } from '~/admin/lib/utils'
-import { Button } from '~/admin/components/ui/button'
-import { useCurrentUser, useLogout } from '~/admin/hooks/use-auth'
+import React, { useState } from 'react'
+
 import { Avatar, AvatarFallback, AvatarImage } from '~/admin/components/ui/avatar'
+import { Button } from '~/admin/components/ui/button'
 import { Separator } from '~/admin/components/ui/separator'
+import { useCurrentUser, useLogout } from '~/admin/hooks/use-auth'
+import { cn } from '~/admin/lib/utils'
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },

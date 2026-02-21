@@ -4,7 +4,6 @@
  * @see Implementation Plan Phase 4
  */
 
-import { BunHttpServer, BunRuntime } from '@effect/platform-bun';
 import {
   HttpMiddleware,
   HttpRouter,
@@ -12,6 +11,7 @@ import {
   HttpServerRequest,
   HttpServerResponse,
 } from '@effect/platform';
+import { BunHttpServer, BunRuntime } from '@effect/platform-bun';
 import { Console, Effect, Layer, Redacted, Schema } from 'effect';
 
 import { AppConfig, AppConfigLive } from './config';
@@ -38,8 +38,6 @@ import {
   UpdateHomeInput,
   UpdatePostInput,
 } from './schemas';
-import type { Home, TipTapDocument } from './types';
-
 // Service Imports
 import { AuthService, AuthServiceLive } from './services/auth.service';
 import { CategoryService, CategoryServiceLive } from './services/category.service';
@@ -48,12 +46,13 @@ import { GalleryService, GalleryServiceLive } from './services/gallery.service';
 import { HomeService, HomeServiceLive } from './services/home.service';
 import { ImageServiceLive } from './services/image.service';
 import { MediaService, MediaServiceLive } from './services/media.service';
-import { PostService, PostServiceLive } from './services/post.service';
-import { makeR2StorageService, StorageService } from './services/storage.service';
 import {
   MediaProcessorQueue,
   MediaProcessorQueueLive,
 } from './services/media-processor';
+import { PostService, PostServiceLive } from './services/post.service';
+import { makeR2StorageService, StorageService } from './services/storage.service';
+import type { Home, TipTapDocument } from './types';
 
 // =============================================================================
 // HELPERS

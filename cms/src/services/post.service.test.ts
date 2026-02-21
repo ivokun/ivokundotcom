@@ -2,9 +2,8 @@ import { describe, expect, it, mock } from 'bun:test';
 import { Effect, Layer } from 'effect';
 
 import type { Post, PostWithMedia } from '../types';
-
 import { DbService } from './db.service';
-import { PostService, makePostService } from './post.service';
+import { makePostService,PostService } from './post.service';
 
 const mockDbService = (queryFn: (op: string, fn: any) => Effect.Effect<any, any>) =>
   Layer.succeed(

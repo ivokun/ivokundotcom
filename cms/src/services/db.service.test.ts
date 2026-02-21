@@ -1,5 +1,5 @@
-import { Effect, Layer, Scope } from 'effect';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { Effect, Layer, Scope } from 'effect';
 
 import { DbService, DbServiceLive } from './db.service';
 

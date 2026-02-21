@@ -1,5 +1,5 @@
-import { Effect, Layer, Redacted } from 'effect';
 import { describe, expect, test } from 'bun:test';
+import { Effect, Layer, Redacted } from 'effect';
 
 import {
   AuthService,
@@ -8,8 +8,8 @@ import {
   ImageService,
   ImageServiceLive,
   R2StorageServiceLive,
-  StorageService,
   type StorageConfig,
+  StorageService,
 } from './index';
 
 const TEST_DB_URL =
