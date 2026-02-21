@@ -86,8 +86,13 @@ jobs:
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
 
           # Run migrations through the tunnel
-          DATABASE_URL="$(echo '${{ secrets.DATABASE_URL }}' | sed 's/@localhost:5432/@localhost:15432/')" \
-            dbmate -d db/migrations --no-dump-schema up
+          RAW_URL="${{ secrets.DATABASE_URL }}" DATABASE_URL="$(bun -e "
+            const url = new URL(process.env.RAW_URL);
+            try { url.password = encodeURIComponent(decodeURIComponent(url.password)); }
+            catch { url.password = encodeURIComponent(url.password); }
+            url.port = '15432';
+            process.stdout.write(url.toString());
+          ")" dbmate -d db/migrations --no-dump-schema up
 
           # Close SSH tunnel
           pkill -f "ssh.*-L 15432" || true
