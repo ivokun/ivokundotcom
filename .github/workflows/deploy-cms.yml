@@ -77,9 +77,20 @@ jobs:
 
       - name: Run database migrations
         run: |
-          ssh -i ~/.ssh/deploy_key \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "DATABASE_URL='${{ secrets.DATABASE_URL }}' dbmate -d /opt/cms/db/migrations up"
+          # Install dbmate on CI runner
+          curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
+          chmod +x /usr/local/bin/dbmate
+
+          # Open SSH tunnel to orbit001 postgres
+          ssh -i ~/.ssh/deploy_key -f -N -L 15432:localhost:5432 \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+
+          # Run migrations through the tunnel
+          DATABASE_URL="$(echo '${{ secrets.DATABASE_URL }}' | sed 's/@localhost:5432/@localhost:15432/')" \
+            dbmate -d db/migrations --no-dump-schema up
+
+          # Close SSH tunnel
+          pkill -f "ssh.*-L 15432" || true
 
       - name: Restart CMS service
         run: |
