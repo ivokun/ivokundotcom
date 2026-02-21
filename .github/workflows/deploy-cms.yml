@@ -91,6 +91,7 @@ jobs:
             try { url.password = encodeURIComponent(decodeURIComponent(url.password)); }
             catch { url.password = encodeURIComponent(url.password); }
             url.port = '15432';
+            url.searchParams.set('sslmode', 'disable');
             process.stdout.write(url.toString());
           ")" dbmate -d db/migrations --no-dump-schema up
 
