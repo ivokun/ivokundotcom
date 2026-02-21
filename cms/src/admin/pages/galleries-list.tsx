@@ -1,10 +1,11 @@
-import { PageHeader } from '~/admin/components/page-header'
-import { Button } from '~/admin/components/ui/button'
-import { Plus, MoreHorizontal, FileEdit, Trash, Image as ImageIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { useGalleries } from '~/admin/hooks/use-galleries'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '~/admin/components/ui/card'
+import { FileEdit, Image as ImageIcon,MoreHorizontal, Plus, Trash } from 'lucide-react'
+
+import { PageHeader } from '~/admin/components/page-header'
 import { Badge } from '~/admin/components/ui/badge'
+import { Button } from '~/admin/components/ui/button'
+import { Card, CardContent, CardFooter,CardHeader, CardTitle } from '~/admin/components/ui/card'
+import { useGalleries } from '~/admin/hooks/use-galleries'
 import { formatDate } from '~/admin/lib/utils'
 
 export function GalleriesListPage() {
@@ -44,7 +45,7 @@ export function GalleriesListPage() {
               </CardContent>
               <CardFooter className="p-4 pt-0 flex gap-2">
                 <Button variant="outline" size="sm" className="flex-1" asChild>
-                  <Link to={`/admin/galleries/${gallery.id}/edit`}>
+                  <Link to="/admin/galleries/$id/edit" params={{ id: gallery.id }}>
                     <FileEdit className="mr-2 h-4 w-4" />
                     Edit
                   </Link>

@@ -1,13 +1,14 @@
-import { PageHeader } from '~/admin/components/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '~/admin/components/ui/card'
-import { usePosts } from '~/admin/hooks/use-posts'
-import { useMedia } from '~/admin/hooks/use-media'
-import { useCategories } from '~/admin/hooks/use-categories'
-import { FileText, Image as ImageIcon, Tags, Plus } from 'lucide-react'
-import { Button } from '~/admin/components/ui/button'
 import { Link } from '@tanstack/react-router'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/admin/components/ui/table'
+import { FileText, Image as ImageIcon, Plus,Tags } from 'lucide-react'
+
+import { PageHeader } from '~/admin/components/page-header'
 import { Badge } from '~/admin/components/ui/badge'
+import { Button } from '~/admin/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '~/admin/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/admin/components/ui/table'
+import { useCategories } from '~/admin/hooks/use-categories'
+import { useMedia } from '~/admin/hooks/use-media'
+import { usePosts } from '~/admin/hooks/use-posts'
 import { formatDate } from '~/admin/lib/utils'
 
 export function DashboardPage() {
@@ -64,7 +65,7 @@ export function DashboardPage() {
                 {posts?.data.slice(0, 5).map((post) => (
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">
-                      <Link to={`/admin/posts/${post.id}/edit`} className="hover:underline">
+                      <Link to="/admin/posts/$id/edit" params={{ id: post.id }} className="hover:underline">
                         {post.title}
                       </Link>
                     </TableCell>

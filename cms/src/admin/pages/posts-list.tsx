@@ -1,29 +1,9 @@
-import { useState } from 'react'
-import { PageHeader } from '~/admin/components/page-header'
-import { Button } from '~/admin/components/ui/button'
-import { Plus, Search, Filter, MoreHorizontal, FileEdit, Trash, Eye, Globe } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { usePosts, useDeletePost } from '~/admin/hooks/use-posts'
-import { useCategories } from '~/admin/hooks/use-categories'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '~/admin/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '~/admin/components/ui/dropdown-menu'
-import { Badge } from '~/admin/components/ui/badge'
-import { Input } from '~/admin/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/admin/components/ui/select'
-import { formatDate } from '~/admin/lib/utils'
+import { Eye, FileEdit, Filter, Globe,MoreHorizontal, Plus, Search, Trash } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+
+import { PageHeader } from '~/admin/components/page-header'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +14,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/admin/components/ui/alert-dialog'
-import { toast } from 'sonner'
+import { Badge } from '~/admin/components/ui/badge'
+import { Button } from '~/admin/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '~/admin/components/ui/dropdown-menu'
+import { Input } from '~/admin/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/admin/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/admin/components/ui/table'
+import { useCategories } from '~/admin/hooks/use-categories'
+import { useDeletePost,usePosts } from '~/admin/hooks/use-posts'
+import { formatDate } from '~/admin/lib/utils'
 
 export function PostsListPage() {
   const [page, setPage] = useState(1)
@@ -140,7 +141,7 @@ export function PostsListPage() {
               posts.data.map((post) => (
                 <TableRow key={post.id}>
                   <TableCell className="font-medium">
-                    <Link to={`/admin/posts/${post.id}/edit`} className="hover:underline">
+                    <Link to="/admin/posts/$id/edit" params={{ id: post.id }} className="hover:underline">
                       {post.title}
                     </Link>
                   </TableCell>
@@ -170,7 +171,7 @@ export function PostsListPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link to={`/admin/posts/${post.id}/edit`}>
+                          <Link to="/admin/posts/$id/edit" params={{ id: post.id }}>
                             <FileEdit className="mr-2 h-4 w-4" />
                             Edit
                           </Link>

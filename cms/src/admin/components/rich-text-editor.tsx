@@ -1,25 +1,26 @@
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
+import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
+import { EditorContent,useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import {
   Bold,
+  Heading1,
+  Heading2,
+  Image as ImageIcon,
   Italic,
+  Link as LinkIcon,
   List,
   ListOrdered,
   Quote,
-  Heading1,
-  Heading2,
-  Link as LinkIcon,
-  Image as ImageIcon,
-  Undo,
   Redo,
+  Undo,
 } from 'lucide-react'
-import { Button } from '~/admin/components/ui/button'
-import { MediaPicker } from '~/admin/components/media-picker'
 import { useEffect } from 'react'
-import { parseEditorContent, getMediaUrl } from '~/admin/lib/utils'
+
+import { MediaPicker } from '~/admin/components/media-picker'
+import { Button } from '~/admin/components/ui/button'
+import { getMediaUrl,parseEditorContent } from '~/admin/lib/utils'
 
 interface RichTextEditorProps {
   content: string
@@ -86,7 +87,7 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
     }
   }
 
-  const addImage = (media: { filename: string }) => {
+  const addImage = (media: { id: string; filename: string }) => {
     editor.chain().focus().setImage({ src: getMediaUrl(media) }).run()
   }
 

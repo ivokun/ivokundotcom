@@ -1,4 +1,5 @@
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useMutation,useQuery } from '@tanstack/react-query'
+
 import { api } from '~/admin/api'
 import { queryClient } from '~/admin/lib/query-client'
 
@@ -12,7 +13,7 @@ export function useCurrentUser() {
 
 export function useLogin() {
   return useMutation({
-    mutationFn: ({ email, password }: Parameters<typeof api.auth.login>) =>
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
       api.auth.login(email, password),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] })
