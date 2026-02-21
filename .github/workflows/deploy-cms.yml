@@ -85,15 +85,28 @@ jobs:
           ssh -i ~/.ssh/deploy_key -f -N -L 15432:localhost:5432 \
             ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
 
-          # Run migrations through the tunnel
-          RAW_URL="${{ secrets.DATABASE_URL }}" DATABASE_URL="$(bun -e "
+          # Parse and fix URL escaping for dbmate
+          export SAFE_DB_URL="$(RAW_URL="${{ secrets.DATABASE_URL }}" bun -e "
             const url = new URL(process.env.RAW_URL);
             try { url.password = encodeURIComponent(decodeURIComponent(url.password)); }
             catch { url.password = encodeURIComponent(url.password); }
             url.port = '15432';
             url.searchParams.set('sslmode', 'disable');
             process.stdout.write(url.toString());
-          ")" dbmate -d db/migrations --no-dump-schema up
+          ")"
+
+          # Mark initial schema as applied (database already has tables)
+          DATABASE_URL="$SAFE_DB_URL" bun -e "
+            import { Client } from 'pg';
+            const client = new Client({ connectionString: process.env.DATABASE_URL });
+            await client.connect();
+            await client.query('CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(128) PRIMARY KEY)');
+            await client.query('INSERT INTO schema_migrations (version) VALUES (\'20251204164209\') ON CONFLICT DO NOTHING');
+            await client.end();
+          "
+
+          # Run new migrations through the tunnel
+          DATABASE_URL="$SAFE_DB_URL" dbmate -d db/migrations --no-dump-schema up
 
           # Close SSH tunnel
           pkill -f "ssh.*-L 15432" || true
