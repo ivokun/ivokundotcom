@@ -60,24 +60,23 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: cms
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: '1.1.38'
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-        working-directory: .
+      - name: Install devenv
+        uses: cachix/cachix-action@v16
+        with:
+          name: devenv
+
+      - name: Install devenv binary
+        run: nix profile install --accept-flake-config github:cachix/devenv/latest
 
       - name: Run tests
-        run: bun test
+        run: devenv test
 
   build-spa:
     name: Build SPA

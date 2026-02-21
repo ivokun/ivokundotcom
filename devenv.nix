@@ -111,6 +111,22 @@
   #   };
   # };
 
+  # Testing — run with `devenv test`
+  testing = {
+    cms-test = {
+      exec = ''
+        echo "Installing dependencies..."
+        bun install --frozen-lockfile
+        echo "Running CMS database migrations..."
+        DATABASE_URL="postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable" \
+          dbmate -d "./cms/db/migrations" up
+        echo "Running CMS tests..."
+        DATABASE_URL="postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable" \
+          bun --filter '@ivokundotcom/cms' test
+      '';
+    };
+  };
+
   # Shell hook - runs when entering the environment
   enterShell = ''
     echo ""
