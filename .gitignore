@@ -3,7 +3,6 @@
 *.tfstate.*
 .env.local
 node_modules
-.sst
 
 ############################
 # Devenv / Nix

@@ -1,14 +1,12 @@
 # AGENTS.md - Guidance for Coding Agents
 
-> **Context:** This is a monorepo built with Bun, SST, Astro, Hono, and Effect TS.
+> **Context:** This is a monorepo built with Bun, Astro, Hono, and Effect TS.
 > **Primary Goal:** Maintain high code quality, strict typing, and deployment stability.
 
 ## 1. Build, Lint & Test Commands
 
 ### Root / Global
 - **Type Check:** `bun run typecheck` (Checks all packages)
-- **Dev Environment:** `bun run dev` (Starts SST dev environment)
-- **Deploy:** `bun run deploy` (Deploys via SST)
 - **Database Migrations (Root):** `bun run db:up` (using dbmate)
 
 ### Web (Astro + React)
@@ -63,7 +61,7 @@
 - **`web/`**: Astro frontend with React islands.
 - **`cms/`**: Standalone CMS binary using Kysely (Postgres) and SolidJS admin panel.
 - **`api/`**: Strapi 5 API (legacy, being replaced by cms).
-- **`infra/`**: SST infrastructure definitions.
+- **`infra/`**: Terraform infrastructure definitions.
 
 ### Workspace Configuration
 Each package has its own `bunfig.toml` for proper module resolution:
@@ -112,6 +110,6 @@ Search here for real implementations when docs aren't enough.
 
 ## 4. Dependencies & Security
 
-- **Secrets:** Never commit `.env` files. Use `sst-env.d.ts` for type-safe environment variables in SST apps.
+- **Secrets:** Never commit `.env` files.
 - **Dependencies:** Install new packages with `bun add` (or `bun add -d` for dev).
 - **Lockfile:** Always commit `bun.lockb`.

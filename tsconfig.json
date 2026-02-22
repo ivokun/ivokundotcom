@@ -1,6 +1,6 @@
 {
   "extends": "@tsconfig/node22/tsconfig.json",
-  "exclude": ["packages", "api", "cms", "web", "node_modules", "dist", ".sst", ".turbo"],
+  "exclude": ["packages", "api", "cms", "web", "node_modules", "dist"],
   "compilerOptions": {
     "typeRoots": [],
     "jsx": "react-jsx",
