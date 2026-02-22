@@ -1,2 +1,0 @@
-# This directory contains dbmate migration files
-# Run `bun db:new <migration_name>` to create a new migration
