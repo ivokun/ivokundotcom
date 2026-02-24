@@ -1,9 +1,10 @@
 import { describe, expect, it, mock } from 'bun:test';
 import { Effect, Layer } from 'effect';
 
-import type { Gallery } from '../types';
+import type { GalleryWithCategory } from '../types';
 import { DbService } from './db.service';
 import { GalleryService, makeGalleryService } from './gallery.service';
+import { MediaService } from './media.service';
 
 const mockDbService = (queryFn: (op: string, fn: any) => Effect.Effect<any, any>) =>
   Layer.succeed(
@@ -15,7 +16,21 @@ const mockDbService = (queryFn: (op: string, fn: any) => Effect.Effect<any, any>
     })
   );
 
-const mockGallery = (overrides: Partial<Gallery> = {}): Gallery => ({
+const mockMediaService = () =>
+  Layer.succeed(
+    MediaService,
+    MediaService.of({
+      initUpload: () => Effect.die('not implemented') as any,
+      confirmUpload: () => Effect.die('not implemented') as any,
+      update: () => Effect.die('not implemented') as any,
+      delete: () => Effect.die('not implemented') as any,
+      findById: () => Effect.die('not implemented') as any,
+      findByIds: () => Effect.succeed([]),
+      findAll: () => Effect.die('not implemented') as any,
+    })
+  );
+
+const mockGallery = (overrides: Partial<GalleryWithCategory> = {}): GalleryWithCategory => ({
   id: '123',
   title: 'Test Gallery',
   slug: 'test-gallery',
@@ -26,15 +41,29 @@ const mockGallery = (overrides: Partial<Gallery> = {}): Gallery => ({
   published_at: null,
   created_at: new Date(),
   updated_at: new Date(),
+  category: null,
   ...overrides,
 });
 
 describe('GalleryService', () => {
   it('should create a gallery', async () => {
     const gallery = mockGallery();
+    // Mock raw DB result (string[] images)
+    const dbResult = {
+      id: '123',
+      title: 'Test Gallery',
+      slug: 'test-gallery',
+      description: null,
+      images: [] as string[],
+      category_id: null,
+      status: 'draft' as const,
+      published_at: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
     const queryStub = mock((op: string) => {
       if (op === 'check_gallery_slug') return Effect.succeed(undefined);
-      if (op === 'create_gallery') return Effect.succeed(gallery);
+      if (op === 'create_gallery') return Effect.succeed(dbResult);
       return Effect.die(`Unexpected op: ${op}`);
     });
 
@@ -47,10 +76,12 @@ describe('GalleryService', () => {
     });
 
     const result = await Effect.runPromise(
-      program.pipe(Effect.provide(GalleryServiceLayer), Effect.provide(layer))
+      program.pipe(Effect.provide(GalleryServiceLayer), Effect.provide(layer), Effect.provide(mockMediaService()))
     );
 
-    expect(result).toEqual(gallery);
+    expect(result.id).toBe(gallery.id);
+    expect(result.title).toBe(gallery.title);
+    expect(result.category).toBeNull();
     expect(queryStub).toHaveBeenCalledTimes(2);
   });
 
@@ -80,7 +111,7 @@ describe('GalleryService', () => {
     });
 
     const result = await Effect.runPromise(
-      program.pipe(Effect.provide(GalleryServiceLayer), Effect.provide(layer))
+      program.pipe(Effect.provide(GalleryServiceLayer), Effect.provide(layer), Effect.provide(mockMediaService()))
     );
 
     expect(result.id).toBe('123');

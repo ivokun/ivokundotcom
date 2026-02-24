@@ -47,14 +47,22 @@ export function PostFormPage() {
 
   useEffect(() => {
     if (post) {
+      // Content from API comes as TipTap JSON object, need to stringify for editor
+      const contentString = post.content 
+        ? (typeof post.content === 'object' ? JSON.stringify(post.content) : post.content)
+        : '';
+      
+      // Handle both camelCase and snake_case for featured image
+      const featuredImageId = post.featuredImageId || (post as any).featured_image || '';
+      
       setFormData({
         title: post.title || '',
         slug: post.slug || '',
         excerpt: post.excerpt || '',
-        content: post.content || '',
+        content: contentString,
         locale: post.locale || 'en',
         categoryId: post.categoryId || '',
-        featuredImageId: post.featuredImageId || '',
+        featuredImageId: featuredImageId,
         status: post.status || 'draft',
         keywords: post.keywords || []
       })
@@ -218,9 +226,17 @@ export function PostFormPage() {
                 <Label>Featured Image</Label>
                 {formData.featuredImageId ? (
                   <div className="relative aspect-video overflow-hidden rounded-md border">
-                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                      <span className="text-sm text-muted-foreground">Image ID: {formData.featuredImageId.slice(0, 8)}...</span>
-                    </div>
+                    {post?.featured_media?.urls ? (
+                      <img
+                        src={post.featured_media.urls.small || post.featured_media.urls.thumbnail || post.featured_media.urls.original}
+                        alt={post.featured_media.alt || ''}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-muted">
+                        <span className="text-sm text-muted-foreground">Image ID: {formData.featuredImageId.slice(0, 8)}...</span>
+                      </div>
+                    )}
                     <Button
                       variant="destructive"
                       size="icon"
@@ -243,15 +259,14 @@ export function PostFormPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">English (EN)</SelectItem>
-                    <SelectItem value="de">German (DE)</SelectItem>
-                    <SelectItem value="es">Spanish (ES)</SelectItem>
+                    <SelectItem value="id">Indonesian (ID)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select value={formData.categoryId} onValueChange={(v) => setFormData(prev => ({ ...prev, categoryId: v }))}>
+                <Select value={formData.categoryId || 'none'} onValueChange={(v) => setFormData(prev => ({ ...prev, categoryId: v === 'none' ? '' : v }))}>
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
@@ -296,11 +311,11 @@ export function PostFormPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Created</span>
-                  <span>{post ? formatDate(post.createdAt) : '-'}</span>
+                  <span>{post ? formatDate(post.createdAt || (post as any).created_at) : '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Last Updated</span>
-                  <span>{post ? formatDate(post.updatedAt) : '-'}</span>
+                  <span>{post ? formatDate(post.updatedAt || (post as any).updated_at) : '-'}</span>
                 </div>
               </CardContent>
             </Card>

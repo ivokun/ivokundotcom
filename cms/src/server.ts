@@ -220,7 +220,7 @@ const publicRouter = HttpRouter.empty.pipe(
       const req = yield* HttpServerRequest.HttpServerRequest;
       const query = yield* decodeQuery(ListQueryParams)(req);
       const galleryService = yield* GalleryService;
-      const galleries = yield* galleryService.findAll({
+      const galleries = yield* galleryService.findAllWithImages({
         limit: query.limit,
         offset: query.offset,
         filter: { status: 'published' },
@@ -234,7 +234,7 @@ const publicRouter = HttpRouter.empty.pipe(
       const req = yield* HttpServerRequest.HttpServerRequest;
       const { slug } = yield* decodeParams(Schema.Struct({ slug: Schema.String }))(req);
       const galleryService = yield* GalleryService;
-      const gallery = yield* galleryService.findBySlug(slug);
+      const gallery = yield* galleryService.findBySlugWithImages(slug);
 
       if (gallery.status !== 'published') {
         return yield* Effect.fail(new NotFound({ resource: 'Gallery', id: slug }));
@@ -500,11 +500,24 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
       const req = yield* HttpServerRequest.HttpServerRequest;
       const query = yield* decodeQuery(ListQueryParams)(req);
       const galleryService = yield* GalleryService;
-      const galleries = yield* galleryService.findAll({
+      const result = yield* galleryService.findAll({
         limit: query.limit,
         offset: query.offset,
       });
-      return yield* HttpServerResponse.json(galleries);
+      // Transform response to match frontend expectations
+      const transformed = {
+        data: result.data.map((g) => ({
+          id: g.id,
+          title: g.title,
+          slug: g.slug,
+          status: g.status,
+          imageCount: g.images.length,
+          publishedAt: g.published_at,
+          createdAt: g.created_at,
+        })),
+        meta: result.meta,
+      };
+      return yield* HttpServerResponse.json(transformed);
     })
   ),
   HttpRouter.post(
@@ -517,7 +530,7 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
         title: body.title,
         slug: body.slug,
         description: toNullable(body.description),
-        images: body.images ? [...body.images] : [],
+        images: body.images ? body.images.map((img) => img.mediaId) : [],
         category_id: toNullable(body.category_id),
         status: 'draft',
         published_at: null,
@@ -532,7 +545,14 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
       const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
       const galleryService = yield* GalleryService;
       const gallery = yield* galleryService.findById(id);
-      return yield* HttpServerResponse.json(gallery);
+      // Transform snake_case dates to camelCase for frontend
+      const transformed = {
+        ...gallery,
+        publishedAt: gallery.published_at,
+        createdAt: gallery.created_at,
+        updatedAt: gallery.updated_at,
+      };
+      return yield* HttpServerResponse.json(transformed);
     })
   ),
   HttpRouter.patch(
@@ -546,7 +566,7 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
         title: body.title,
         slug: body.slug,
         description: body.description,
-        images: body.images ? [...body.images] : undefined,
+        images: body.images ? body.images.map((img) => img.mediaId) : undefined,
         category_id: body.category_id,
       });
       return yield* HttpServerResponse.json(gallery);
@@ -635,6 +655,24 @@ const adminMiscRouter = HttpRouter.empty.pipe(
       return yield* HttpServerResponse.json(media);
     })
   ),
+  HttpRouter.patch(
+    '/admin/api/media/:id',
+    Effect.gen(function* () {
+      const req = yield* HttpServerRequest.HttpServerRequest;
+      const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
+      const body = yield* Effect.flatMap(
+        req.json,
+        Schema.decodeUnknown(
+          Schema.Struct({
+            alt: Schema.optional(Schema.String),
+          })
+        )
+      );
+      const mediaService = yield* MediaService;
+      const media = yield* mediaService.update(id, { alt: body.alt });
+      return yield* HttpServerResponse.json(media);
+    })
+  ),
   HttpRouter.del(
     '/admin/api/media/:id',
     Effect.gen(function* () {
@@ -695,7 +733,16 @@ const adminMiscRouter = HttpRouter.empty.pipe(
       const keys = yield* query('list_api_keys', (db) =>
         db.selectFrom('api_keys').selectAll().orderBy('created_at', 'desc').execute()
       );
-      return yield* HttpServerResponse.json({ data: keys });
+      // Transform snake_case to camelCase for frontend
+      const transformedKeys = keys.map(key => ({
+        id: key.id,
+        name: key.name,
+        prefix: key.prefix,
+        keyHash: key.key_hash,
+        lastUsedAt: key.last_used_at,
+        createdAt: key.created_at,
+      }));
+      return yield* HttpServerResponse.json({ data: transformedKeys });
     })
   ),
   HttpRouter.post(
@@ -722,7 +769,18 @@ const adminMiscRouter = HttpRouter.empty.pipe(
           .executeTakeFirstOrThrow()
       );
 
-      return yield* HttpServerResponse.json({ data: { ...apiKey, key: result.key } }, { status: 201 });
+      // Transform snake_case to camelCase and include the generated key
+      const transformedKey = {
+        id: apiKey.id,
+        name: apiKey.name,
+        prefix: apiKey.prefix,
+        keyHash: apiKey.key_hash,
+        lastUsedAt: apiKey.last_used_at,
+        createdAt: apiKey.created_at,
+        key: result.key, // Include the plaintext key (only returned once)
+      };
+
+      return yield* HttpServerResponse.json({ data: transformedKey }, { status: 201 });
     })
   ),
   HttpRouter.del(
@@ -890,7 +948,8 @@ const MediaWithDeps = MediaServiceLive.pipe(
 // Content services need DbService
 const CategoryWithDb = CategoryServiceLive.pipe(Layer.provide(DbWithConfig));
 const PostWithDb = PostServiceLive.pipe(Layer.provide(DbWithConfig));
-const GalleryWithDb = GalleryServiceLive.pipe(Layer.provide(DbWithConfig));
+// GalleryService also needs MediaService for image resolution
+const GalleryWithDb = GalleryServiceLive.pipe(Layer.provide(DbWithConfig), Layer.provide(MediaWithDeps));
 const HomeWithDb = HomeServiceLive.pipe(Layer.provide(DbWithConfig));
 
 // AuthServiceLive needs DbService

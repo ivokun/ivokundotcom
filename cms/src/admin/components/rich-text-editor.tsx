@@ -1,5 +1,4 @@
 import Image from '@tiptap/extension-image'
-import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import { EditorContent,useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -31,9 +30,15 @@ interface RichTextEditorProps {
 export function RichTextEditor({ content, onChange, placeholder }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Link.configure({ openOnClick: false }),
-      Image,
+      StarterKit.configure({
+        link: { openOnClick: false },
+      }),
+      Image.configure({
+        // Disable inline images to prevent base64 paste issues
+        inline: false,
+        // Allow images to be draggable
+        allowBase64: false, // Don't allow base64 images - they cause validation errors
+      }),
       Placeholder.configure({ placeholder: placeholder || 'Write something...' }),
     ],
     content: parseEditorContent(content),
@@ -70,7 +75,7 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
       variant="ghost"
       size="icon"
       className={active ? "bg-muted" : ""}
-      onClick={(e) => {
+      onMouseDown={(e) => {
         e.preventDefault()
         onClick()
       }}

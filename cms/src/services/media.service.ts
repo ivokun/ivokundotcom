@@ -36,6 +36,7 @@ export class MediaService extends Context.Tag('MediaService')<
     ) => Effect.Effect<Media, DatabaseError | NotFound>;
     readonly delete: (id: string) => Effect.Effect<void, DatabaseError | NotFound | StorageError>;
     readonly findById: (id: string) => Effect.Effect<Media, DatabaseError | NotFound>;
+    readonly findByIds: (ids: string[]) => Effect.Effect<Media[], DatabaseError>;
     readonly findAll: (options?: {
       limit?: number;
       offset?: number;
@@ -60,6 +61,11 @@ export const makeMediaService = Effect.gen(function* () {
       Effect.flatMap((media) =>
         media ? Effect.succeed(media) : Effect.fail(new NotFound({ resource: 'Media', id }))
       )
+    );
+
+  const findByIds = (ids: string[]) =>
+    query('find_media_by_ids', (db) =>
+      db.selectFrom('media').selectAll().where('id', 'in', ids).execute()
     );
 
   const initUpload = (params: {
@@ -216,6 +222,7 @@ export const makeMediaService = Effect.gen(function* () {
     update,
     delete: delete_,
     findById,
+    findByIds,
     findAll,
   };
 });

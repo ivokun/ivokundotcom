@@ -96,7 +96,7 @@ async function createCategory(data: { name: string; slug?: string }) {
 
 async function updateCategory(id: string, data: { name: string; slug?: string }) {
   return request(`/categories/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
@@ -138,10 +138,19 @@ async function getPost(id: string) {
     locale: string;
     categoryId: string | null;
     featuredImageId: string | null;
+    featured_image?: string | null;
+    featured_media?: {
+      id: string;
+      filename: string;
+      urls: { original: string; thumbnail: string; small: string; large: string } | null;
+      alt: string | null;
+    } | null;
     publishedAt: string | null;
     keywords: string[];
     createdAt: string;
+    created_at?: string;
     updatedAt: string;
+    updated_at?: string;
   }>(`/posts/${id}`);
 }
 
@@ -158,21 +167,36 @@ async function createPost(data: {
 }) {
   // Transform camelCase to snake_case for backend
   // Parse content as TipTap JSON if it's a string
+  let parsedContent: object | null = null;
+  if (data.content) {
+    try {
+      parsedContent = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+    } catch (e) {
+      console.error('Failed to parse content as JSON:', e);
+      parsedContent = null;
+    }
+  }
+  
   const payload = {
     title: data.title,
     slug: data.slug,
-    content: data.content ? (typeof data.content === 'string' ? JSON.parse(data.content) : data.content) : undefined,
-    excerpt: data.excerpt,
-    locale: data.locale,
-    status: data.status,
-    category_id: data.categoryId,
-    featured_image: data.featuredImageId,
-    keywords: data.keywords,
+    content: parsedContent,
+    excerpt: data.excerpt || null,
+    locale: data.locale || 'en',
+    category_id: data.categoryId || null,
+    featured_image: data.featuredImageId || null,
+    keywords: data.keywords || [],
   };
-  return request('/posts', {
+  
+  console.log('Creating post with payload:', payload);
+  
+  const response = await request<{ id: string; title: string; slug: string; status: string; createdAt: string }>('/posts', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+  
+  console.log('Post created:', response);
+  return response;
 }
 
 async function updatePost(id: string, data: Partial<{
@@ -190,20 +214,32 @@ async function updatePost(id: string, data: Partial<{
   const payload: Record<string, unknown> = {};
   if (data.title !== undefined) payload['title'] = data.title;
   if (data.slug !== undefined) payload['slug'] = data.slug;
-  if (data.content !== undefined) {
-    payload['content'] = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+  if (data.content !== undefined && data.content !== '') {
+    // Only parse and send content if it's not empty
+    try {
+      payload['content'] = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+    } catch (e) {
+      console.error('Failed to parse content:', e);
+      // If parsing fails, send null
+      payload['content'] = null;
+    }
   }
-  if (data.excerpt !== undefined) payload['excerpt'] = data.excerpt;
+  if (data.excerpt !== undefined) payload['excerpt'] = data.excerpt || null;
   if (data.locale !== undefined) payload['locale'] = data.locale;
-  if (data.categoryId !== undefined) payload['category_id'] = data.categoryId;
-  if (data.featuredImageId !== undefined) payload['featured_image'] = data.featuredImageId;
+  if (data.categoryId !== undefined) payload['category_id'] = data.categoryId || null;
+  if (data.featuredImageId !== undefined) payload['featured_image'] = data.featuredImageId || null;
   if (data.status !== undefined) payload['status'] = data.status;
-  if (data.keywords !== undefined) payload['keywords'] = data.keywords;
+  if (data.keywords !== undefined) payload['keywords'] = data.keywords || [];
 
-  return request(`/posts/${id}`, {
+  console.log('Updating post with payload:', payload);
+
+  const response = await request<{ id: string; title: string; slug: string; status: string; updatedAt: string }>(`/posts/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
+
+  console.log('Post updated:', response);
+  return response;
 }
 
 async function deletePost(id: string) {
@@ -270,7 +306,7 @@ async function updateGallery(id: string, data: Partial<{
   images: Array<{ id: string; mediaId: string; order: number }>;
 }>) {
   return request(`/galleries/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
@@ -375,7 +411,7 @@ async function uploadMedia(
 
 async function updateMedia(id: string, data: { alt?: string }) {
   return request(`/media/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
@@ -401,27 +437,30 @@ async function updateHomePage(data: {
   keywords?: string[];
 }) {
   return request('/home', {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
 
 // API Keys
 async function getApiKeys() {
-  return request<Array<{
+  const response = await request<{ data: Array<{
     id: string;
     name: string;
-    key: string;
+    prefix: string;
+    keyHash: string;
     createdAt: string;
     lastUsedAt: string | null;
-  }>>('/api-keys');
+  }> }>('/api-keys');
+  return response.data;
 }
 
 async function createApiKey(data: { name: string }) {
-  return request<{ id: string; key: string; name: string; createdAt: string }>('/api-keys', {
+  const response = await request<{ data: { id: string; key: string; name: string; prefix: string; keyHash: string; createdAt: string } }>('/api-keys', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return response.data;
 }
 
 async function deleteApiKey(id: string) {

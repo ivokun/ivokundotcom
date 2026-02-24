@@ -75,7 +75,7 @@ export function DashboardPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {formatDate(post.createdAt)}
+                      {formatDate(post.createdAt || (post as any).created_at)}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -284,15 +284,34 @@ export interface PaginatedResponse<T> {
  */
 export interface PostWithCategory extends Post {
   category: Category | null;
+  featured_media: Media | null;
 }
 
 export interface PostWithMedia extends PostWithCategory {
-  featured_media: Media | null;
+  // featured_media is now in PostWithCategory
+}
+
+/**
+ * Gallery image entry with metadata
+ */
+export interface GalleryImageEntry {
+  id: string;
+  mediaId: string;
+  order: number;
 }
 
 /**
  * Gallery with expanded category
  */
-export interface GalleryWithCategory extends Gallery {
+export interface GalleryWithCategory extends Omit<Gallery, 'images'> {
+  images: GalleryImageEntry[];
   category: Category | null;
 }
+
+/**
+ * Gallery with resolved media images for public API
+ * Note: This uses Omit to override the images property type
+ */
+export type GalleryWithImages = Omit<GalleryWithCategory, 'images'> & {
+  images: Media[];
+};

@@ -117,7 +117,7 @@ export function CategoriesPage() {
                 <TableRow key={cat.id}>
                   <TableCell className="font-medium">{cat.name}</TableCell>
                   <TableCell className="font-mono text-xs">{cat.slug}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(cat.createdAt)}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDate(cat.createdAt || (cat as any).created_at)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

@@ -7,11 +7,13 @@ import type {
   Gallery,
   GalleryUpdate,
   GalleryWithCategory,
+  GalleryWithImages,
   NewGallery,
   PaginatedResponse,
   Status,
 } from '../types';
 import { DbService } from './db.service';
+import { MediaService } from './media.service';
 
 export interface GalleryFilter {
   status?: Status;
@@ -23,14 +25,15 @@ export class GalleryService extends Context.Tag('GalleryService')<
   {
     readonly create: (
       data: Omit<NewGallery, 'id' | 'created_at' | 'updated_at' | 'slug'> & { slug?: string }
-    ) => Effect.Effect<Gallery, DatabaseError | SlugConflict>;
+    ) => Effect.Effect<GalleryWithCategory, DatabaseError | SlugConflict>;
     readonly update: (
       id: string,
       data: GalleryUpdate
-    ) => Effect.Effect<Gallery, DatabaseError | NotFound | SlugConflict>;
+    ) => Effect.Effect<GalleryWithCategory, DatabaseError | NotFound | SlugConflict>;
     readonly delete: (id: string) => Effect.Effect<void, DatabaseError | NotFound>;
     readonly findById: (id: string) => Effect.Effect<GalleryWithCategory, DatabaseError | NotFound>;
     readonly findBySlug: (slug: string) => Effect.Effect<GalleryWithCategory, DatabaseError | NotFound>;
+    readonly findBySlugWithImages: (slug: string) => Effect.Effect<GalleryWithImages, DatabaseError | NotFound>;
     readonly findAll: (
       options?: {
         limit?: number;
@@ -38,11 +41,19 @@ export class GalleryService extends Context.Tag('GalleryService')<
         filter?: GalleryFilter;
       }
     ) => Effect.Effect<PaginatedResponse<GalleryWithCategory>, DatabaseError>;
+    readonly findAllWithImages: (
+      options?: {
+        limit?: number;
+        offset?: number;
+        filter?: GalleryFilter;
+      }
+    ) => Effect.Effect<PaginatedResponse<GalleryWithImages>, DatabaseError>;
   }
 >() {}
 
 export const makeGalleryService = Effect.gen(function* () {
   const { query } = yield* DbService;
+  const mediaService = yield* MediaService;
 
   const generateSlug = (title: string, override?: string): string => {
     return slugify(override || title, { lower: true, strict: true });
@@ -94,7 +105,11 @@ export const makeGalleryService = Effect.gen(function* () {
           title: result.title,
           slug: result.slug,
           description: result.description,
-          images: result.images,
+          images: (result.images as string[]).map((mediaId, order) => ({
+            id: `${result.id}-${order}`,
+            mediaId,
+            order,
+          })),
           category_id: result.category_id,
           status: result.status,
           published_at: result.published_at,
@@ -153,7 +168,11 @@ export const makeGalleryService = Effect.gen(function* () {
           title: result.title,
           slug: result.slug,
           description: result.description,
-          images: result.images,
+          images: (result.images as string[]).map((mediaId, order) => ({
+            id: `${result.id}-${order}`,
+            mediaId,
+            order,
+          })),
           category_id: result.category_id,
           status: result.status,
           published_at: result.published_at,
@@ -192,9 +211,20 @@ export const makeGalleryService = Effect.gen(function* () {
         published_at: data.published_at ?? null,
       };
 
-      return yield* query('create_gallery', (db) =>
+      const result = yield* query('create_gallery', (db) =>
         db.insertInto('galleries').values(newGallery).returningAll().executeTakeFirstOrThrow()
       );
+      
+      // Transform images to structured format for frontend
+      return {
+        ...result,
+        images: (result.images as string[]).map((mediaId, order) => ({
+          id: `${result.id}-${order}`,
+          mediaId,
+          order,
+        })),
+        category: null,
+      };
     });
 
   const update = (id: string, data: GalleryUpdate) =>
@@ -233,7 +263,7 @@ export const makeGalleryService = Effect.gen(function* () {
         updated_at: new Date(),
       };
 
-      return yield* query('update_gallery', (db) =>
+      const result = yield* query('update_gallery', (db) =>
         db
           .updateTable('galleries')
           .set(updateData)
@@ -241,6 +271,38 @@ export const makeGalleryService = Effect.gen(function* () {
           .returningAll()
           .executeTakeFirstOrThrow()
       );
+      
+      // Fetch category separately since the update query doesn't join
+      let category = null;
+      if (result.category_id) {
+        category = yield* query('get_category_for_gallery', (db) =>
+          db
+            .selectFrom('categories')
+            .select(['id', 'name', 'slug', 'description', 'created_at', 'updated_at'])
+            .where('id', '=', result.category_id)
+            .executeTakeFirst()
+        );
+      }
+      
+      // Transform images to structured format for frontend
+      return {
+        ...result,
+        images: (result.images as string[]).map((mediaId, order) => ({
+          id: `${result.id}-${order}`,
+          mediaId,
+          order,
+        })),
+        category: category
+          ? {
+              id: category.id,
+              name: category.name,
+              slug: category.slug,
+              description: category.description ?? null,
+              created_at: category.created_at,
+              updated_at: category.updated_at,
+            }
+          : null,
+      };
     });
 
   const delete_ = (id: string) =>
@@ -334,7 +396,11 @@ export const makeGalleryService = Effect.gen(function* () {
           title: row.title,
           slug: row.slug,
           description: row.description,
-          images: row.images,
+          images: (row.images as string[]).map((mediaId, order) => ({
+            id: `${row.id}-${order}`,
+            mediaId,
+            order,
+          })),
           category_id: row.category_id,
           status: row.status,
           published_at: row.published_at,
@@ -354,13 +420,50 @@ export const makeGalleryService = Effect.gen(function* () {
       };
     });
 
+  // Helper function to resolve image IDs to Media objects
+  const resolveImages = (imageIds: string[]) =>
+    imageIds.length > 0 ? mediaService.findByIds(imageIds) : Effect.succeed([]);
+
+  const findBySlugWithImages = (slug: string) =>
+    Effect.gen(function* () {
+      const gallery = yield* findBySlug(slug);
+      const imageIds = gallery.images.map((img) => img.mediaId);
+      const images = yield* resolveImages(imageIds);
+      return { ...gallery, images } as GalleryWithImages;
+    });
+
+  const findAllWithImages = (options?: {
+    limit?: number;
+    offset?: number;
+    filter?: GalleryFilter;
+  }) =>
+    Effect.gen(function* () {
+      const result = yield* findAll(options);
+      // Collect all unique image IDs
+      const allImageIds = [...new Set(result.data.flatMap((g) => g.images.map((img) => img.mediaId)))];
+      const allImages = allImageIds.length > 0 ? yield* mediaService.findByIds(allImageIds) : [];
+      const imageMap = new Map(allImages.map((m) => [m.id, m]));
+
+      const mappedData: GalleryWithImages[] = result.data.map((gallery) => ({
+        ...gallery,
+        images: gallery.images.map((img) => imageMap.get(img.mediaId)).filter(Boolean),
+      })) as GalleryWithImages[];
+
+      return {
+        data: mappedData,
+        meta: result.meta,
+      };
+    });
+
   return {
     create,
     update,
     delete: delete_,
     findById,
     findBySlug,
+    findBySlugWithImages,
     findAll,
+    findAllWithImages,
   };
 });
 

@@ -19,13 +19,15 @@ export function SettingsPage() {
 
   const [newKeyName, setNewKeyName] = useState('')
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<{ key: string; name: string } | null>(null)
 
   const handleCreateKey = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newKeyName) return
     createApiKey.mutate({ name: newKeyName }, {
-      onSuccess: () => {
-        toast.success('API Key created')
+      onSuccess: (data) => {
+        toast.success('API Key created - Copy it now, it will not be shown again!')
+        setNewlyCreatedKey({ key: data.key, name: newKeyName })
         setNewKeyName('')
       },
       onError: (err) => toast.error(err.message)
@@ -93,11 +95,50 @@ export function SettingsPage() {
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
               />
-              <Button type="submit" disabled={createApiKey.isPending}>
+              <Button 
+                type="button"
+                disabled={!newKeyName || createApiKey.isPending}
+                onClick={() => {
+                  if (!newKeyName) {
+                    toast.error('Please enter a key name')
+                    return
+                  }
+                  createApiKey.mutate({ name: newKeyName }, {
+                    onSuccess: (data) => {
+                      toast.success('API Key created - Copy it now, it will not be shown again!')
+                      setNewlyCreatedKey({ key: data.key, name: newKeyName })
+                      setNewKeyName('')
+                    },
+                    onError: (err) => toast.error(err.message)
+                  })
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
-                Generate
+                {createApiKey.isPending ? 'Creating...' : 'Generate'}
               </Button>
             </form>
+
+            {newlyCreatedKey && (
+              <div className="rounded-lg border-2 border-primary bg-primary/5 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-primary">New API Key Created: {newlyCreatedKey.name}</h4>
+                  <Button variant="ghost" size="sm" onClick={() => setNewlyCreatedKey(null)}>Dismiss</Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Copy this key now. It will not be shown again!
+                </p>
+                <div className="flex items-center gap-2 p-3 bg-background rounded border font-mono text-sm">
+                  <code className="flex-1 break-all text-foreground font-bold">{newlyCreatedKey.key || 'Error: Key not received'}</code>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => copyToClipboard(newlyCreatedKey.key)}
+                  >
+                    {copiedKey === newlyCreatedKey.key ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="rounded-md border">
               <Table>
@@ -118,13 +159,10 @@ export function SettingsPage() {
                         <TableCell className="font-medium">{key.name}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-                            <span>••••••••••••••••</span>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(key.key)}>
-                              {copiedKey === key.key ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                            </Button>
+                            <span>{key.prefix}••••••••••</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{formatDate(key.createdAt)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{formatDate(key.createdAt || (key as any).created_at)}</TableCell>
                         <TableCell>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteKey(key.id)}>
                             <Trash className="h-4 w-4 text-destructive" />

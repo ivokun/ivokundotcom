@@ -157,10 +157,10 @@ export function PostsListPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {categories?.data.find(c => c.id === post.categoryId)?.name || '-'}
+                    {categories?.data.find(c => c.id === (post.categoryId || (post as any).category_id))?.name || '-'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDate(post.createdAt)}
+                    {formatDate(post.createdAt || (post as any).created_at)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -176,11 +176,7 @@ export function PostsListPage() {
                             Edit
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
+
                         <DropdownMenuItem 
                           className="text-destructive"
                           onClick={() => setDeleteId(post.id)}

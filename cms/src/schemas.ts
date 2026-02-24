@@ -157,10 +157,10 @@ export type Post = typeof Post.Type;
 export const CreatePostInput = Schema.Struct({
   title: NonEmptyString,
   slug: Slug,
-  excerpt: Schema.optional(Schema.String),
-  content: Schema.optional(TipTapDocument),
-  featured_image: Schema.optional(Cuid2),
-  category_id: Schema.optional(Cuid2),
+  excerpt: Schema.optional(Schema.NullOr(Schema.String)),
+  content: Schema.optional(Schema.NullOr(TipTapDocument)),
+  featured_image: Schema.optional(Schema.NullOr(Cuid2)),
+  category_id: Schema.optional(Schema.NullOr(Cuid2)),
   locale: Schema.optionalWith(Locale, { default: () => 'en' as const }),
 });
 export type CreatePostInput = typeof CreatePostInput.Type;
@@ -194,11 +194,18 @@ export const Gallery = Schema.Struct({
 });
 export type Gallery = typeof Gallery.Type;
 
+export const GalleryImageInput = Schema.Struct({
+  id: Schema.optional(Schema.String),
+  mediaId: Cuid2,
+  order: Schema.Number,
+});
+export type GalleryImageInput = typeof GalleryImageInput.Type;
+
 export const CreateGalleryInput = Schema.Struct({
   title: NonEmptyString,
   slug: Slug,
   description: Schema.optional(Schema.String),
-  images: Schema.optional(Schema.Array(Cuid2)),
+  images: Schema.optional(Schema.Array(GalleryImageInput)),
   category_id: Schema.optional(Cuid2),
 });
 export type CreateGalleryInput = typeof CreateGalleryInput.Type;
@@ -207,7 +214,7 @@ export const UpdateGalleryInput = Schema.Struct({
   title: Schema.optional(NonEmptyString),
   slug: Schema.optional(Slug),
   description: Schema.optional(Schema.NullOr(Schema.String)),
-  images: Schema.optional(Schema.Array(Cuid2)),
+  images: Schema.optional(Schema.Array(GalleryImageInput)),
   category_id: Schema.optional(Schema.NullOr(Cuid2)),
 });
 export type UpdateGalleryInput = typeof UpdateGalleryInput.Type;
@@ -294,11 +301,26 @@ export const PaginatedResponse = <T extends Schema.Schema.Any>(itemSchema: T) =>
     meta: PaginationMeta,
   });
 
+// Helper to parse number from string (for query params)
+const NumberFromString = Schema.transform(
+  Schema.String,
+  Schema.Number,
+  {
+    strict: true,
+    decode: (s) => Number(s),
+    encode: (n) => String(n),
+  }
+);
+
 export const ListQueryParams = Schema.Struct({
-  limit: Schema.optionalWith(PositiveInt, { default: () => 20 }),
-  offset: Schema.optionalWith(Schema.Number.pipe(Schema.int(), Schema.nonNegative()), {
-    default: () => 0,
-  }),
+  limit: Schema.optionalWith(
+    NumberFromString.pipe(Schema.int(), Schema.positive()),
+    { default: () => 20 }
+  ),
+  offset: Schema.optionalWith(
+    NumberFromString.pipe(Schema.int(), Schema.nonNegative()),
+    { default: () => 0 }
+  ),
 });
 export type ListQueryParams = typeof ListQueryParams.Type;
 

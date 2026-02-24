@@ -361,6 +361,7 @@ export const makePostService = Effect.gen(function* () {
           let q = db
             .selectFrom('posts')
             .leftJoin('categories', 'posts.category_id', 'categories.id')
+            .leftJoin('media', 'posts.featured_image', 'media.id')
             .select([
               'posts.id',
               'posts.title',
@@ -382,6 +383,18 @@ export const makePostService = Effect.gen(function* () {
               'categories.description as cat_desc',
               'categories.created_at as cat_created_at',
               'categories.updated_at as cat_updated_at',
+              // Media fields
+              'media.id as media_id',
+              'media.filename as media_filename',
+              'media.mime_type as media_mime_type',
+              'media.size as media_size',
+              'media.alt as media_alt',
+              'media.urls as media_urls',
+              'media.width as media_width',
+              'media.height as media_height',
+              'media.status as media_status',
+              'media.upload_key as media_upload_key',
+              'media.created_at as media_created_at',
             ])
             .orderBy('posts.created_at', 'desc')
             .limit(limit)
@@ -440,6 +453,22 @@ export const makePostService = Effect.gen(function* () {
             }
           : null;
 
+        const featured_media = row.media_id
+          ? {
+              id: row.media_id,
+              filename: row.media_filename!,
+              mime_type: row.media_mime_type!,
+              size: row.media_size!,
+              alt: row.media_alt ?? null,
+              urls: row.media_urls ?? null,
+              width: row.media_width ?? null,
+              height: row.media_height ?? null,
+              status: (row as any).media_status ?? 'ready',
+              upload_key: (row as any).media_upload_key ?? null,
+              created_at: row.media_created_at!,
+            }
+          : null;
+
         return {
           id: row.id,
           title: row.title,
@@ -455,6 +484,7 @@ export const makePostService = Effect.gen(function* () {
           created_at: row.created_at,
           updated_at: row.updated_at,
           category,
+          featured_media,
         };
       });
 
