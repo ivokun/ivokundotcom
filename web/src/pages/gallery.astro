@@ -2,26 +2,23 @@
 import NewLayout from '@layouts/NewLayout.astro';
 import Navigation from '@components/Navigation.astro';
 import GalleryGrid from '@components/GalleryGrid.astro';
-import { fetchGallery, Gallery, convertToGalleryItems } from '@api/gallery';
-import { fetchCategories, Category, filterGalleryCategories, formatCategoryName } from "@api/category";
+import { fetchGalleries, type Gallery, convertToGalleryItems } from '@api/gallery';
+import { fetchCategories, type Category, formatCategoryName } from "@api/category";
 
 // Fetch gallery data from API
-const galleries = await fetchGallery<Gallery[]>({
-  endpoint: "galleries?populate=*",
-  wrappedByKey: "data",
-});
+const galleriesResponse = await fetchGalleries();
+const galleries = galleriesResponse.data;
 
 // Convert API response to gallery items for the component
 const galleryItems = convertToGalleryItems(galleries);
 
-// Fetch categories with their related galleries
-const allCategories = await fetchCategories<Category[]>({
-  endpoint: "categories?populate=galleries",
-  wrappedByKey: "data",
-});
+// Fetch categories
+const categoriesResponse = await fetchCategories();
+const allCategories = categoriesResponse.data;
 
-// Filter categories that have related galleries
-const galleryCategories = filterGalleryCategories(allCategories);
+// Filter categories that have galleries (check which categories are used)
+const categoryIdsWithGalleries = new Set(galleries.map(g => g.category_id).filter(Boolean));
+const galleryCategories = allCategories.filter(c => categoryIdsWithGalleries.has(c.id));
 ---
 
 <NewLayout 
@@ -36,8 +33,8 @@ const galleryCategories = filterGalleryCategories(allCategories);
         <div class="gallery-filters">
           <button class="filter-btn active" data-filter="all">ALL</button>
           {galleryCategories.map(category => (
-            <button class="filter-btn" data-filter={formatCategoryName(category.attributes.name)}>
-              {formatCategoryName(category.attributes.name, true)}
+            <button class="filter-btn" data-filter={formatCategoryName(category.name)}>
+              {formatCategoryName(category.name, true)}
             </button>
           ))}
         </div>
@@ -113,14 +110,15 @@ const galleryCategories = filterGalleryCategories(allCategories);
         // Add active class to clicked button
         btn.classList.add('active');
 
-        const filter = btn.dataset.filter;
+        const filter = (btn as HTMLElement).dataset.filter;
 
         // Show/hide gallery items based on filter
         galleryItems.forEach(item => {
-          if (filter === 'all' || item.dataset.category === filter) {
-            item.style.display = 'block';
+          const el = item as HTMLElement;
+          if (filter === 'all' || el.dataset.category === filter) {
+            el.style.display = 'block';
           } else {
-            item.style.display = 'none';
+            el.style.display = 'none';
           }
         });
       });

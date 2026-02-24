@@ -1,13 +1,15 @@
-import { type Static, Type } from "@sinclair/typebox";
+import { cmsFetch, type TipTapDocument } from './cms';
 
-const HomeSchema = Type.Object({
-  title: Type.String(),
-  description: Type.String(),
-  hero: Type.String(),
-  shortDescription: Type.String(),
-  keywords: Type.String(),
-  createdAt: Type.String(),
-  updatedAt: Type.String(),
-});
+export interface Home {
+  id: string;
+  title: string | null;
+  short_description: string | null;
+  description: TipTapDocument | null;
+  hero: string | null;
+  keywords: string | null;
+  updated_at: string;
+}
 
-export type Home = Static<typeof HomeSchema>;
+export async function fetchHome(): Promise<Home> {
+  return cmsFetch<Home>('api/home');
+}

@@ -1,35 +1,30 @@
 ---
 import NewLayout from '@layouts/NewLayout.astro';
 import Navigation from '@components/Navigation.astro';
-import { fetchGallery, Gallery, convertToGalleryItems, GalleryItem } from '@api/gallery';
+import { fetchGalleries, fetchGalleryBySlug, type Gallery, convertToGalleryItems, type GalleryItem } from '@api/gallery';
 
 export async function getStaticPaths() {
-  const galleries = await fetchGallery<Gallery[]>({
-    endpoint: "galleries?populate=*",
-    wrappedByKey: "data",
-  });
+  const response = await fetchGalleries({ limit: 100 });
+  const galleries = response.data;
 
-  console.log(`Fetched ${galleries.length} galleries from API`)
-  
   if (!galleries || galleries.length === 0) {
     return [];
   }
-  
-  // Convert the API data to gallery items
+
+  // Convert galleries to individual gallery items for paths
   const galleryItems = convertToGalleryItems(galleries);
   
-  // Create a path for each gallery item
-  return galleryItems.map(item => ({
+  return galleryItems.map((item) => ({
     params: { slug: item.slug },
     props: { 
       currentItem: item,
-      allItems: galleryItems
-    }
+      allItems: galleryItems 
+    },
   }));
 }
 
 const { slug } = Astro.params;
-const { currentItem, allItems } = Astro.props;
+const { currentItem, allItems } = Astro.props as { currentItem: GalleryItem; allItems: GalleryItem[] };
 
 // Find the current index
 const currentIndex = allItems.findIndex(item => item.slug === slug);
@@ -37,7 +32,6 @@ const currentIndex = allItems.findIndex(item => item.slug === slug);
 // Get previous and next items (with wraparound)
 const prevItem = currentIndex > 0 ? allItems[currentIndex - 1] : allItems[allItems.length - 1];
 const nextItem = currentIndex < allItems.length - 1 ? allItems[currentIndex + 1] : allItems[0];
-console.log(nextItem, prevItem, currentItem);
 ---
 
 <NewLayout 
@@ -496,17 +490,14 @@ console.log(nextItem, prevItem, currentItem);
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const prevLink = document.getElementById('prevLink');
-    const nextLink = document.getElementById('nextLink');
-    
     // Lightbox Elements
     const lightboxTrigger = document.getElementById('lightboxTrigger');
     const lightbox = document.getElementById('lightbox');
     const lightboxClose = document.getElementById('lightboxClose');
-    const lightboxImage = document.getElementById('lightboxImage');
-    const mainImage = document.getElementById('mainImage');
+    const lightboxImage = document.getElementById('lightboxImage') as HTMLImageElement | null;
+    const mainImage = document.getElementById('mainImage') as HTMLImageElement | null;
+    const prevLink = document.getElementById('prevLink');
+    const nextLink = document.getElementById('nextLink');
     
     // Lightbox functionality
     if (lightboxTrigger && lightbox && lightboxClose && lightboxImage && mainImage) {
@@ -547,25 +538,12 @@ console.log(nextItem, prevItem, currentItem);
       
       // Gallery navigation
       if (e.key === 'ArrowLeft' && prevLink) {
-        window.location.href = prevLink.href;
+        window.location.href = (prevLink as HTMLAnchorElement).href;
       } else if (e.key === 'ArrowRight' && nextLink) {
-        window.location.href = nextLink.href;
+        window.location.href = (nextLink as HTMLAnchorElement).href;
       } else if (e.key === 'Escape') {
         window.location.href = '/gallery';
       }
     });
-
-    // Handle button clicks
-    if (prevBtn && prevLink) {
-      prevBtn.addEventListener('click', () => {
-        window.location.href = prevLink.href;
-      });
-    }
-
-    if (nextBtn && nextLink) {
-      nextBtn.addEventListener('click', () => {
-        window.location.href = nextLink.href;
-      });
-    }
   });
 </script>

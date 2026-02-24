@@ -2,23 +2,20 @@
 import NewLayout from "@layouts/NewLayout.astro";
 import Navigation from "@components/Navigation.astro";
 import ArticleCard from "@components/ArticleCard.astro";
-import { fetchArticles, Article } from "@api/article";
-import { fetchCategories, Category, filterArticleCategories, formatCategoryName } from "@api/category";
+import { fetchArticles, type Article } from "@api/article";
+import { fetchCategories, type Category, formatCategoryName } from "@api/category";
 
 // Fetch articles
-const articles = await fetchArticles<Article[]>({
-  endpoint: "posts?populate=*",
-  wrappedByKey: "data",
-});
+const articlesResponse = await fetchArticles();
+const articles = articlesResponse.data;
 
-// Fetch categories with their related posts
-const allCategories = await fetchCategories<Category[]>({
-  endpoint: "categories?populate=posts",
-  wrappedByKey: "data",
-});
+// Fetch categories
+const categoriesResponse = await fetchCategories();
+const allCategories = categoriesResponse.data;
 
-// Filter categories that have related articles
-const articleCategories = filterArticleCategories(allCategories);
+// Filter categories that have articles (we'll check which categories are used)
+const categoryIdsWithArticles = new Set(articles.map(a => a.category_id).filter(Boolean));
+const articleCategories = allCategories.filter(c => categoryIdsWithArticles.has(c.id));
 
 // Get the category from URL query parameter if available
 const { searchParams } = Astro.url;
@@ -42,13 +39,13 @@ const selectedCategory = searchParams.get('category') || 'all';
             ALL
           </button>
           {articleCategories.map((category) => {
-            const categoryValue = formatCategoryName(category.attributes.name);
+            const categoryValue = formatCategoryName(category.name);
             return (
               <button 
                 class={`filter-btn ${selectedCategory === categoryValue ? 'active' : ''}`}
                 data-filter={categoryValue}
               >
-                {formatCategoryName(category.attributes.name, true)}
+                {formatCategoryName(category.name, true)}
               </button>
             );
           })}
@@ -57,7 +54,7 @@ const selectedCategory = searchParams.get('category') || 'all';
         <div class="articles-grid">
           {
             articles.map((article: Article) => {
-              const articleCategory = article.attributes.category.data.attributes.name.toLowerCase();
+              const articleCategory = article.category?.name?.toLowerCase() ?? 'uncategorized';
               const isVisible = selectedCategory === 'all' || selectedCategory === articleCategory;
               return (
                 <div 
@@ -156,10 +153,11 @@ const selectedCategory = searchParams.get('category') || 'all';
     filterBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
         // Get the filter value
-        const filter = btn.dataset.filter;
+        const filter = (btn as HTMLElement).dataset.filter;
+        if (!filter) return;
         
         // Update URL with the selected category
-        const url = new URL(window.location);
+        const url = new URL(window.location.href);
         if (filter === "all") {
           url.searchParams.delete("category");
         } else {
@@ -176,10 +174,11 @@ const selectedCategory = searchParams.get('category') || 'all';
 
         // Show/hide articles based on filter
         articleWrappers.forEach((wrapper) => {
-          if (filter === "all" || wrapper.dataset.category === filter) {
-            wrapper.style.display = "block";
+          const el = wrapper as HTMLElement;
+          if (filter === "all" || el.dataset.category === filter) {
+            el.style.display = "block";
           } else {
-            wrapper.style.display = "none";
+            el.style.display = "none";
           }
         });
       });

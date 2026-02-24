@@ -1,7 +1,7 @@
 ---
 import dayjs from "dayjs";
 
-import { Article } from "@api/article";
+import type { Article } from "@api/article";
 
 export interface Props {
   article: Article;
@@ -9,32 +9,34 @@ export interface Props {
 
 const { article } = Astro.props;
 
-const categoryColors = {
+const categoryColors: Record<string, string> = {
   tech: 'var(--color-blue)',
   photography: 'var(--color-black)',
   parenting: 'var(--color-gray)'
 };
 
-const categoryIcons = {
+const categoryIcons: Record<string, string> = {
   tech: '💻',
   photography: '📷',
   parenting: '👶'
 };
 
-function formatDate(date: string) {
+function formatDate(date: string | null | undefined): string {
+  if (!date) return '';
   return dayjs(date).format("YYYY-MM-DD");
 }
-const category = article.attributes.category.data.attributes.name.toLowerCase() as keyof typeof categoryColors;
-const date = formatDate(article.attributes.updatedAt || article.attributes.publishedAt);
-const readTime = `${article.attributes.readTimeMinute || 0} mins`;
-const slug = article.attributes.slug || article.id;
-const excerpt = article.attributes.excerpt || "No excerpt available.";
-const title = article.attributes.title || "Untitled Article";
+
+const category = article.category?.name?.toLowerCase() ?? 'uncategorized';
+const date = formatDate(article.updated_at || article.published_at);
+const readTime = article.read_time_minute ? `${article.read_time_minute} min${article.read_time_minute > 1 ? 's' : ''}` : 'Quick read';
+const slug = article.slug;
+const excerpt = article.excerpt || "No excerpt available.";
+const title = article.title || "Untitled Article";
 ---
 
 <article class="article-card">
   <div class="article-header">
-    <span class="article-category" style={`color: ${categoryColors[category]}`}>
+    <span class="article-category" style={`color: ${categoryColors[category] || 'var(--color-gray)'}`}>
       {category.toUpperCase()}
     </span>
     <div class="article-meta">

@@ -1,67 +1,40 @@
-import { type Static, Type } from "@sinclair/typebox";
+import { cmsFetch, type PaginatedResponse, type Category, type Media } from './cms';
 
-const FormatSchema = Type.Object({
-  url: Type.String({ format: "uri" }),
-  ext: Type.String(),
-  hash: Type.String(),
-  mime: Type.String(),
-  name: Type.String(),
-  width: Type.Integer(),
-  height: Type.Integer(),
-});
+export interface Gallery {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  // CMS now returns resolved Media objects instead of string IDs
+  images: Media[];
+  category_id: string | null;
+  status: 'draft' | 'published';
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Resolved relations from CMS
+  category: Category | null;
+}
 
-const ImageFormatsSchema = Type.Object({
-  large: FormatSchema,
-  medium: FormatSchema,
-  small: FormatSchema,
-  thumbnail: FormatSchema,
-});
+export interface GalleryListParams {
+  limit?: number;
+  offset?: number;
+}
 
-const ImageSchema = Type.Object({
-  data: Type.Array(
-    Type.Object({
-      id: Type.Integer(),
-      attributes: Type.Object({
-        name: Type.String(),
-        url: Type.String({ format: "uri" }),
-        alternativeText: Type.Optional(Type.String()),
-        caption: Type.Optional(Type.String()),
-        width: Type.Integer(),
-        height: Type.Integer(),
-        formats: ImageFormatsSchema,
-        createdAt: Type.String({ format: "date-time" }),
-        updatedAt: Type.String({ format: "date-time" }),
-      }),
-    })
-  ),
-});
+export async function fetchGalleries(params?: GalleryListParams): Promise<PaginatedResponse<Gallery>> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.set('limit', String(params.limit));
+  if (params?.offset) queryParams.set('offset', String(params.offset));
 
-const GallerySchema = Type.Object({
-  id: Type.Integer(),
-  attributes: Type.Object({
-    title: Type.String(),
-    description: Type.Optional(Type.String()),
-    slug: Type.String(),
-    category: Type.Object({
-      data: Type.Object({
-        id: Type.Integer(),
-        attributes: Type.Object({
-          name: Type.String(),
-          description: Type.String(),
-          slug: Type.String(),
-        }),
-      }),
-    }),
-    images: ImageSchema,
-    createdAt: Type.String({ format: "date-time" }),
-    updatedAt: Type.String({ format: "date-time" }),
-    publishedAt: Type.String({ format: "date-time" }),
-  }),
-});
+  const query = queryParams.toString();
+  return cmsFetch<PaginatedResponse<Gallery>>(`api/galleries${query ? `?${query}` : ''}`);
+}
 
-export type Gallery = Static<typeof GallerySchema>;
+export async function fetchGalleryBySlug(slug: string): Promise<Gallery> {
+  return cmsFetch<Gallery>(`api/galleries/${slug}`);
+}
 
-// For the GalleryGrid component
+// Component-friendly gallery item format
 export interface GalleryItem {
   id: string;
   title: string;
@@ -77,75 +50,40 @@ export interface GalleryItem {
   description?: string;
 }
 
-type Props = {
-  endpoint: string;
-  query?: Record<string, string>;
-  wrappedByKey?: string;
-  wrappedByList?: boolean;
-};
-
-export async function fetchGallery<T>({
-  endpoint,
-  query,
-  wrappedByKey,
-  wrappedByList,
-}: Props): Promise<T> {
-  if (endpoint.startsWith("/")) {
-    endpoint = endpoint.slice(1);
-  }
-
-  const url = new URL(`${import.meta.env.CMS_API_URL}/${endpoint}`);
-
-  if (query) {
-    Object.entries(query).forEach(([key, value]) => {
-      url.searchParams.append(key, value);
-    });
-  }
-  
-  const res = await fetch(url.toString(), {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `bearer ${import.meta.env.CMS_API_TOKEN}`,
-    },
-  });
-  
-  const data = await res.json();
-
-  if (wrappedByKey) {
-    return data[wrappedByKey] as T;
-  }
-
-  if (wrappedByList) {
-    return data[0] as T;
-  }
-
-  return data as T;
-}
-
 // Helper function to convert Gallery API response to GalleryItems for the component
 export function convertToGalleryItems(galleries: Gallery[]): GalleryItem[] {
   return galleries.flatMap((gallery) => {
-    const category = gallery.attributes.category.data.attributes.name.toLowerCase();
-    
-    return gallery.attributes.images.data.map((image) => {
-      // Check if formats exists and use appropriate URLs
-      const formats = image.attributes.formats || {};
-      
+    const category = gallery.category?.name?.toLowerCase() ?? 'uncategorized';
+
+    return gallery.images.map((image) => {
+      // Use media urls if available, fallback to empty strings
+      const urls = image.urls ?? {
+        original: '',
+        thumbnail: '',
+        small: '',
+        large: '',
+      };
+
       return {
-        id: `${gallery.id}`,
-        slug: gallery.attributes.slug,
-        title: gallery.attributes.title,
+        id: image.id,
+        slug: gallery.slug,
+        title: gallery.title,
         category,
-        // Default to original URL if no formats are available
-        imageUrl: image.attributes.url,
+        imageUrl: urls.original,
         formats: {
-          large: formats.large?.url || image.attributes.url,
-          medium: formats.medium?.url || formats.large?.url || image.attributes.url,
-          small: formats.small?.url || formats.medium?.url || formats.large?.url || image.attributes.url,
-          thumbnail: formats.thumbnail?.url || formats.small?.url || image.attributes.url
+          large: urls.large || urls.original,
+          medium: urls.small || urls.large || urls.original,
+          small: urls.small || urls.large || urls.original,
+          thumbnail: urls.thumbnail || urls.small || urls.original,
         },
-        description: gallery.attributes.description || undefined,
+        description: gallery.description ?? undefined,
       };
     });
   });
+}
+
+// Helper to get the best image URL from a Media object
+export function getGalleryImageUrl(media: Media | null | undefined, size: 'original' | 'thumbnail' | 'small' | 'large' = 'large'): string | null {
+  if (!media?.urls) return null;
+  return media.urls[size];
 }

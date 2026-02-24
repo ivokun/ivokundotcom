@@ -1,104 +1,60 @@
-import { type Static, Type } from "@sinclair/typebox";
+import { cmsFetch, type PaginatedResponse, type Category, type Media, type TipTapDocument } from './cms';
 
-const FormatSchema = Type.Object({
-  url: Type.String({ format: "uri" }),
-  ext: Type.String(),
-  hash: Type.String(),
-  mime: Type.String(),
-  name: Type.String(),
-  width: Type.Integer(),
-  height: Type.Integer(),
-});
-const ImageFormatsSchema = Type.Object({
-  large: FormatSchema,
-  medium: FormatSchema,
-  small: FormatSchema,
-  thumbnail: FormatSchema,
-});
+export interface Article {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: TipTapDocument | null;
+  featured_image: string | null;
+  read_time_minute: number | null;
+  category_id: string | null;
+  locale: 'en' | 'id';
+  status: 'draft' | 'published';
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Resolved relations from CMS
+  category: Category | null;
+  featured_media: Media | null;
+}
 
-const FeaturedPictureSchema = Type.Object({
-  data: Type.Object({
-    id: Type.Integer(),
-    attributes: Type.Object({
-      name: Type.String(),
-      url: Type.String({ format: "uri" }),
-      alternativeText: Type.String(),
-      caption: Type.String(),
-      width: Type.Integer(),
-      height: Type.Integer(),
-      formats: ImageFormatsSchema,
-    }),
-    createdAt: Type.String({ format: "date-time" }),
-    updatedAt: Type.String({ format: "date-time" }),
-  }),
-});
+export type ArticleWithRelations = Article;
 
-const ArticleSchema = Type.Object({
-  id: Type.Integer(),
-  attributes: Type.Object({
-    title: Type.String(),
-    content: Type.String(),
-    slug: Type.String(),
-    category: Type.Object({
-      data: Type.Object({
-        id: Type.Integer(),
-        attributes: Type.Object({
-          name: Type.String(),
-          description: Type.String(),
-          slug: Type.String(),
-        }),
-      }),
-    }),
-    readTimeMinute: Type.Integer(),
-    featuredPicture: FeaturedPictureSchema,
-    excerpt: Type.String(),
-    createdAt: Type.String({ format: "date-time" }),
-    updatedAt: Type.String({ format: "date-time" }),
-    publishedAt: Type.String({ format: "date-time" }),
-  }),
-});
+export interface ArticleListParams {
+  limit?: number;
+  offset?: number;
+  locale?: 'en' | 'id';
+  category_id?: string;
+}
 
-export type Article = Static<typeof ArticleSchema>;
+export async function fetchArticles(params?: ArticleListParams): Promise<PaginatedResponse<Article>> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.set('limit', String(params.limit));
+  if (params?.offset) queryParams.set('offset', String(params.offset));
+  if (params?.locale) queryParams.set('locale', params.locale);
+  if (params?.category_id) queryParams.set('category_id', params.category_id);
 
-type Props = {
-  endpoint: string;
-  query?: Record<string, string>;
-  wrappedByKey?: string;
-  wrappedByList?: boolean;
-};
+  const query = queryParams.toString();
+  return cmsFetch<PaginatedResponse<Article>>(`api/posts${query ? `?${query}` : ''}`);
+}
 
-export async function fetchArticles<T>({
-  endpoint,
-  query,
-  wrappedByKey,
-  wrappedByList,
-}: Props): Promise<T> {
-  if (endpoint.startsWith("/")) {
-    endpoint = endpoint.slice(1);
-  }
+export async function fetchArticleBySlug(slug: string, locale?: 'en' | 'id'): Promise<Article> {
+  const queryParams = new URLSearchParams();
+  if (locale) queryParams.set('locale', locale);
 
-  const url = new URL(`${import.meta.env.CMS_API_URL}/${endpoint}`);
+  const query = queryParams.toString();
+  return cmsFetch<Article>(`api/posts/${slug}${query ? `?${query}` : ''}`);
+}
 
-  if (query) {
-    Object.entries(query).forEach(([key, value]) => {
-      url.searchParams.append(key, value);
-    });
-  }
-  const res = await fetch(url.toString(), {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `bearer ${import.meta.env.CMS_API_TOKEN}`,
-    },
-  });
-  const data = await res.json();
+// Helper to get the best image URL from media
+export function getImageUrl(media: Media | null | undefined, size: 'original' | 'thumbnail' | 'small' | 'large' = 'large'): string | null {
+  if (!media?.urls) return null;
+  return media.urls[size];
+}
 
-  if (wrappedByKey) {
-    return data[wrappedByKey] as T;
-  }
-
-  if (wrappedByList) {
-    return data[0] as T;
-  }
-
-  return data as T;
+// Helper to format read time
+export function formatReadTime(minutes: number | null | undefined): string {
+  if (!minutes) return 'Quick read';
+  return `${minutes} min read`;
 }

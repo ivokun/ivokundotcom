@@ -638,16 +638,16 @@ const currentPath = Astro.url.pathname;
     const mobileNavClose = document.getElementById('mobile-nav-close');
 
     function openMobileNav() {
-      mobileNavToggle.classList.add('active');
-      mobileNavMenu.classList.add('active');
-      mobileNavOverlay.classList.add('active');
+      mobileNavToggle?.classList.add('active');
+      mobileNavMenu?.classList.add('active');
+      mobileNavOverlay?.classList.add('active');
       document.body.style.overflow = 'hidden';
     }
 
     function closeMobileNav() {
-      mobileNavToggle.classList.remove('active');
-      mobileNavMenu.classList.remove('active');
-      mobileNavOverlay.classList.remove('active');
+      mobileNavToggle?.classList.remove('active');
+      mobileNavMenu?.classList.remove('active');
+      mobileNavOverlay?.classList.remove('active');
       document.body.style.overflow = '';
     }
 

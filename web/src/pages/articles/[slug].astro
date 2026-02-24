@@ -1,64 +1,49 @@
 ---
 import NewLayout from "@layouts/NewLayout.astro";
 import Navigation from "@components/Navigation.astro";
-import { type Article, fetchArticles } from "@api/article";
-import { parse } from "marked";
+import { fetchArticles, fetchArticleBySlug, type Article, getImageUrl, formatReadTime } from "@api/article";
+import { tiptapToHtml } from "@utils/tiptap";
 import dayjs from "dayjs";
 
 export async function getStaticPaths() {
-  const articles = await fetchArticles<Article[]>({
-    endpoint: "posts?populate=*",
-    wrappedByKey: "data",
-  });
-  if (!articles) {
+  const response = await fetchArticles({ limit: 100 });
+  const articles = response.data;
+
+  if (!articles || articles.length === 0) {
     return [];
   }
-  if (articles.length === 0) {
-    return [];
-  }
+
   return articles.map((article) => ({
-    params: { slug: article.attributes.slug },
+    params: { slug: article.slug },
     props: article,
   }));
 }
 
-const article = Astro.props;
-const { attributes: articleAttributes } = article;
-const { 
-  title, 
-  featuredPicture, 
-  content, 
-  excerpt, 
-  readTimeMinute, 
-  category,
-  publishedAt,
-  updatedAt 
-} = articleAttributes;
+const article = Astro.props as Article;
 
-// Parse markdown content
-const parsedContent = parse(content ?? "");
-console.log("Parsed content:", parsedContent);
+// Convert TipTap content to HTML
+const parsedContent = tiptapToHtml(article.content);
 
-// Prepare image responsive srcset
-const featuredPictureFormats = featuredPicture.data.attributes.formats;
-const srcSetUrls = `${featuredPictureFormats.small.url} 500w, ${featuredPictureFormats.medium.url} 800w, ${featuredPictureFormats.large.url} 1000w`;
+// Get featured image URLs from media
+const featuredMedia = article.featured_media;
+const imageUrls = featuredMedia?.urls;
 
 // Format dates
-const publishDate = publishedAt ? dayjs(publishedAt).format("MMMM D, YYYY") : null;
-const updateDate = updatedAt ? dayjs(updatedAt).format("MMMM D, YYYY") : null;
+const publishDate = article.published_at ? dayjs(article.published_at).format("MMMM D, YYYY") : null;
+const updateDate = article.updated_at ? dayjs(article.updated_at).format("MMMM D, YYYY") : null;
 const displayDate = updateDate || publishDate;
 
-// Reading time
-const readTime = readTimeMinute ? `${readTimeMinute} min read` : "Quick read";
+// Category info
+const categoryName = article.category?.name || "Uncategorized";
 
-// Category
-const categoryName = category?.data?.attributes?.name || "Uncategorized";
+// Reading time
+const readTime = formatReadTime(article.read_time_minute);
 ---
 
 <NewLayout 
-  title={`${title} - IVOKUN BLOG`}
-  description={excerpt || `Read ${title} on IVOKUN BLOG`}
-  ogImage={featuredPicture.data.attributes.formats.large.url}
+  title={`${article.title} - IVOKUN BLOG`}
+  description={article.excerpt || `Read ${article.title} on IVOKUN BLOG`}
+  ogImage={imageUrls?.large ?? ''}
 >
   <Navigation />
   
@@ -74,29 +59,31 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
           <span class="article-readtime">{readTime}</span>
         </div>
         
-        <h1 class="article-title">{title}</h1>
+        <h1 class="article-title">{article.title}</h1>
       </header>
       
       <!-- Featured Image -->
-      <figure class="article-featured-image">
-        <picture>
-          <source media="(min-width: 1200px)" srcset={featuredPictureFormats.large.url} />
-          <source media="(min-width: 768px)" srcset={featuredPictureFormats.medium.url} />
-          <source media="(max-width: 767px)" srcset={featuredPictureFormats.small.url} />
-          <img 
-            src={featuredPictureFormats.large.url}
-            alt={featuredPicture.data.attributes.caption || title}
-            width={featuredPictureFormats.large.width}
-            height={featuredPictureFormats.large.height}
-            loading="eager"
-          />
-        </picture>
-        {featuredPicture.data.attributes.caption && (
-          <figcaption class="image-caption">
-            {featuredPicture.data.attributes.caption}
-          </figcaption>
-        )}
-      </figure>
+      {imageUrls && (
+        <figure class="article-featured-image">
+          <picture>
+            <source media="(min-width: 1200px)" srcset={imageUrls.large} />
+            <source media="(min-width: 768px)" srcset={imageUrls.small} />
+            <source media="(max-width: 767px)" srcset={imageUrls.small} />
+            <img 
+              src={imageUrls.large}
+              alt={featuredMedia?.alt || article.title}
+              width={featuredMedia?.width || 1200}
+              height={featuredMedia?.height || 800}
+              loading="eager"
+            />
+          </picture>
+          {featuredMedia?.alt && (
+            <figcaption class="image-caption">
+              {featuredMedia.alt}
+            </figcaption>
+          )}
+        </figure>
+      )}
       
       <!-- Article Content -->
       <div class="article-content-wrapper">
@@ -113,13 +100,13 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
           <div class="article-share">
             <span class="share-label">SHARE</span>
             <div class="share-buttons">
-              <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(Astro.url.href)}`} target="_blank" rel="noopener noreferrer" class="share-button">
+              <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(Astro.url.href)}`} target="_blank" rel="noopener noreferrer" class="share-button">
                 <span>X</span>
               </a>
               <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(Astro.url.href)}`} target="_blank" rel="noopener noreferrer" class="share-button">
                 <span>FB</span>
               </a>
-              <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(Astro.url.href)}&title=${encodeURIComponent(title)}`} target="_blank" rel="noopener noreferrer" class="share-button">
+              <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(Astro.url.href)}&title=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer" class="share-button">
                 <span>LI</span>
               </a>
             </div>
@@ -193,22 +180,6 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
     text-transform: none;
   }
   
-  .article-excerpt {
-    font-size: 1.25rem;
-    line-height: 1.4;
-    color: var(--color-gray);
-    margin-bottom: 2rem;
-    border-left: 4px solid var(--color-blue);
-    padding-left: 1rem;
-  }
-  
-  .article-excerpt p {
-    font-family: var(--font-sans);
-    font-size: 1.25rem;
-    font-weight: 500;
-    line-height: 1.4;
-  }
-  
   /* Featured Image */
   .article-featured-image {
     margin-bottom: 3rem;
@@ -251,7 +222,7 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
     color: var(--color-black);
   }
   
-  .article-content h2 {
+  .article-content :global(h2) {
     font-size: 2rem;
     margin: 2rem 0 1rem;
     border-bottom: 2px solid var(--color-black);
@@ -259,39 +230,39 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
     text-transform: none;
   }
   
-  .article-content h3 {
+  .article-content :global(h3) {
     font-size: 1.5rem;
     margin: 1.5rem 0 1rem;
     text-transform: none;
   }
   
-  .article-content p {
+  .article-content :global(p) {
     margin-bottom: 1.5rem;
     font-family: var(--font-sans);
     font-size: 1.1rem;
   }
   
-  .article-content ul,
-  .article-content ol {
+  .article-content :global(ul),
+  .article-content :global(ol) {
     margin: 0 0 1.5rem 1.5rem;
   }
   
-  .article-content li {
+  .article-content :global(li) {
     margin-bottom: 0.5rem;
     font-family: var(--font-sans);
   }
   
-  .article-content a {
+  .article-content :global(a) {
     color: var(--color-blue);
     border-bottom: 2px solid var(--color-blue);
   }
   
-  .article-content a:hover {
+  .article-content :global(a:hover) {
     background: var(--color-blue);
     color: var(--color-white);
   }
   
-  .article-content blockquote {
+  .article-content :global(blockquote) {
     border-left: 4px solid var(--color-blue);
     padding-left: 1rem;
     margin-left: 0;
@@ -300,7 +271,7 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
     color: var(--color-gray);
   }
   
-  .article-content pre {
+  .article-content :global(pre) {
     background: #f5f5f5;
     border: 2px solid var(--color-black);
     padding: 1rem;
@@ -310,7 +281,7 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
     font-size: 0.9rem;
   }
   
-  .article-content code {
+  .article-content :global(code) {
     font-family: var(--font-mono);
     background: #f5f5f5;
     padding: 0.2rem 0.4rem;
@@ -318,7 +289,7 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
     font-size: 0.9rem;
   }
   
-  .article-content img {
+  .article-content :global(img) {
     max-width: 100%;
     height: auto;
     border: 2px solid var(--color-black);
@@ -437,14 +408,6 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
       font-size: 2rem;
     }
     
-    .article-excerpt {
-      font-size: 1rem;
-    }
-    
-    .article-excerpt p {
-      font-size: 1rem;
-    }
-    
     .article-meta {
       flex-direction: column;
       align-items: flex-start;
@@ -460,15 +423,15 @@ const categoryName = category?.data?.attributes?.name || "Uncategorized";
       font-size: 1rem;
     }
     
-    .article-content h2 {
+    .article-content :global(h2) {
       font-size: 1.5rem;
     }
     
-    .article-content h3 {
+    .article-content :global(h3) {
       font-size: 1.25rem;
     }
     
-    .article-content p {
+    .article-content :global(p) {
       font-size: 1rem;
     }
     
