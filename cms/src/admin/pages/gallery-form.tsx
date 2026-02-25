@@ -86,6 +86,12 @@ export function GalleryFormPage() {
       createGallery.mutate(data, {
         onSuccess: (newGallery: any) => {
           toast.success('Gallery created')
+          if (publish) {
+            publishGallery.mutate(newGallery.id, {
+              onSuccess: () => toast.success('Gallery published'),
+              onError: (err: Error) => toast.error(err.message),
+            })
+          }
           navigate({ to: `/admin/galleries/${newGallery.id}/edit` })
         },
         onError: (err) => toast.error(err.message),

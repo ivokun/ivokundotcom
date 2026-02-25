@@ -1,4 +1,4 @@
-import { Check, Copy, Filter, Loader2,Search, Trash, Upload } from 'lucide-react'
+import { Check, Copy, Loader2, Search, Trash, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -45,6 +45,7 @@ export function MediaLibraryPage() {
   const updateMedia = useUpdateMedia()
 
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
@@ -95,10 +96,13 @@ export function MediaLibraryPage() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const filteredMedia = (media?.data as MediaItem[] | undefined)?.filter(item =>
-    item.filename.toLowerCase().includes(search.toLowerCase()) ||
-    item.alt?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredMedia = (media?.data as MediaItem[] | undefined)?.filter((item) => {
+    const matchesSearch =
+      item.filename.toLowerCase().includes(search.toLowerCase()) ||
+      item.alt?.toLowerCase().includes(search.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
   const uploadingFiles = Object.entries(progress)
 
@@ -150,10 +154,17 @@ export function MediaLibraryPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="ghost" size="sm">
-          <Filter className="mr-2 h-4 w-4" />
-          Filter
-        </Button>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-9 w-[140px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="ready">Ready</SelectItem>
+            <SelectItem value="processing">Processing</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">

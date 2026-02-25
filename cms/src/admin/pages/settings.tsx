@@ -3,6 +3,12 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '~/admin/components/page-header'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '~/admin/components/ui/tooltip' 
 import { Button } from '~/admin/components/ui/button'
 import { Card, CardContent, CardDescription,CardHeader, CardTitle } from '~/admin/components/ui/card'
 import { Input } from '~/admin/components/ui/input'
@@ -20,6 +26,19 @@ export function SettingsPage() {
   const [newKeyName, setNewKeyName] = useState('')
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<{ key: string; name: string } | null>(null)
+
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('cms-dark-mode') === 'true'
+    }
+    return false
+  })
+
+  const handleDarkModeToggle = (checked: boolean) => {
+    setDarkMode(checked)
+    localStorage.setItem('cms-dark-mode', String(checked))
+    document.documentElement.classList.toggle('dark', checked)
+  }
 
   const handleCreateKey = (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,14 +85,25 @@ export function SettingsPage() {
                 <Label>Maintenance Mode</Label>
                 <p className="text-sm text-muted-foreground">Disable public access to the API</p>
               </div>
-              <Switch />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Switch disabled />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Not yet implemented</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Dark Mode</Label>
                 <p className="text-sm text-muted-foreground">Use the dark theme for the admin panel</p>
               </div>
-              <Switch />
+              <Switch checked={darkMode} onCheckedChange={handleDarkModeToggle} />
             </div>
           </CardContent>
         </Card>
