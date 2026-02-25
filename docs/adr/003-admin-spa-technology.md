@@ -149,6 +149,32 @@ export function RichTextEditor(props: {
 }
 ```
 
+### Gallery Management with Image Reordering
+
+The gallery form provides an intuitive drag-and-drop-free interface for managing photo collections:
+
+```tsx
+// GalleryForm.tsx - Image reordering with arrow controls
+const moveImage = (index: number, direction: 'up' | 'down') => {
+  const newImages = [...images()];
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  [newImages[index], newImages[targetIndex]] = [newImages[targetIndex], newImages[index]];
+  setImages(newImages);
+};
+
+// UI features:
+// - Up/down arrow buttons on hover for reordering
+// - Order number badge (1, 2, 3...) on each image
+// - First image serves as gallery cover/thumbnail
+// - Automatic reindexing when images are removed
+```
+
+**Key Design Decisions:**
+- **Arrow-based reordering** instead of drag-and-drop (simpler, more accessible)
+- **Visual order indicator** - badges show current position
+- **First-image-as-cover** convention - no separate cover image field needed
+- **Automatic cleanup** - removing an image reindexes remaining items
+
 ### Build Configuration
 
 Vite config for SPA build:
