@@ -347,3 +347,13 @@ export const LoginResponse = Schema.Struct({
   session_id: Cuid2,
 });
 export type LoginResponse = typeof LoginResponse.Type;
+
+// =============================================================================
+// USER MANAGEMENT SCHEMAS
+// =============================================================================
+
+export const InviteUserInput = Schema.Struct({
+  name: NonEmptyString,
+  email: Email,
+});
+export type InviteUserInput = typeof InviteUserInput.Type;

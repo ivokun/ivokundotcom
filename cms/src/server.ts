@@ -29,6 +29,7 @@ import {
   CreateCategoryInput,
   CreateGalleryInput,
   CreatePostInput,
+  InviteUserInput,
   ListQueryParams,
   Locale,
   LoginInput,
@@ -52,6 +53,7 @@ import {
 } from './services/media-processor';
 import { PostService, PostServiceLive } from './services/post.service';
 import { makeR2StorageService, StorageService } from './services/storage.service';
+import { UserService, UserServiceLive } from './services/user.service';
 import type { Home, TipTapDocument } from './types';
 
 // =============================================================================
@@ -566,7 +568,12 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
         title: body.title,
         slug: body.slug,
         description: body.description,
-        images: body.images ? body.images.map((img) => img.mediaId) : undefined,
+        images: body.images
+          ? body.images
+              .slice()
+              .sort((a: { order: number }, b: { order: number }) => a.order - b.order)
+              .map((img: { mediaId: string }) => img.mediaId)
+          : undefined,
         category_id: body.category_id,
       });
       return yield* HttpServerResponse.json(gallery);
@@ -792,6 +799,43 @@ const adminMiscRouter = HttpRouter.empty.pipe(
       yield* query('delete_api_key', (db) => db.deleteFrom('api_keys').where('id', '=', id).execute());
       return yield* HttpServerResponse.empty();
     })
+  ),
+
+  // Users Admin
+  HttpRouter.get(
+    '/admin/api/users',
+    Effect.gen(function* () {
+      const userService = yield* UserService;
+      const users = yield* userService.findAll();
+      // Transform snake_case to camelCase for frontend
+      const transformedUsers = users.map((user) => ({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        createdAt: user.created_at,
+      }));
+      return yield* HttpServerResponse.json({ data: transformedUsers });
+    })
+  ),
+  HttpRouter.post(
+    '/admin/api/users/invite',
+    Effect.gen(function* () {
+      const req = yield* HttpServerRequest.HttpServerRequest;
+      const body = yield* decodeBody(InviteUserInput)(req);
+      const userService = yield* UserService;
+      const user = yield* userService.invite(body.name, body.email);
+      return yield* HttpServerResponse.json({ data: user }, { status: 201 });
+    })
+  ),
+  HttpRouter.del(
+    '/admin/api/users/:id',
+    Effect.gen(function* () {
+      const req = yield* HttpServerRequest.HttpServerRequest;
+      const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
+      const userService = yield* UserService;
+      yield* userService.deleteUser(id);
+      return yield* HttpServerResponse.empty();
+    })
   )
 );
 
@@ -955,6 +999,9 @@ const HomeWithDb = HomeServiceLive.pipe(Layer.provide(DbWithConfig));
 // AuthServiceLive needs DbService
 const AuthWithDb = AuthServiceLive.pipe(Layer.provide(DbWithConfig));
 
+// UserServiceLive needs DbService
+const UserWithDb = UserServiceLive.pipe(Layer.provide(DbWithConfig));
+
 // Combine all service layers
 const AllServices = Layer.mergeAll(
   AppConfigLive,
@@ -967,7 +1014,8 @@ const AllServices = Layer.mergeAll(
   PostWithDb,
   GalleryWithDb,
   HomeWithDb,
-  AuthWithDb
+  AuthWithDb,
+  UserWithDb
 );
 
 // Final app layer with server
