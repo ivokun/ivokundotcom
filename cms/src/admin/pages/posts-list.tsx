@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Eye, FileEdit, Filter, Globe,MoreHorizontal, Plus, Search, Trash } from 'lucide-react'
+import { FileEdit, Globe, MoreHorizontal, Plus, Search, Trash } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -20,7 +20,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/admin/components/ui/dropdown-menu'
 import { Input } from '~/admin/components/ui/input'
@@ -34,7 +33,7 @@ import {
   TableRow,
 } from '~/admin/components/ui/table'
 import { useCategories } from '~/admin/hooks/use-categories'
-import { useDeletePost,usePosts } from '~/admin/hooks/use-posts'
+import { useDeletePost, usePosts } from '~/admin/hooks/use-posts'
 import { formatDate } from '~/admin/lib/utils'
 
 export function PostsListPage() {
@@ -43,6 +42,7 @@ export function PostsListPage() {
   const [locale, setLocale] = useState<string>('all')
   const [categoryId, setCategoryId] = useState<string>('all')
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   const { data: posts, isLoading } = usePosts({
     page,
@@ -61,10 +61,14 @@ export function PostsListPage() {
           toast.success('Post deleted')
           setDeleteId(null)
         },
-        onError: (err) => toast.error(err.message)
+        onError: (err) => toast.error(err.message),
       })
     }
   }
+
+  const filteredPosts = posts?.data.filter((post) =>
+    post.title.toLowerCase().includes(search.toLowerCase())
+  ) ?? []
 
   return (
     <div className="space-y-6">
@@ -80,7 +84,12 @@ export function PostsListPage() {
       <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-card p-4">
         <div className="flex flex-1 items-center gap-2 min-w-[200px]">
           <Search className="h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search posts..." className="h-9" />
+          <Input
+            placeholder="Search posts..."
+            className="h-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <div className="flex items-center gap-2">
           <Select value={status} onValueChange={setStatus}>
@@ -100,8 +109,7 @@ export function PostsListPage() {
             <SelectContent>
               <SelectItem value="all">All Locales</SelectItem>
               <SelectItem value="en">English</SelectItem>
-              <SelectItem value="de">German</SelectItem>
-              <SelectItem value="es">Spanish</SelectItem>
+              <SelectItem value="id">Indonesian</SelectItem>
             </SelectContent>
           </Select>
           <Select value={categoryId} onValueChange={setCategoryId}>
@@ -137,8 +145,8 @@ export function PostsListPage() {
                   Loading posts...
                 </TableCell>
               </TableRow>
-            ) : posts?.data.length ? (
-              posts.data.map((post) => (
+            ) : filteredPosts.length ? (
+              filteredPosts.map((post) => (
                 <TableRow key={post.id}>
                   <TableCell className="font-medium">
                     <Link to="/admin/posts/$id/edit" params={{ id: post.id }} className="hover:underline">
@@ -202,7 +210,7 @@ export function PostsListPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {posts?.data.length || 0} of {posts?.total || 0} posts
+          Showing {filteredPosts.length} of {posts?.total || 0} posts
         </p>
         <div className="flex gap-2">
           <Button 

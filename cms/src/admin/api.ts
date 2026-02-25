@@ -188,14 +188,10 @@ async function createPost(data: {
     keywords: data.keywords || [],
   };
   
-  console.log('Creating post with payload:', payload);
-  
   const response = await request<{ id: string; title: string; slug: string; status: string; createdAt: string }>('/posts', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  
-  console.log('Post created:', response);
   return response;
 }
 
@@ -231,14 +227,10 @@ async function updatePost(id: string, data: Partial<{
   if (data.status !== undefined) payload['status'] = data.status;
   if (data.keywords !== undefined) payload['keywords'] = data.keywords || [];
 
-  console.log('Updating post with payload:', payload);
-
   const response = await request<{ id: string; title: string; slug: string; status: string; updatedAt: string }>(`/posts/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
-
-  console.log('Post updated:', response);
   return response;
 }
 
@@ -422,13 +414,24 @@ async function deleteMedia(id: string) {
 
 // Home Page
 async function getHomePage() {
-  return request<{
+  const home = await request<{
     id: string;
-    heroImageId: string | null;
-    description: string;
-    keywords: string[];
+    hero: string | null;
+    description: string | object | null;
+    keywords: string | null;
     updatedAt: string;
   }>('/home');
+  return {
+    id: home.id,
+    heroImageId: home.hero || '',
+    description: home.description
+      ? typeof home.description === 'object'
+        ? JSON.stringify(home.description)
+        : home.description
+      : '',
+    keywords: home.keywords ? home.keywords.split(',').map((k) => k.trim()).filter(Boolean) : [],
+    updatedAt: home.updatedAt,
+  };
 }
 
 async function updateHomePage(data: {
@@ -436,9 +439,19 @@ async function updateHomePage(data: {
   description?: string;
   keywords?: string[];
 }) {
+  const payload: Record<string, unknown> = {};
+  if (data.heroImageId !== undefined) payload['hero'] = data.heroImageId || null;
+  if (data.description !== undefined) {
+    try {
+      payload['description'] = data.description ? JSON.parse(data.description) : null;
+    } catch {
+      payload['description'] = null;
+    }
+  }
+  if (data.keywords !== undefined) payload['keywords'] = data.keywords.join(',') || null;
   return request('/home', {
     method: 'PATCH',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -465,6 +478,22 @@ async function createApiKey(data: { name: string }) {
 
 async function deleteApiKey(id: string) {
   return request(`/api-keys/${id}`, { method: 'DELETE' });
+}
+
+// Users
+async function getUsers() {
+  return request<{ data: Array<{ id: string; email: string; name: string | null; createdAt: string }> }>('/users');
+}
+
+async function inviteUser(data: { name: string; email: string }) {
+  return request<{ id: string; email: string; name: string; initialPassword: string; createdAt: string }>('/users/invite', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+async function deleteUser(id: string) {
+  return request(`/users/${id}`, { method: 'DELETE' });
 }
 
 // Combined export
@@ -514,5 +543,10 @@ const api = {
     list: getApiKeys,
     create: createApiKey,
     delete: deleteApiKey,
+  },
+  users: {
+    list: getUsers,
+    invite: inviteUser,
+    delete: deleteUser,
   },
 };

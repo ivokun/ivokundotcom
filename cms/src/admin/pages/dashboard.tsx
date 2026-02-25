@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~
 import { useCategories } from '~/admin/hooks/use-categories'
 import { useMedia } from '~/admin/hooks/use-media'
 import { usePosts } from '~/admin/hooks/use-posts'
-import { formatDate } from '~/admin/lib/utils'
+import { cn, formatDate } from '~/admin/lib/utils'
 
 export function DashboardPage() {
   const { data: posts } = usePosts({ page: 1 })
@@ -112,6 +112,4 @@ export function DashboardPage() {
   )
 }
 
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ')
-}
+
