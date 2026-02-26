@@ -10,12 +10,18 @@ import { Button } from '~/admin/components/ui/button'
 import { Card, CardContent, CardDescription,CardHeader, CardTitle } from '~/admin/components/ui/card'
 import { Input } from '~/admin/components/ui/input'
 import { Label } from '~/admin/components/ui/label'
+import { useMedia } from '~/admin/hooks/use-media'
 import { useHome, useUpdateHome } from '~/admin/hooks/use-home'
-import { getMediaUrl } from '~/admin/lib/utils'
 
 export function HomePageEditor() {
   const { data: home, isLoading } = useHome()
   const updateHome = useUpdateHome()
+  const { data: mediaData } = useMedia()
+
+  const mediaMap = mediaData?.data.reduce(
+    (acc, m) => { acc[m.id] = m; return acc },
+    {} as Record<string, (typeof mediaData.data)[0]>
+  ) || {}
 
   const [formData, setFormData] = useState({
     description: '',
@@ -74,9 +80,17 @@ export function HomePageEditor() {
               <Label>Hero Image</Label>
               {formData.heroImageId ? (
                 <div className="relative aspect-[21/9] overflow-hidden rounded-md border bg-muted">
-                  <div className="flex h-full w-full items-center justify-center">
-                    <span className="text-sm text-muted-foreground">Image ID: {formData.heroImageId.slice(0, 8)}...</span>
-                  </div>
+                  {(() => {
+                    const media = mediaMap?.[formData.heroImageId];
+                    const url = media?.urls?.small || media?.urls?.thumbnail || media?.urls?.original;
+                    return url ? (
+                      <img src={url} alt={media?.alt || ''} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <span className="text-sm text-muted-foreground">Image ID: {formData.heroImageId.slice(0, 8)}...</span>
+                      </div>
+                    );
+                  })()}
                   <Button
                     variant="destructive"
                     size="icon"

@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from '~/admin/components/ui/dialog'
 import { useMedia, useUploadMedia } from '~/admin/hooks/use-media'
+import { queryClient } from '~/admin/lib/query-client'
 import { cn, formatFileSize, getMediaUrl } from '~/admin/lib/utils'
 
 interface MediaPickerProps {
@@ -28,10 +29,9 @@ export function MediaPicker({ onSelect, selectedId, trigger }: MediaPickerProps)
     const file = e.target.files?.[0]
     if (file) {
       upload.mutate({ file }, {
-        onSuccess: (data: any) => {
-          // data matches the expected structure
-          // api.ts uploadMedia returns { id, filename, ... }
-        }
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['media'] })
+        },
       })
     }
   }

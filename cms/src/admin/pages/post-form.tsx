@@ -1,5 +1,5 @@
 import { useNavigate,useParams } from '@tanstack/react-router'
-import { ArrowLeft, Eye, Globe, Save, Send, Trash, X } from 'lucide-react'
+import { ArrowLeft, Globe, Save, Send, Trash, X } from 'lucide-react'
 import { useEffect,useState } from 'react'
 import slugify from 'slugify'
 import { toast } from 'sonner'
@@ -15,8 +15,9 @@ import { Label } from '~/admin/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/admin/components/ui/select'
 import { Textarea } from '~/admin/components/ui/textarea'
 import { useCategories } from '~/admin/hooks/use-categories'
+import { useMedia } from '~/admin/hooks/use-media'
 import { useCreatePost, usePost, usePublishPost, useUnpublishPost,useUpdatePost } from '~/admin/hooks/use-posts'
-import { formatDate,getMediaUrl } from '~/admin/lib/utils'
+import { formatDate } from '~/admin/lib/utils'
 
 export function PostFormPage() {
   const { id } = useParams({ strict: false }) as { id?: string }
@@ -30,6 +31,12 @@ export function PostFormPage() {
   const updatePost = useUpdatePost()
   const publishPost = usePublishPost()
   const unpublishPost = useUnpublishPost()
+
+  const { data: mediaData } = useMedia()
+  const mediaMap = mediaData?.data.reduce(
+    (acc, m) => { acc[m.id] = m; return acc },
+    {} as Record<string, (typeof mediaData.data)[0]>
+  ) || {}
 
   const [formData, setFormData] = useState({
     title: '',
@@ -85,9 +92,15 @@ export function PostFormPage() {
       createPost.mutate(data, {
         onSuccess: (newPost: any) => {
           toast.success('Post created')
+          if (publish) {
+            publishPost.mutate(newPost.id, {
+              onSuccess: () => toast.success('Post published'),
+              onError: (err: Error) => toast.error(err.message),
+            })
+          }
           navigate({ to: `/admin/posts/${newPost.id}/edit` })
         },
-        onError: (err) => toast.error(err.message)
+        onError: (err) => toast.error(err.message),
       })
     } else {
       updatePost.mutate({ id: id!, data }, {
@@ -139,12 +152,7 @@ export function PostFormPage() {
           Back to Posts
         </Button>
         <div className="flex items-center gap-2">
-          {!isNew && (
-            <Button variant="outline" size="sm">
-              <Eye className="mr-2 h-4 w-4" />
-              Preview
-            </Button>
-          )}
+
           <Button variant="outline" size="sm" onClick={() => onSave(false)} disabled={createPost.isPending || updatePost.isPending}>
             <Save className="mr-2 h-4 w-4" />
             Save Draft
@@ -226,17 +234,19 @@ export function PostFormPage() {
                 <Label>Featured Image</Label>
                 {formData.featuredImageId ? (
                   <div className="relative aspect-video overflow-hidden rounded-md border">
-                    {post?.featured_media?.urls ? (
-                      <img
-                        src={post.featured_media.urls.small || post.featured_media.urls.thumbnail || post.featured_media.urls.original}
-                        alt={post.featured_media.alt || ''}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-muted">
-                        <span className="text-sm text-muted-foreground">Image ID: {formData.featuredImageId.slice(0, 8)}...</span>
-                      </div>
-                    )}
+                    {(() => {
+                      const media = mediaMap[formData.featuredImageId] || post?.featured_media;
+                      const url = media?.urls?.small || media?.urls?.thumbnail || media?.urls?.original;
+                      return url ? (
+                        <img src={url} alt={media?.alt || ''} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-muted">
+                          <span className="text-sm text-muted-foreground">
+                            Image ID: {formData.featuredImageId.slice(0, 8)}...
+                          </span>
+                        </div>
+                      );
+                    })()}
                     <Button
                       variant="destructive"
                       size="icon"
