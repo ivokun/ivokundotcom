@@ -1,5 +1,6 @@
 import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
+import { sql } from 'kysely';
 import slugify from 'slugify';
 
 import { DatabaseError, NotFound, SlugConflict } from '../errors';
@@ -14,6 +15,17 @@ import type {
 } from '../types';
 import { DbService } from './db.service';
 import { MediaService } from './media.service';
+
+/**
+ * Safely coerce a JSONB value returned by pg into a string[].
+ * The pg driver may return an object (`{}`) for an empty JS array
+ * because it serializes `[]` as a PostgreSQL text array literal,
+ * which JSONB then stores as an empty object.
+ */
+const asStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value as string[];
+  return [];
+};
 
 export interface GalleryFilter {
   status?: Status;
@@ -105,7 +117,7 @@ export const makeGalleryService = Effect.gen(function* () {
           title: result.title,
           slug: result.slug,
           description: result.description,
-          images: (result.images as string[]).map((mediaId, order) => ({
+          images: asStringArray(result.images).map((mediaId, order) => ({
             id: `${result.id}-${order}`,
             mediaId,
             order,
@@ -168,7 +180,7 @@ export const makeGalleryService = Effect.gen(function* () {
           title: result.title,
           slug: result.slug,
           description: result.description,
-          images: (result.images as string[]).map((mediaId, order) => ({
+          images: asStringArray(result.images).map((mediaId, order) => ({
             id: `${result.id}-${order}`,
             mediaId,
             order,
@@ -200,25 +212,35 @@ export const makeGalleryService = Effect.gen(function* () {
         return yield* Effect.fail(new SlugConflict({ slug }));
       }
 
-      const newGallery: NewGallery = {
-        id: createId(),
-        title: data.title,
-        slug,
-        description: data.description ?? null,
-        images: data.images ?? [],
-        category_id: data.category_id ?? null,
-        status: data.status,
-        published_at: data.published_at ?? null,
-      };
+      const id = createId();
+      const imagesJson = JSON.stringify(data.images ?? []);
 
       const result = yield* query('create_gallery', (db) =>
-        db.insertInto('galleries').values(newGallery).returningAll().executeTakeFirstOrThrow()
+        db
+          .insertInto('galleries')
+          .values({
+            id,
+            title: data.title,
+            slug,
+            description: data.description ?? null,
+            // JSON.stringify + sql cast is required because the pg driver
+            // does not automatically serialise JS arrays to JSONB – it
+            // sends a PostgreSQL array literal instead, which either
+            // errors or silently stores the wrong value (e.g. `{}` for `[]`).
+            images: sql`${imagesJson}::jsonb` as any,
+            category_id: data.category_id ?? null,
+            status: data.status,
+            published_at: data.published_at ?? null,
+          })
+          .returningAll()
+          .executeTakeFirstOrThrow()
       );
-      
+
       // Transform images to structured format for frontend
+      const imageIds = asStringArray(result.images);
       return {
         ...result,
-        images: (result.images as string[]).map((mediaId, order) => ({
+        images: imageIds.map((mediaId, order) => ({
           id: `${result.id}-${order}`,
           mediaId,
           order,
@@ -263,14 +285,23 @@ export const makeGalleryService = Effect.gen(function* () {
         updated_at: new Date(),
       };
 
-      const result = yield* query('update_gallery', (db) =>
-        db
+      // Remove images from the update data – it will be set separately
+      // via sql cast to avoid pg driver JSONB serialisation issues.
+      const { images: rawImages, ...updateWithoutImages } = updateData;
+
+      const result = yield* query('update_gallery', (db) => {
+        let q = db
           .updateTable('galleries')
-          .set(updateData)
-          .where('id', '=', id)
-          .returningAll()
-          .executeTakeFirstOrThrow()
-      );
+          .set(updateWithoutImages)
+          .where('id', '=', id);
+
+        if (rawImages !== undefined) {
+          const imagesJson = JSON.stringify(rawImages);
+          q = q.set({ images: sql`${imagesJson}::jsonb` } as any);
+        }
+
+        return q.returningAll().executeTakeFirstOrThrow();
+      });
       
       // Fetch category separately since the update query doesn't join
       let category = null;
@@ -285,9 +316,10 @@ export const makeGalleryService = Effect.gen(function* () {
       }
       
       // Transform images to structured format for frontend
+      const updateImageIds = asStringArray(result.images);
       return {
         ...result,
-        images: (result.images as string[]).map((mediaId, order) => ({
+        images: updateImageIds.map((mediaId, order) => ({
           id: `${result.id}-${order}`,
           mediaId,
           order,
@@ -396,7 +428,7 @@ export const makeGalleryService = Effect.gen(function* () {
           title: row.title,
           slug: row.slug,
           description: row.description,
-          images: (row.images as string[]).map((mediaId, order) => ({
+          images: asStringArray(row.images).map((mediaId, order) => ({
             id: `${row.id}-${order}`,
             mediaId,
             order,
