@@ -47,6 +47,14 @@ export class SlugConflict extends Data.TaggedError('SlugConflict')<{
   }
 }
 
+export class DuplicateEmail extends Data.TaggedError('DuplicateEmail')<{
+  readonly email: string;
+}> {
+  get message(): string {
+    return `User with email '${this.email}' already exists`;
+  }
+}
+
 export interface ValidationFieldError {
   readonly path: string;
   readonly message: string;
@@ -100,7 +108,7 @@ export class ConfigError extends Data.TaggedError('ConfigError')<{
 
 export type AuthError = InvalidCredentials | SessionExpired | InvalidApiKey | Unauthorized;
 
-export type ResourceError = NotFound | SlugConflict | ValidationError;
+export type ResourceError = NotFound | SlugConflict | ValidationError | DuplicateEmail;
 
 export type InfraError = DatabaseError | StorageError | ImageProcessingError | ConfigError;
 
@@ -129,6 +137,7 @@ export const toHttpStatus = (error: AppError): number =>
       Unauthorized: () => 403,
       NotFound: () => 404,
       SlugConflict: () => 409,
+      DuplicateEmail: () => 409,
       ValidationError: () => 400,
       DatabaseError: () => 500,
       StorageError: () => 500,
@@ -170,7 +179,10 @@ export const isAuthError = (error: AppError): error is AuthError => {
 
 export const isResourceError = (error: AppError): error is ResourceError => {
   return (
-    error._tag === 'NotFound' || error._tag === 'SlugConflict' || error._tag === 'ValidationError'
+    error._tag === 'NotFound' ||
+    error._tag === 'SlugConflict' ||
+    error._tag === 'ValidationError' ||
+    error._tag === 'DuplicateEmail'
   );
 };
 

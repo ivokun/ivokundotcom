@@ -2,12 +2,14 @@
  * @fileoverview User management service for admin operations
  */
 
+import { randomBytes } from 'crypto';
+
 import { hash } from '@node-rs/argon2';
 import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
 
-import { DatabaseError } from '../errors';
-import type { NewUser, User } from '../types';
+import { DatabaseError, DuplicateEmail, NotFound } from '../errors';
+import type { NewUser } from '../types';
 import { DbService } from './db.service';
 
 // =============================================================================
@@ -48,8 +50,8 @@ export class UserService extends Context.Tag('UserService')<
     readonly invite: (
       name: string,
       email: string
-    ) => Effect.Effect<InviteResponse, DatabaseError>;
-    readonly deleteUser: (id: string) => Effect.Effect<void, DatabaseError>;
+    ) => Effect.Effect<InviteResponse, DatabaseError | DuplicateEmail>;
+    readonly deleteUser: (id: string) => Effect.Effect<void, DatabaseError | NotFound>;
   }
 >() {}
 
@@ -66,6 +68,16 @@ export const makeUserService = Effect.gen(function* () {
       catch: (error) => new DatabaseError({ cause: error, operation: 'hash_password' }),
     });
 
+  const generatePassword = (): string => {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    const bytes = randomBytes(16);
+    let password = '';
+    for (let i = 0; i < 16; i++) {
+      password += charset[bytes[i]! % charset.length];
+    }
+    return password;
+  };
+
   const findAll = (): Effect.Effect<ReadonlyArray<SafeUser>, DatabaseError> =>
     Effect.gen(function* () {
       const users = yield* query('find_all_users', (db) =>
@@ -81,10 +93,18 @@ export const makeUserService = Effect.gen(function* () {
   const invite = (
     name: string,
     email: string
-  ): Effect.Effect<InviteResponse, DatabaseError> =>
+  ): Effect.Effect<InviteResponse, DatabaseError | DuplicateEmail> =>
     Effect.gen(function* () {
-      // Generate a random 16-character password using createId (24 chars, we'll use it as-is)
-      const initialPassword = createId().slice(0, 16);
+      // Check for existing user with this email
+      const existing = yield* query('check_user_email', (db) =>
+        db.selectFrom('users').select('id').where('email', '=', email.toLowerCase()).executeTakeFirst()
+      );
+      if (existing) {
+        return yield* Effect.fail(new DuplicateEmail({ email }));
+      }
+
+      // Generate a secure random 16-character password
+      const initialPassword = generatePassword();
       const passwordHash = yield* hashPassword(initialPassword);
 
       const newUser: NewUser = {
@@ -95,7 +115,7 @@ export const makeUserService = Effect.gen(function* () {
       };
 
       const user = yield* query('create_user', (db) =>
-        db.insertInto('users').values(newUser).returningAll().executeTakeFirstOrThrow()
+        db.insertInto('users').values(newUser).returning(['id', 'email', 'name', 'created_at']).executeTakeFirstOrThrow()
       );
 
       return {
@@ -107,8 +127,16 @@ export const makeUserService = Effect.gen(function* () {
       };
     });
 
-  const deleteUser = (id: string): Effect.Effect<void, DatabaseError> =>
+  const deleteUser = (id: string): Effect.Effect<void, DatabaseError | NotFound> =>
     Effect.gen(function* () {
+      // Check if user exists first
+      const user = yield* query('check_user_exists', (db) =>
+        db.selectFrom('users').select('id').where('id', '=', id).executeTakeFirst()
+      );
+      if (!user) {
+        return yield* Effect.fail(new NotFound({ resource: 'User', id }));
+      }
+
       // Delete all sessions for this user first
       yield* query('delete_user_sessions', (db) =>
         db.deleteFrom('sessions').where('user_id', '=', id).execute()
