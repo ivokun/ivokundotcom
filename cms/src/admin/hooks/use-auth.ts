@@ -8,6 +8,10 @@ export function useCurrentUser() {
     queryKey: ['auth', 'me'],
     queryFn: api.auth.getCurrentUser,
     retry: false,
+    // Avoid refetching on every component mount as the user navigates between
+    // pages. Session validity is enforced server-side via HttpOnly cookie;
+    // there is no need to re-validate on every page transition.
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
 
@@ -15,8 +19,11 @@ export function useLogin() {
   return useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       api.auth.login(email, password),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] })
+    onSuccess: (data) => {
+      // Pre-populate the user cache from the login response so that navigating
+      // to a protected route immediately after login never shows a "Loading..."
+      // flash (no extra network round-trip needed).
+      queryClient.setQueryData(['auth', 'me'], data.user)
     },
   })
 }

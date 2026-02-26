@@ -14,7 +14,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '~/admin/components/ui/avatar'
 import { Button } from '~/admin/components/ui/button'
@@ -41,10 +41,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>
-  if (!user) {
-    navigate({ to: '/admin/login' })
-    return null
+  // Move navigation side-effect out of the render body.
+  // Calling navigate() directly during render fails silently in React 18
+  // StrictMode because side effects are not allowed during render.
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate({ to: '/admin/login' })
+    }
+  }, [isLoading, user, navigate])
+
+  // While the auth check is in-flight, or while the redirect is pending,
+  // show a neutral loading screen so the user never sees a blank page.
+  if (isLoading || !user) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>
   }
 
   const handleLogout = () => {
