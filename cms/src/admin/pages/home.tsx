@@ -10,8 +10,8 @@ import { Button } from '~/admin/components/ui/button'
 import { Card, CardContent, CardDescription,CardHeader, CardTitle } from '~/admin/components/ui/card'
 import { Input } from '~/admin/components/ui/input'
 import { Label } from '~/admin/components/ui/label'
-import { useMedia } from '~/admin/hooks/use-media'
 import { useHome, useUpdateHome } from '~/admin/hooks/use-home'
+import { useMedia } from '~/admin/hooks/use-media'
 
 export function HomePageEditor() {
   const { data: home, isLoading } = useHome()

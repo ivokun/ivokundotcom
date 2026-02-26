@@ -2,10 +2,9 @@
  * @fileoverview User management service for admin operations
  */
 
-import { randomBytes } from 'crypto';
-
 import { hash } from '@node-rs/argon2';
 import { createId } from '@paralleldrive/cuid2';
+import { randomBytes } from 'crypto';
 import { Context, Effect, Layer } from 'effect';
 
 import { DatabaseError, DuplicateEmail, NotFound } from '../errors';
