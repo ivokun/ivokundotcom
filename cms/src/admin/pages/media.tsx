@@ -14,6 +14,13 @@ import {
 } from '~/admin/components/ui/dialog'
 import { Input } from '~/admin/components/ui/input'
 import { Label } from '~/admin/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/admin/components/ui/select'
 import { useDeleteMedia, useMedia, useUpdateMedia,useUploadMedia } from '~/admin/hooks/use-media'
 import { cn, formatDate,formatFileSize } from '~/admin/lib/utils'
 

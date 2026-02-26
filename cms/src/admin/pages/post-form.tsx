@@ -17,7 +17,7 @@ import { Textarea } from '~/admin/components/ui/textarea'
 import { useCategories } from '~/admin/hooks/use-categories'
 import { useMedia } from '~/admin/hooks/use-media'
 import { useCreatePost, usePost, usePublishPost, useUnpublishPost,useUpdatePost } from '~/admin/hooks/use-posts'
-import { formatDate,getMediaUrl } from '~/admin/lib/utils'
+import { formatDate } from '~/admin/lib/utils'
 
 export function PostFormPage() {
   const { id } = useParams({ strict: false }) as { id?: string }

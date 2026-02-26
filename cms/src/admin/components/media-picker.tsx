@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from '~/admin/components/ui/dialog'
 import { useMedia, useUploadMedia } from '~/admin/hooks/use-media'
+import { queryClient } from '~/admin/lib/query-client'
 import { cn, formatFileSize, getMediaUrl } from '~/admin/lib/utils'
 
 interface MediaPickerProps {

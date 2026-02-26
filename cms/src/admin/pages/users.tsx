@@ -1,4 +1,4 @@
-import { Copy, Mail, MoreHorizontal, Plus, Shield, Trash, UserCheck, X } from 'lucide-react'
+import { Check, Copy, MoreHorizontal, Plus, Shield, Trash, UserCheck, X } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -277,7 +277,7 @@ export function UsersPage() {
                 </code>
                 <Button variant="outline" size="sm" onClick={copyPassword}>
                   {copiedPassword ? (
-                    <Copy className="h-4 w-4" />
+                    <Check className="h-4 w-4" />
                   ) : (
                     <Copy className="h-4 w-4" />
                   )}
