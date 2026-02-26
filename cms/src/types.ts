@@ -287,6 +287,7 @@ export interface PostWithCategory extends Post {
   featured_media: Media | null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface PostWithMedia extends PostWithCategory {
   // featured_media is now in PostWithCategory
 }
