@@ -8,7 +8,7 @@ import { hash, verify } from '@node-rs/argon2';
 import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
 
-import { DatabaseError,InvalidCredentials, SessionExpired } from '../errors';
+import { DatabaseError, InvalidCredentials, SessionExpired } from '../errors';
 import type { NewSession, NewUser, Session, User } from '../types';
 import { DbService } from './db.service';
 
@@ -33,8 +33,8 @@ const ARGON2_OPTIONS = {
 export class AuthService extends Context.Tag('AuthService')<
   AuthService,
   {
-    readonly hashPassword: (password: string) => Effect.Effect<string, unknown>;
-    readonly verifyPassword: (hash: string, password: string) => Effect.Effect<boolean, unknown>;
+    readonly hashPassword: (password: string) => Effect.Effect<string, DatabaseError>;
+    readonly verifyPassword: (hash: string, password: string) => Effect.Effect<boolean, DatabaseError>;
     readonly createSession: (userId: string) => Effect.Effect<Session, DatabaseError>;
     readonly validateSession: (
       sessionId: string
@@ -43,16 +43,16 @@ export class AuthService extends Context.Tag('AuthService')<
     readonly validateCredentials: (
       email: string,
       password: string
-    ) => Effect.Effect<User, InvalidCredentials | DatabaseError | unknown>;
+    ) => Effect.Effect<User, InvalidCredentials | DatabaseError>;
     readonly generateApiKey: () => {
       key: string;
       prefix: string;
-      hash: Effect.Effect<string, unknown>;
+      hash: Effect.Effect<string, DatabaseError>;
     };
     readonly verifyApiKey: (
       prefix: string,
       key: string
-    ) => Effect.Effect<boolean, InvalidCredentials | DatabaseError | unknown>;
+    ) => Effect.Effect<boolean, InvalidCredentials | DatabaseError>;
   }
 >() {}
 
@@ -63,14 +63,20 @@ export class AuthService extends Context.Tag('AuthService')<
 export const makeAuthService = Effect.gen(function* () {
   const { query } = yield* DbService;
 
-  const hashPassword = (password: string): Effect.Effect<string, unknown> =>
-    Effect.promise(() => hash(password, ARGON2_OPTIONS));
+  const hashPassword = (password: string): Effect.Effect<string, DatabaseError> =>
+    Effect.tryPromise({
+      try: () => hash(password, ARGON2_OPTIONS),
+      catch: (error) => new DatabaseError({ cause: error, operation: 'hash_password' }),
+    });
 
   const verifyPassword = (
     passwordHash: string,
     password: string
-  ): Effect.Effect<boolean, unknown> =>
-    Effect.promise(() => verify(passwordHash, password, ARGON2_OPTIONS));
+  ): Effect.Effect<boolean, DatabaseError> =>
+    Effect.tryPromise({
+      try: () => verify(passwordHash, password, ARGON2_OPTIONS),
+      catch: (error) => new DatabaseError({ cause: error, operation: 'verify_password' }),
+    });
 
   const createSession = (userId: string): Effect.Effect<Session, DatabaseError> =>
     Effect.gen(function* () {
@@ -113,7 +119,7 @@ export const makeAuthService = Effect.gen(function* () {
   const validateCredentials = (
     email: string,
     password: string
-  ): Effect.Effect<User, InvalidCredentials | DatabaseError | unknown> =>
+  ): Effect.Effect<User, InvalidCredentials | DatabaseError> =>
     Effect.gen(function* () {
       const user = yield* query('get_user_by_email', (db) =>
         db
@@ -151,7 +157,7 @@ export const makeAuthService = Effect.gen(function* () {
   const verifyApiKey = (
     prefix: string,
     providedKey: string
-  ): Effect.Effect<boolean, InvalidCredentials | DatabaseError | unknown> =>
+  ): Effect.Effect<boolean, InvalidCredentials | DatabaseError> =>
     Effect.gen(function* () {
       const apiKey = yield* query('get_api_key_by_prefix', (db) =>
         db

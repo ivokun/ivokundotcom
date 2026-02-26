@@ -12,7 +12,7 @@ import {
   HttpServerResponse,
 } from '@effect/platform';
 import { BunHttpServer, BunRuntime } from '@effect/platform-bun';
-import { Console, Effect, Layer, Redacted, Schema } from 'effect';
+import { Cause, Console, Effect, Layer, ParseResult, Redacted, Schema } from 'effect';
 
 import { AppConfig, AppConfigLive } from './config';
 import {
@@ -71,7 +71,27 @@ const decodeQuery =
 const decodeBody =
   <A, I>(schema: Schema.Schema<A, I>) =>
   (req: HttpServerRequest.HttpServerRequest) =>
-    Effect.flatMap(req.json, Schema.decodeUnknown(schema));
+    Effect.gen(function* () {
+      const json = yield* req.json;
+      const decoded = yield* Schema.decodeUnknown(schema)(json).pipe(
+        Effect.catchAll((error) => {
+          // Convert ParseError to our ValidationError
+          const parseError = error as ParseResult.ParseError;
+          let errorMessage: string;
+          try {
+            errorMessage = ParseResult.TreeFormatter.formatErrorSync(parseError);
+          } catch {
+            errorMessage = 'Validation failed';
+          }
+          return Effect.fail(
+            new ValidationError({
+              errors: [{ path: 'body', message: errorMessage }],
+            })
+          );
+        })
+      );
+      return decoded;
+    });
 
 const decodeParams =
   <A, I>(schema: Schema.Schema<A, I>) =>
@@ -109,34 +129,16 @@ const defaultHome: Home = {
 // =============================================================================
 
 const errorHandler = HttpMiddleware.make((app) =>
-  Effect.gen(function* () {
-    return yield* app;
-  }).pipe(
-    Effect.catchAll((error: unknown) => {
+  Effect.matchEffect(app, {
+    onSuccess: (response) => Effect.succeed(response),
+    onFailure: (error: unknown) => {
       if (isAppError(error)) {
         const status = toHttpStatus(error);
         const body = toJsonResponse(error);
         return HttpServerResponse.json(body, { status });
       }
 
-      // Handle ParseError from Schema
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        '_tag' in error &&
-        (error as { _tag: string })._tag === 'ParseError'
-      ) {
-        return HttpServerResponse.json(
-          {
-            error: 'ValidationError',
-            message: 'Invalid request data',
-            details: error,
-          },
-          { status: 400 }
-        );
-      }
-
-      // Unexpected errors - log and return generic response
+      // Handle unexpected errors
       console.error('Unexpected error:', error);
       return HttpServerResponse.json(
         {
@@ -145,8 +147,8 @@ const errorHandler = HttpMiddleware.make((app) =>
         },
         { status: 500 }
       );
-    })
-  )
+    },
+  })
 );
 
 // =============================================================================
@@ -279,7 +281,32 @@ const authRouter = HttpRouter.empty.pipe(
       const cookieValue = `session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}${isProduction ? '; Secure' : ''}`;
 
       return HttpServerResponse.setHeader(response, 'Set-Cookie', cookieValue);
-    })
+    }).pipe(
+      Effect.catchAll((error) => {
+        // For security, always return generic "Invalid email or password" message
+        // This prevents information leakage about whether email exists or password is wrong
+        if (isAppError(error)) {
+          // Check if it's an auth error (InvalidCredentials, SessionExpired, etc.)
+          const status = toHttpStatus(error);
+          // Return generic message for all auth/validation errors
+          return HttpServerResponse.json(
+            {
+              error: 'InvalidCredentials',
+              message: 'Invalid email or password',
+            },
+            { status }
+          );
+        }
+        // For non-AppError, still return generic message
+        return HttpServerResponse.json(
+          {
+            error: 'InvalidCredentials',
+            message: 'Invalid email or password',
+          },
+          { status: 401 }
+        );
+      })
+    )
   ),
   HttpRouter.post(
     '/admin/api/logout',
