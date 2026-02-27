@@ -18,15 +18,15 @@ import {
 describe('Auth E2E', () => {
   beforeAll(async () => {
     await startTestServer();
-  }, 60000);
+  });
 
   afterAll(async () => {
     await stopTestServer();
-  }, 10000);
+  });
 
   beforeEach(async () => {
     await cleanDatabase();
-  }, 10000);
+  });
 
   describe('POST /admin/api/login', () => {
     test('returns 200 and sets session cookie on valid credentials', async () => {

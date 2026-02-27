@@ -21,17 +21,17 @@ describe('Posts E2E', () => {
 
   beforeAll(async () => {
     await startTestServer();
-  }, 60000);
+  });
 
   afterAll(async () => {
     await stopTestServer();
-  }, 10000);
+  });
 
   beforeEach(async () => {
     await cleanDatabase();
     const { sessionCookie } = await createTestUser('Test Admin');
     adminSession = sessionCookie;
-  }, 10000);
+  });
 
   describe('POST /admin/api/posts', () => {
     test('creates a new post with 201 status', async () => {

@@ -1112,7 +1112,10 @@ const DbLive = Layer.scoped(
 // SERVER STARTUP
 // =============================================================================
 
-const ServerLive = BunHttpServer.layer({ port: 3000 });
+// Read port from environment or use default
+const PORT = process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 3000;
+
+const ServerLive = BunHttpServer.layer({ port: PORT });
 
 const serverEffect = appRouter.pipe(HttpServer.serve(errorHandler), HttpServer.withLogAddress);
 

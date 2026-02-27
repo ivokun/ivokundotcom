@@ -20,17 +20,17 @@ describe('Categories E2E', () => {
 
   beforeAll(async () => {
     await startTestServer();
-  }, 60000);
+  });
 
   afterAll(async () => {
     await stopTestServer();
-  }, 10000);
+  });
 
   beforeEach(async () => {
     await cleanDatabase();
     const { sessionCookie } = await createTestUser();
     adminSession = sessionCookie;
-  }, 10000);
+  });
 
   describe('POST /admin/api/categories', () => {
     test('creates a new category with 201 status', async () => {
