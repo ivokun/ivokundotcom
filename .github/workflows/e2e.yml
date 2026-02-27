@@ -1,0 +1,101 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ivokundotcom_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v26
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v14
+        with:
+          name: devenv
+
+      - name: Install devenv
+        run: nix profile install --accept-flake-config nixpkgs#devenv
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+            cms/node_modules
+            web/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: |
+          devenv shell -- bun install --frozen-lockfile
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..10}; do
+            pg_isready -h localhost -p 5432 && break
+            sleep 1
+          done
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable
+        run: |
+          devenv shell -- dbmate -d "./cms/db/migrations" up
+
+      - name: Run E2E tests
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable
+          SESSION_SECRET: test-secret-min-32-chars-long-for-ci-only!!!
+          R2_ACCESS_KEY_ID: test
+          R2_ACCESS_SECRET: test
+          R2_ENDPOINT: http://localhost:9000
+          R2_BUCKET: test-bucket
+          R2_PUBLIC_URL: http://localhost:9000/test-bucket
+          NODE_ENV: test
+        run: |
+          devenv shell -- sh -c "cd cms && bun test src/e2e/"
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.run_id }}
+          path: |
+            cms/test-results/
+            **/*.log
+          retention-days: 7
