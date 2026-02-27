@@ -86,6 +86,20 @@ export async function startTestServer(config?: Partial<Config>): Promise<TestSer
   const isInCms = currentDir.includes('cms') && !currentDir.includes('cms/src');
   const cwd = isInCms ? currentDir : currentDir + '/cms';
 
+  // Debug logging
+  console.error(`[E2E] Starting server with: ${bunPath} run src/server.ts`);
+  console.error(`[E2E] Working directory: ${cwd}`);
+  console.error(`[E2E] Port: ${port}`);
+
+  // Verify cwd exists and server.ts exists
+  const fs = await import('fs');
+  const path = await import('path');
+  const serverPath = path.join(cwd, 'src', 'server.ts');
+  if (!fs.existsSync(serverPath)) {
+    throw new Error(`Server file not found: ${serverPath}`);
+  }
+  console.error(`[E2E] Server file exists: ${serverPath}`);
+
   const proc = spawn({
     cmd: [bunPath, 'run', 'src/server.ts'],
     cwd,
@@ -93,6 +107,17 @@ export async function startTestServer(config?: Partial<Config>): Promise<TestSer
     stdout: 'pipe',
     stderr: 'pipe',
   });
+
+  // Check if process exits immediately
+  const earlyExitPromise = new Promise<void>((resolve) => {
+    proc.exited.then((code) => {
+      console.error(`[E2E] Server process exited early with code: ${code}`);
+      resolve();
+    });
+  });
+
+  // Give process a moment to start or fail
+  await Promise.race([earlyExitPromise, new Promise((r) => setTimeout(r, 500))]);
 
   // Capture server output for debugging
   let stdout = '';
