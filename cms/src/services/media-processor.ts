@@ -5,7 +5,7 @@
 
 import { Context, Effect, Layer, Queue } from 'effect';
 
-import { DatabaseError, ImageProcessingError, StorageError } from '../errors';
+// Import errors from errors.ts as needed
 import type { MediaUrls } from '../types';
 import { DbService } from './db.service';
 import { ImageService } from './image.service';
@@ -42,7 +42,7 @@ export const makeMediaProcessorQueue = Effect.gen(function* () {
   const imageService = yield* ImageService;
   const storage = yield* StorageService;
 
-  const queue = yield* Queue.unbounded<MediaProcessingJob>();
+  const queue = yield* Queue.bounded<MediaProcessingJob>(100);
 
   const updateStatus = (
     mediaId: string,

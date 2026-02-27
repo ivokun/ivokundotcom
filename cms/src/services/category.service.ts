@@ -2,7 +2,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
 import slugify from 'slugify';
 
-import { DatabaseError, NotFound, SlugConflict } from '../errors';
+import { DatabaseError, NotFound, SlugConflict, ValidationError } from '../errors';
 import type { Category, CategoryUpdate, NewCategory, PaginatedResponse } from '../types';
 import { DbService } from './db.service';
 
@@ -16,7 +16,7 @@ export class CategoryService extends Context.Tag('CategoryService')<
       id: string,
       data: CategoryUpdate
     ) => Effect.Effect<Category, DatabaseError | NotFound | SlugConflict>;
-    readonly delete: (id: string) => Effect.Effect<void, DatabaseError | NotFound>;
+    readonly delete: (id: string) => Effect.Effect<void, DatabaseError | NotFound | ValidationError>;
     readonly findById: (id: string) => Effect.Effect<Category, DatabaseError | NotFound>;
     readonly findBySlug: (slug: string) => Effect.Effect<Category, DatabaseError | NotFound>;
     readonly findAll: (options?: {
@@ -123,13 +123,32 @@ export const makeCategoryService = Effect.gen(function* () {
 
   const delete_ = (id: string) =>
     Effect.gen(function* () {
-      const result = yield* query('delete_category', (db) =>
-        db.deleteFrom('categories').where('id', '=', id).executeTakeFirst()
+      // Verify category exists
+      yield* findById(id);
+
+      // Check if any posts reference this category
+      const postsUsingCategory = yield* query('check_category_usage', (db) =>
+        db
+          .selectFrom('posts')
+          .select((eb) => eb.fn.count<string>('id').as('count'))
+          .where('category_id', '=', id)
+          .executeTakeFirstOrThrow()
       );
 
-      if (Number(result.numDeletedRows) === 0) {
-        return yield* Effect.fail(new NotFound({ resource: 'Category', id }));
+      if (Number(postsUsingCategory.count) > 0) {
+        return yield* Effect.fail(
+          new ValidationError({
+            errors: [{
+              path: 'category_id',
+              message: `Cannot delete category: ${postsUsingCategory.count} post(s) still reference it`,
+            }],
+          })
+        );
       }
+
+      yield* query('delete_category', (db) =>
+        db.deleteFrom('categories').where('id', '=', id).executeTakeFirst()
+      );
     });
 
   const findAll = (options?: { limit?: number; offset?: number }) =>

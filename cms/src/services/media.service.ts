@@ -9,6 +9,25 @@ import { MediaProcessorQueue } from './media-processor';
 import { StorageService } from './storage.service';
 
 // =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/** Sanitize filename to prevent path traversal and hidden files */
+const sanitizeFilename = (filename: string): string => {
+  // Remove path separators and traversal sequences
+  const safe = filename.replace(/[/\\]/g, '-').replace(/^\.+/, '');
+  // Limit length and provide fallback
+  return safe.slice(0, 255) || 'unnamed';
+};
+
+// =============================================================================
 // SERVICE INTERFACE
 // =============================================================================
 
@@ -29,7 +48,7 @@ export class MediaService extends Context.Tag('MediaService')<
       alt?: string;
     }) => Effect.Effect<PresignedUploadResult, DatabaseError | StorageError | ValidationError>;
     /** Called after the browser finishes uploading — enqueues image processing */
-    readonly confirmUpload: (mediaId: string) => Effect.Effect<Media, DatabaseError | NotFound>;
+    readonly confirmUpload: (mediaId: string) => Effect.Effect<Media, DatabaseError | NotFound | ValidationError>;
     readonly update: (
       id: string,
       data: MediaUpdate
@@ -64,9 +83,11 @@ export const makeMediaService = Effect.gen(function* () {
     );
 
   const findByIds = (ids: string[]) =>
-    query('find_media_by_ids', (db) =>
-      db.selectFrom('media').selectAll().where('id', 'in', ids).execute()
-    );
+    ids.length === 0
+      ? Effect.succeed([])
+      : query('find_media_by_ids', (db) =>
+          db.selectFrom('media').selectAll().where('id', 'in', ids).execute()
+        );
 
   const initUpload = (params: {
     filename: string;
@@ -75,16 +96,26 @@ export const makeMediaService = Effect.gen(function* () {
     alt?: string;
   }) =>
     Effect.gen(function* () {
-      if (!params.contentType.startsWith('image/')) {
+      // Validate MIME type against allowlist
+      if (!ALLOWED_MIME_TYPES.includes(params.contentType.toLowerCase())) {
         return yield* Effect.fail(
           new ValidationError({
-            errors: [{ path: 'contentType', message: 'Only image uploads are supported' }],
+            errors: [{ path: 'contentType', message: `Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}` }],
+          })
+        );
+      }
+
+      // Validate file size
+      if (params.size > MAX_FILE_SIZE) {
+        return yield* Effect.fail(
+          new ValidationError({
+            errors: [{ path: 'size', message: 'Maximum file size is 50MB' }],
           })
         );
       }
 
       const id = createId();
-      const uploadKey = `uploads/${id}/${params.filename}`;
+      const uploadKey = `uploads/${id}/${sanitizeFilename(params.filename)}`;
 
       // Generate presigned PUT URL
       const uploadUrl = yield* storage.getPresignedUploadUrl(uploadKey, params.contentType);
@@ -117,7 +148,9 @@ export const makeMediaService = Effect.gen(function* () {
 
       if (media.status !== 'uploading') {
         return yield* Effect.fail(
-          new NotFound({ resource: 'Media', id: mediaId })
+          new ValidationError({
+            errors: [{ path: 'status', message: `Media is in '${media.status}' state, expected 'uploading'` }],
+          })
         );
       }
 
@@ -166,11 +199,15 @@ export const makeMediaService = Effect.gen(function* () {
       const media = yield* findById(id);
 
       // Delete processed variants
-      yield* imageService.deleteVariants(id).pipe(Effect.catchAll(() => Effect.void));
+      yield* imageService.deleteVariants(id).pipe(
+        Effect.catchAll((error) => Effect.logWarning(`Failed to delete image variants for media ${id}: ${error}`))
+      );
 
       // Delete original upload
       if (media.upload_key) {
-        yield* storage.delete(media.upload_key).pipe(Effect.catchAll(() => Effect.void));
+        yield* storage.delete(media.upload_key).pipe(
+          Effect.catchAll((error) => Effect.logWarning(`Failed to delete upload for media ${id}: ${error}`))
+        );
       }
 
       // Delete from DB
