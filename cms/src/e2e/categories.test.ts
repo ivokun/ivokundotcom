@@ -59,8 +59,8 @@ describe('Categories E2E', () => {
     });
 
     expect(response.status).toBe(200);
-    const categories = await response.json();
-    expect(Array.isArray(categories)).toBe(true);
+    const result = await response.json();
+    expect(Array.isArray(result.data)).toBe(true);
   });
 
   test('updates category', async () => {

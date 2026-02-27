@@ -62,9 +62,9 @@ describe('Posts E2E', () => {
     });
 
     expect(response.status).toBe(200);
-    const posts = await response.json();
-    expect(Array.isArray(posts)).toBe(true);
-    expect(posts.length).toBeGreaterThanOrEqual(1);
+    const result = await response.json();
+    expect(Array.isArray(result.data)).toBe(true);
+    expect(result.data.length).toBeGreaterThanOrEqual(1);
   });
 
   test('gets post by ID', async () => {
