@@ -4,13 +4,14 @@
  * Tests CRUD operations for categories including deletion constraints.
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'bun:test';
+import { afterAll, beforeAll, beforeEach,describe, expect, test } from 'bun:test';
+
 import {
-  startTestServer,
-  stopTestServer,
+  apiClient,
   cleanDatabase,
   createTestUser,
-  apiClient,
+  startTestServer,
+  stopTestServer,
 } from '../test/e2e-setup';
 import { categoryFixtures, postFixtures, validators } from '../test/fixtures';
 
@@ -19,17 +20,17 @@ describe('Categories E2E', () => {
 
   beforeAll(async () => {
     await startTestServer();
-  });
+  }, 60000);
 
   afterAll(async () => {
     await stopTestServer();
-  });
+  }, 10000);
 
   beforeEach(async () => {
     await cleanDatabase();
     const { sessionCookie } = await createTestUser();
     adminSession = sessionCookie;
-  });
+  }, 10000);
 
   describe('POST /admin/api/categories', () => {
     test('creates a new category with 201 status', async () => {

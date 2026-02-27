@@ -4,14 +4,15 @@
  * Tests CRUD operations for posts including publishing workflow.
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'bun:test';
+import { afterAll, beforeAll, beforeEach,describe, expect, test } from 'bun:test';
+
 import {
+  apiClient,
+  cleanDatabase,
+  createTestApiKey,
+  createTestUser,
   startTestServer,
   stopTestServer,
-  cleanDatabase,
-  createTestUser,
-  createTestApiKey,
-  apiClient,
 } from '../test/e2e-setup';
 import { postFixtures, validators } from '../test/fixtures';
 
@@ -20,17 +21,17 @@ describe('Posts E2E', () => {
 
   beforeAll(async () => {
     await startTestServer();
-  });
+  }, 60000);
 
   afterAll(async () => {
     await stopTestServer();
-  });
+  }, 10000);
 
   beforeEach(async () => {
     await cleanDatabase();
     const { sessionCookie } = await createTestUser('Test Admin');
     adminSession = sessionCookie;
-  });
+  }, 10000);
 
   describe('POST /admin/api/posts', () => {
     test('creates a new post with 201 status', async () => {

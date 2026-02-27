@@ -4,28 +4,29 @@
  * Tests authentication flows including login, logout, and rate limiting.
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'bun:test';
+import { afterAll, beforeAll, beforeEach,describe, expect, test } from 'bun:test';
+
 import {
-  startTestServer,
-  stopTestServer,
+  apiClient,
   cleanDatabase,
   createTestUser,
-  apiClient,
   getTestBaseUrl,
+  startTestServer,
+  stopTestServer,
 } from '../test/e2e-setup';
 
 describe('Auth E2E', () => {
   beforeAll(async () => {
     await startTestServer();
-  });
+  }, 60000);
 
   afterAll(async () => {
     await stopTestServer();
-  });
+  }, 10000);
 
   beforeEach(async () => {
     await cleanDatabase();
-  });
+  }, 10000);
 
   describe('POST /admin/api/login', () => {
     test('returns 200 and sets session cookie on valid credentials', async () => {

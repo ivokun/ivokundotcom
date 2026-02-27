@@ -4,13 +4,14 @@
  * Tests API key management and authentication.
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'bun:test';
+import { afterAll, beforeAll, beforeEach,describe, expect, test } from 'bun:test';
+
 import {
-  startTestServer,
-  stopTestServer,
+  apiClient,
   cleanDatabase,
   createTestUser,
-  apiClient,
+  startTestServer,
+  stopTestServer,
 } from '../test/e2e-setup';
 import { apiKeyFixtures, validators } from '../test/fixtures';
 
@@ -19,17 +20,17 @@ describe('API Keys E2E', () => {
 
   beforeAll(async () => {
     await startTestServer();
-  });
+  }, 60000);
 
   afterAll(async () => {
     await stopTestServer();
-  });
+  }, 10000);
 
   beforeEach(async () => {
     await cleanDatabase();
     const { sessionCookie } = await createTestUser();
     adminSession = sessionCookie;
-  });
+  }, 10000);
 
   describe('POST /admin/api/api-keys', () => {
     test('creates API key and returns plaintext only once', async () => {

@@ -9,6 +9,7 @@
  */
 
 import { spawn, type Subprocess } from 'bun';
+
 import type { Config } from '../types';
 
 // =============================================================================
