@@ -12,6 +12,7 @@ import {
   HttpServerResponse,
 } from '@effect/platform';
 import { BunHttpServer, BunRuntime } from '@effect/platform-bun';
+import { createId } from '@paralleldrive/cuid2';
 import { Console, Effect, Layer, ParseResult, Redacted, Schema } from 'effect';
 
 import { AppConfig, AppConfigLive } from './config';
@@ -919,7 +920,7 @@ const adminMiscRouter = HttpRouter.empty.pipe(
         db
           .insertInto('api_keys')
           .values({
-            id: crypto.randomUUID(),
+            id: createId(),
             name: body.name,
             prefix: result.prefix,
             key_hash: keyHash,

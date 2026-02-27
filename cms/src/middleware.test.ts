@@ -67,34 +67,30 @@ describe('Middleware', () => {
       expect(result.status).toBe(200);
     });
 
-    it('should fail with missing cookie', async () => {
+    it('should return 401 with missing cookie', async () => {
       const authLayer = makeMockAuthService();
       const reqLayer = makeMockRequest({});
 
       const program = sessionMiddleware(Effect.succeed(HttpServerResponse.text('success')));
 
-      const result = await Effect.runPromiseExit(
+      const result = await Effect.runPromise(
         program.pipe(Effect.provide(authLayer), Effect.provide(reqLayer))
       );
 
-      expect(Exit.isFailure(result)).toBe(true);
-      if (Exit.isFailure(result)) {
-        // @ts-ignore
-        expect(result.cause.error._tag).toBe('InvalidCredentials');
-      }
+      expect(result.status).toBe(401);
     });
 
-    it('should fail with expired session', async () => {
+    it('should return 401 with expired session', async () => {
       const authLayer = makeMockAuthService(() => Effect.fail(new SessionExpired({ message: 'Expired' })));
       const reqLayer = makeMockRequest({ session: 'expired' });
 
       const program = sessionMiddleware(Effect.succeed(HttpServerResponse.text('success')));
 
-      const result = await Effect.runPromiseExit(
+      const result = await Effect.runPromise(
         program.pipe(Effect.provide(authLayer), Effect.provide(reqLayer))
       );
 
-      expect(Exit.isFailure(result)).toBe(true);
+      expect(result.status).toBe(401);
     });
   });
 

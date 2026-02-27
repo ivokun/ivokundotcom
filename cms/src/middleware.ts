@@ -89,7 +89,10 @@ export const sessionMiddleware = HttpMiddleware.make((app) =>
     const sessionId = request.cookies['session'];
 
     if (!sessionId) {
-      return yield* Effect.fail(new InvalidCredentials({ message: 'Missing session cookie' }));
+      return yield* HttpServerResponse.json(
+        { error: 'InvalidCredentials', message: 'Missing session cookie' },
+        { status: 401 }
+      );
     }
 
     const session = yield* authService.validateSession(sessionId).pipe(
@@ -101,7 +104,14 @@ export const sessionMiddleware = HttpMiddleware.make((app) =>
 
     // Provide session to the app
     return yield* app.pipe(Effect.provideService(UserContext, { session }));
-  })
+  }).pipe(
+    Effect.catchTag('SessionExpired', () =>
+      HttpServerResponse.json(
+        { error: 'SessionExpired', message: 'Session expired' },
+        { status: 401 }
+      )
+    )
+  )
 );
 
 // =============================================================================

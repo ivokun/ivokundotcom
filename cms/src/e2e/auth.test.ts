@@ -63,7 +63,7 @@ describe('Auth E2E', () => {
 
     // Logout
     const logoutResponse = await apiClient.post('/admin/api/logout', {}, { session: sessionCookie });
-    expect(logoutResponse.status).toBe(200);
+    expect(logoutResponse.status).toBe(204);
 
     // Verify session is invalidated
     const meResponse2 = await apiClient.get('/admin/api/me', { session: sessionCookie });
