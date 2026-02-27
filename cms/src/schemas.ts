@@ -197,7 +197,7 @@ export type Gallery = typeof Gallery.Type;
 export const GalleryImageInput = Schema.Struct({
   id: Schema.optional(Schema.String),
   mediaId: Cuid2,
-  order: Schema.Number,
+  order: Schema.Number.pipe(Schema.int(), Schema.nonNegative(), Schema.lessThanOrEqualTo(10000)),
 });
 export type GalleryImageInput = typeof GalleryImageInput.Type;
 
@@ -312,9 +312,12 @@ const NumberFromString = Schema.transform(
   }
 );
 
+/** Maximum allowed limit for pagination queries */
+const MAX_PAGE_LIMIT = 100;
+
 export const ListQueryParams = Schema.Struct({
   limit: Schema.optionalWith(
-    NumberFromString.pipe(Schema.int(), Schema.positive()),
+    NumberFromString.pipe(Schema.int(), Schema.positive(), Schema.lessThanOrEqualTo(MAX_PAGE_LIMIT)),
     { default: () => 20 }
   ),
   offset: Schema.optionalWith(
@@ -344,9 +347,17 @@ export type LoginInput = typeof LoginInput.Type;
 
 export const LoginResponse = Schema.Struct({
   user: User,
-  session_id: Cuid2,
 });
 export type LoginResponse = typeof LoginResponse.Type;
+
+// =============================================================================
+// MEDIA MANAGEMENT SCHEMAS
+// =============================================================================
+
+export const UpdateMediaInput = Schema.Struct({
+  alt: Schema.optional(Schema.String),
+});
+export type UpdateMediaInput = typeof UpdateMediaInput.Type;
 
 // =============================================================================
 // USER MANAGEMENT SCHEMAS

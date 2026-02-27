@@ -95,7 +95,7 @@ export interface MediaTable {
   urls: ColumnType<MediaUrls | null, MediaUrls | null, MediaUrls | null>;
   width: number | null;
   height: number | null;
-  status: ColumnType<MediaStatus, MediaStatus, MediaStatus>;
+  status: ColumnType<MediaStatus, MediaStatus | undefined, MediaStatus>;
   upload_key: string | null;
   created_at: Generated<Date>;
 }
@@ -137,7 +137,7 @@ export interface GalleriesTable {
   title: string;
   slug: string;
   description: string | null;
-  images: ColumnType<string[], string[], string[]>;
+  images: ColumnType<string[], string[] | undefined, string[]>;
   category_id: string | null;
   status: Status;
   published_at: Date | null;
