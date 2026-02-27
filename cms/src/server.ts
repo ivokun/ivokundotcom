@@ -12,18 +12,17 @@ import {
   HttpServerResponse,
 } from '@effect/platform';
 import { BunHttpServer, BunRuntime } from '@effect/platform-bun';
-import { Cause, Console, Effect, Layer, ParseResult, Redacted, Schema } from 'effect';
+import { Console, Effect, Layer, ParseResult, Redacted, Schema } from 'effect';
 
 import { AppConfig, AppConfigLive } from './config';
 import {
-  type AppError,
   isAppError,
   NotFound,
   toHttpStatus,
   toJsonResponse,
   ValidationError,
 } from './errors';
-import { apiKeyMiddleware, sessionMiddleware, UserContext } from './middleware';
+import { apiKeyMiddleware, loginRateLimitMiddleware, sessionMiddleware, UserContext } from './middleware';
 import {
   CreateApiKeyInput,
   CreateCategoryInput,
@@ -37,6 +36,7 @@ import {
   UpdateCategoryInput,
   UpdateGalleryInput,
   UpdateHomeInput,
+  UpdateMediaInput,
   UpdatePostInput,
 } from './schemas';
 // Service Imports
@@ -47,14 +47,120 @@ import { GalleryService, GalleryServiceLive } from './services/gallery.service';
 import { HomeService, HomeServiceLive } from './services/home.service';
 import { ImageServiceLive } from './services/image.service';
 import { MediaService, MediaServiceLive } from './services/media.service';
-import {
-  MediaProcessorQueue,
-  MediaProcessorQueueLive,
-} from './services/media-processor';
+import { MediaProcessorQueueLive } from './services/media-processor';
 import { PostService, PostServiceLive } from './services/post.service';
 import { makeR2StorageService, StorageService } from './services/storage.service';
 import { UserService, UserServiceLive } from './services/user.service';
 import type { Home, TipTapDocument } from './types';
+
+// =============================================================================
+// EXPORTS FOR TESTING
+// =============================================================================
+
+/**
+ * Create the CMS application layer with custom configuration.
+ * Used by E2E tests to create isolated server instances.
+ *
+ * @example
+ * ```typescript
+ * // Create app with test database
+ * const testApp = createAppLayer({
+ *   databaseUrl: 'postgres://test@localhost/test_db'
+ * });
+ *
+ * // Launch the server
+ * yield* Layer.launch(testApp);
+ * ```
+ */
+export const createAppLayer = (
+  config?: Partial<{
+    port: number;
+    databaseUrl: string;
+    sessionSecret: string;
+    r2: {
+      accessKeyId: string;
+      secretAccessKey: string;
+      endpoint: string;
+      bucket: string;
+      publicUrl: string;
+    };
+    corsOrigin?: string;
+  }>
+): Layer.Layer<never, unknown, never> => {
+  // Determine environment
+  const nodeEnv = process.env['NODE_ENV'] ?? 'development';
+
+  // Build config layer with defaults merged with provided config
+  const configValue = {
+    port: config?.port ?? 3000,
+    nodeEnv,
+    isDevelopment: nodeEnv === 'development',
+    isProduction: nodeEnv === 'production',
+    databaseUrl: Redacted.make(
+      config?.databaseUrl ??
+        process.env['DATABASE_URL'] ??
+        'postgres://postgres:postgres@localhost:5432/ivokundotcom_dev?sslmode=disable'
+    ),
+    sessionSecret: Redacted.make(
+      config?.sessionSecret ??
+        process.env['SESSION_SECRET'] ??
+        'dev-secret-min-32-chars-long!!!'
+    ),
+    r2: {
+      accessKeyId: Redacted.make(
+        config?.r2?.accessKeyId ?? process.env['R2_ACCESS_KEY_ID'] ?? ''
+      ),
+      secretAccessKey: Redacted.make(
+        config?.r2?.secretAccessKey ?? process.env['R2_ACCESS_SECRET'] ?? ''
+      ),
+      endpoint: config?.r2?.endpoint ?? process.env['R2_ENDPOINT'] ?? '',
+      bucket: config?.r2?.bucket ?? process.env['R2_BUCKET'] ?? '',
+      publicUrl: config?.r2?.publicUrl ?? process.env['R2_PUBLIC_URL'] ?? '',
+    },
+    corsOrigin: config?.corsOrigin ?? process.env['CORS_ORIGIN'] ?? '*',
+  };
+
+  const ConfigLive = Layer.succeed(AppConfig, configValue as unknown as AppConfig);
+
+  // Build all layers with the config
+  const DbWithConfig = DbLive.pipe(Layer.provide(ConfigLive));
+  const StorageWithConfig = StorageLive.pipe(Layer.provide(ConfigLive));
+  const ImageWithStorage = ImageServiceLive.pipe(Layer.provide(StorageWithConfig));
+  const ProcessorQueueWithDeps = MediaProcessorQueueLive.pipe(
+    Layer.provide(DbWithConfig),
+    Layer.provide(ImageWithStorage),
+    Layer.provide(StorageWithConfig)
+  );
+  const MediaWithDeps = MediaServiceLive.pipe(
+    Layer.provide(DbWithConfig),
+    Layer.provide(ImageWithStorage),
+    Layer.provide(StorageWithConfig),
+    Layer.provide(ProcessorQueueWithDeps)
+  );
+
+  const AllServices = Layer.mergeAll(
+    ConfigLive,
+    DbWithConfig,
+    StorageWithConfig,
+    ImageWithStorage,
+    ProcessorQueueWithDeps,
+    MediaWithDeps,
+    CategoryServiceLive.pipe(Layer.provide(DbWithConfig)),
+    PostServiceLive.pipe(Layer.provide(DbWithConfig)),
+    GalleryServiceLive.pipe(Layer.provide(DbWithConfig), Layer.provide(MediaWithDeps)),
+    HomeServiceLive.pipe(Layer.provide(DbWithConfig)),
+    AuthServiceLive.pipe(Layer.provide(DbWithConfig)),
+    UserServiceLive.pipe(Layer.provide(DbWithConfig))
+  );
+
+  // Create server with the configured port
+  const ServerLive = BunHttpServer.layer({ port: configValue.port });
+
+  return serverEffect.pipe(
+    Layer.provide(ServerLive),
+    Layer.provide(AllServices)
+  );
+};
 
 // =============================================================================
 // HELPERS
@@ -125,12 +231,35 @@ const defaultHome: Home = {
 };
 
 // =============================================================================
+// SECURITY HEADERS
+// =============================================================================
+
+const isProduction = process.env.NODE_ENV === 'production';
+
+const applySecurityHeaders = (
+  response: HttpServerResponse.HttpServerResponse
+): HttpServerResponse.HttpServerResponse => {
+  let result = response;
+  result = HttpServerResponse.setHeader(result, 'X-Content-Type-Options', 'nosniff');
+  result = HttpServerResponse.setHeader(result, 'X-Frame-Options', 'DENY');
+  result = HttpServerResponse.setHeader(result, 'Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (isProduction) {
+    result = HttpServerResponse.setHeader(
+      result,
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains'
+    );
+  }
+  return result;
+};
+
+// =============================================================================
 // ERROR HANDLING
 // =============================================================================
 
 const errorHandler = HttpMiddleware.make((app) =>
   Effect.matchEffect(app, {
-    onSuccess: (response) => Effect.succeed(response),
+    onSuccess: (response) => Effect.succeed(applySecurityHeaders(response)),
     onFailure: (error: unknown) => {
       if (isAppError(error)) {
         const status = toHttpStatus(error);
@@ -266,6 +395,7 @@ const publicRouter = HttpRouter.empty.pipe(
 // =============================================================================
 
 const authRouter = HttpRouter.empty.pipe(
+  HttpRouter.use(loginRateLimitMiddleware),
   HttpRouter.post(
     '/admin/api/login',
     Effect.gen(function* () {
@@ -275,7 +405,7 @@ const authRouter = HttpRouter.empty.pipe(
       const user = yield* authService.validateCredentials(body.email, body.password);
       const session = yield* authService.createSession(user.id);
 
-      const response = yield* HttpServerResponse.json({ user, session_id: session.id });
+      const response = yield* HttpServerResponse.json({ user });
 
       const isProduction = process.env.NODE_ENV === 'production';
       const cookieValue = `session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}${isProduction ? '; Secure' : ''}`;
@@ -393,7 +523,7 @@ const adminPostRouter = HttpRouter.empty.pipe(
         read_time_minute: null,
         published_at: null,
       });
-      return yield* HttpServerResponse.json(post);
+      return yield* HttpServerResponse.json(post, { status: 201 });
     })
   ),
   HttpRouter.get(
@@ -482,7 +612,7 @@ const adminCategoryRouter = HttpRouter.empty.pipe(
         slug: body.slug,
         description: toNullable(body.description),
       });
-      return yield* HttpServerResponse.json(category);
+      return yield* HttpServerResponse.json(category, { status: 201 });
     })
   ),
   HttpRouter.get(
@@ -564,7 +694,7 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
         status: 'draft',
         published_at: null,
       });
-      return yield* HttpServerResponse.json(gallery);
+      return yield* HttpServerResponse.json(gallery, { status: 201 });
     })
   ),
   HttpRouter.get(
@@ -694,14 +824,7 @@ const adminMiscRouter = HttpRouter.empty.pipe(
     Effect.gen(function* () {
       const req = yield* HttpServerRequest.HttpServerRequest;
       const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
-      const body = yield* Effect.flatMap(
-        req.json,
-        Schema.decodeUnknown(
-          Schema.Struct({
-            alt: Schema.optional(Schema.String),
-          })
-        )
-      );
+      const body = yield* decodeBody(UpdateMediaInput)(req);
       const mediaService = yield* MediaService;
       const media = yield* mediaService.update(id, { alt: body.alt });
       return yield* HttpServerResponse.json(media);
@@ -765,14 +888,17 @@ const adminMiscRouter = HttpRouter.empty.pipe(
     Effect.gen(function* () {
       const { query } = yield* DbService;
       const keys = yield* query('list_api_keys', (db) =>
-        db.selectFrom('api_keys').selectAll().orderBy('created_at', 'desc').execute()
+        db
+          .selectFrom('api_keys')
+          .select(['id', 'name', 'prefix', 'last_used_at', 'created_at'])
+          .orderBy('created_at', 'desc')
+          .execute()
       );
       // Transform snake_case to camelCase for frontend
-      const transformedKeys = keys.map(key => ({
+      const transformedKeys = keys.map((key) => ({
         id: key.id,
         name: key.name,
         prefix: key.prefix,
-        keyHash: key.key_hash,
         lastUsedAt: key.last_used_at,
         createdAt: key.created_at,
       }));
@@ -808,7 +934,6 @@ const adminMiscRouter = HttpRouter.empty.pipe(
         id: apiKey.id,
         name: apiKey.name,
         prefix: apiKey.prefix,
-        keyHash: apiKey.key_hash,
         lastUsedAt: apiKey.last_used_at,
         createdAt: apiKey.created_at,
         key: result.key, // Include the plaintext key (only returned once)
@@ -1053,4 +1178,7 @@ const program = Effect.gen(function* () {
   return yield* Layer.launch(AppLive);
 });
 
-BunRuntime.runMain(program);
+// Only start server if this file is run directly (not imported)
+if (import.meta.main) {
+  BunRuntime.runMain(program);
+}

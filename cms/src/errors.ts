@@ -34,7 +34,7 @@ export class NotFound extends Data.TaggedError('NotFound')<{
   readonly id: string | number;
 }> {
   get message(): string {
-    return `${this.resource} with id ${this.id} not found`;
+    return `${this.resource} '${this.id}' not found`;
   }
 }
 
