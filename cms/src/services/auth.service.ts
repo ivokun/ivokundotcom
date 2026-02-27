@@ -9,7 +9,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
 
 import { DatabaseError, InvalidCredentials, SessionExpired } from '../errors';
-import type { NewSession, NewUser, Session, User } from '../types';
+import type { NewSession, Session, User } from '../types';
 import { DbService } from './db.service';
 
 // =============================================================================
@@ -25,6 +25,10 @@ const ARGON2_OPTIONS = {
   parallelism: 4,
   outputLen: 32,
 };
+
+// Dummy hash for timing attack prevention (generated from empty string with ARGON2_OPTIONS)
+// This ensures constant-time execution during credential validation
+const DUMMY_HASH = '$argon2id$v=19$m=65536,t=3,p=4$UBB4LKVZeEzBdOrNM7gWsw$7gAP8+6ZUenK0lM5lU8i6u4d8f3q2x1v0b9n5m7k4j2h1g0f';
 
 // =============================================================================
 // SERVICE INTERFACE
@@ -130,6 +134,8 @@ export const makeAuthService = Effect.gen(function* () {
       );
 
       if (!user) {
+        // Perform dummy verification to prevent timing attacks
+        yield* verifyPassword(DUMMY_HASH, password).pipe(Effect.catchAll(() => Effect.void));
         return yield* Effect.fail(new InvalidCredentials({ message: 'Invalid email or password' }));
       }
 
@@ -140,6 +146,7 @@ export const makeAuthService = Effect.gen(function* () {
       }
 
       // Return user without password_hash
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password_hash: _, ...safeUser } = user;
       return safeUser as User;
     });

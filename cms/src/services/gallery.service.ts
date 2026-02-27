@@ -5,7 +5,6 @@ import slugify from 'slugify';
 
 import { DatabaseError, NotFound, SlugConflict } from '../errors';
 import type {
-  Gallery,
   GalleryUpdate,
   GalleryWithCategory,
   GalleryWithImages,
@@ -227,6 +226,7 @@ export const makeGalleryService = Effect.gen(function* () {
             // does not automatically serialise JS arrays to JSONB – it
             // sends a PostgreSQL array literal instead, which either
             // errors or silently stores the wrong value (e.g. `{}` for `[]`).
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             images: sql`${imagesJson}::jsonb` as any,
             category_id: data.category_id ?? null,
             status: data.status,
@@ -297,6 +297,7 @@ export const makeGalleryService = Effect.gen(function* () {
 
         if (rawImages !== undefined) {
           const imagesJson = JSON.stringify(rawImages);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           q = q.set({ images: sql`${imagesJson}::jsonb` } as any);
         }
 

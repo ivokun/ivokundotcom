@@ -3,7 +3,7 @@
  * @see PRD Appendix 16.2 - Environment Variables
  */
 
-import { Config, ConfigError, Effect, Layer, Redacted } from 'effect';
+import { Config, Effect } from 'effect';
 
 // =============================================================================
 // CONFIGURATION SCHEMA

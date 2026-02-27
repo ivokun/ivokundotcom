@@ -5,6 +5,7 @@ import slugify from 'slugify';
 import { DatabaseError, NotFound, SlugConflict } from '../errors';
 import type {
   Locale,
+  MediaStatus,
   NewPost,
   PaginatedResponse,
   Post,
@@ -20,6 +21,45 @@ export interface PostFilter {
   status?: Status;
   categoryId?: string;
   search?: string;
+}
+
+/**
+ * Raw query result with aliased columns from joins.
+ * Kysely doesn't automatically type aliased columns in the result.
+ */
+interface PostQueryResult {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: unknown;
+  featured_image: string | null;
+  read_time_minute: number | null;
+  category_id: string | null;
+  locale: Locale;
+  status: Status;
+  published_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+  // Category fields (aliased)
+  cat_id: string | null;
+  cat_name: string | null;
+  cat_slug: string | null;
+  cat_desc: string | null;
+  cat_created_at: Date | null;
+  cat_updated_at: Date | null;
+  // Media fields (aliased)
+  media_id: string | null;
+  media_filename: string | null;
+  media_mime_type: string | null;
+  media_size: number | null;
+  media_alt: string | null;
+  media_urls: unknown;
+  media_width: number | null;
+  media_height: number | null;
+  media_status: MediaStatus | null;
+  media_upload_key: string | null;
+  media_created_at: Date | null;
 }
 
 export class PostService extends Context.Tag('PostService')<
@@ -122,8 +162,8 @@ export const makePostService = Effect.gen(function* () {
               urls: result.media_urls ?? null,
               width: result.media_width ?? null,
               height: result.media_height ?? null,
-              status: (result as any).media_status ?? 'ready',
-              upload_key: (result as any).media_upload_key ?? null,
+              status: (result as PostQueryResult).media_status ?? 'ready',
+              upload_key: (result as PostQueryResult).media_upload_key ?? null,
               created_at: result.media_created_at!,
             }
           : null;
@@ -218,8 +258,8 @@ export const makePostService = Effect.gen(function* () {
               urls: result.media_urls ?? null,
               width: result.media_width ?? null,
               height: result.media_height ?? null,
-              status: (result as any).media_status ?? 'ready',
-              upload_key: (result as any).media_upload_key ?? null,
+              status: (result as PostQueryResult).media_status ?? 'ready',
+              upload_key: (result as PostQueryResult).media_upload_key ?? null,
               created_at: result.media_created_at!,
             }
           : null;
@@ -463,8 +503,8 @@ export const makePostService = Effect.gen(function* () {
               urls: row.media_urls ?? null,
               width: row.media_width ?? null,
               height: row.media_height ?? null,
-              status: (row as any).media_status ?? 'ready',
-              upload_key: (row as any).media_upload_key ?? null,
+              status: (row as PostQueryResult).media_status ?? 'ready',
+              upload_key: (row as PostQueryResult).media_upload_key ?? null,
               created_at: row.media_created_at!,
             }
           : null;

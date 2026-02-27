@@ -3,7 +3,7 @@
  * @see PRD Section 5.1 - DbService layer
  */
 
-import { Context, Effect, Layer, Scope } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 
@@ -78,7 +78,7 @@ export const makeDbService = (connectionString: string) =>
         await db.destroy();
         try {
           await pool.end();
-        } catch (e) {
+        } catch {
           // Ignore if already closed by db.destroy()
         }
       })

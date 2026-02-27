@@ -51,6 +51,7 @@ export class StorageService extends Context.Tag('StorageService')<
 // =============================================================================
 
 export const makeR2StorageService = (config: StorageConfig) =>
+  // eslint-disable-next-line require-yield
   Effect.gen(function* () {
     const client = new S3Client({
       region: 'auto',
