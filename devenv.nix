@@ -101,6 +101,40 @@
     typecheck.exec = ''
       bun run typecheck
     '';
+
+    # E2E Testing commands
+    test-e2e.exec = ''
+      echo "Setting up E2E test database..."
+      DATABASE_URL="postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable" \
+        dbmate -d "./cms/db/migrations" up
+      
+      echo "Running E2E tests..."
+      cd cms && DATABASE_URL="postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable" \
+        SESSION_SECRET="test-secret-min-32-chars-long-for-e2e-only!!!" \
+        R2_ACCESS_KEY_ID="test" \
+        R2_ACCESS_SECRET="test" \
+        R2_ENDPOINT="http://localhost:9000" \
+        R2_BUCKET="test-bucket" \
+        R2_PUBLIC_URL="http://localhost:9000/test-bucket" \
+        bun test src/e2e/
+    '';
+    
+    test-e2e-watch.exec = ''
+      cd cms && DATABASE_URL="postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable" \
+        SESSION_SECRET="test-secret-min-32-chars-long-for-e2e-only!!!" \
+        R2_ACCESS_KEY_ID="test" \
+        R2_ACCESS_SECRET="test" \
+        R2_ENDPOINT="http://localhost:9000" \
+        R2_BUCKET="test-bucket" \
+        R2_PUBLIC_URL="http://localhost:9000/test-bucket" \
+        bun test --watch src/e2e/
+    '';
+    
+    test-unit.exec = ''
+      echo "Running unit tests..."
+      DATABASE_URL="postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable" \
+        bun --filter '@ivokundotcom/cms' test src/services/ src/middleware.test.ts src/schemas.test.ts src/errors.test.ts
+    '';
   };
 
   # Pre-commit hooks disabled for now - can be enabled later
@@ -115,12 +149,17 @@
   enterTest = ''
     echo "Installing dependencies..."
     bun install --frozen-lockfile
+    
     echo "Running CMS database migrations..."
     DATABASE_URL="postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable" \
       dbmate -d "./cms/db/migrations" up
-    echo "Running CMS tests..."
+    
+    echo "Running unit tests..."
     DATABASE_URL="postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable" \
-      bun --filter '@ivokundotcom/cms' test
+      bun --filter '@ivokundotcom/cms' test src/services/ src/middleware.test.ts src/schemas.test.ts src/errors.test.ts
+    
+    echo "Running E2E tests..."
+    test-e2e
   '';
 
   # Shell hook - runs when entering the environment
@@ -144,6 +183,12 @@
     echo "    dev            - Start SST dev environment"
     echo "    build          - Build all services"
     echo "    typecheck      - Run TypeScript type checking"
+    echo ""
+    echo "  Testing commands:"
+    echo "    test-unit      - Run unit tests only"
+    echo "    test-e2e       - Run E2E tests"
+    echo "    test-e2e-watch - Run E2E tests in watch mode"
+    echo "    devenv test    - Run all tests (unit + E2E)"
     echo ""
   '';
 
