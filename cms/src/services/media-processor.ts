@@ -9,6 +9,7 @@ import { Context, Effect, Layer, Queue } from 'effect';
 import type { MediaUrls } from '../types';
 import { DbService } from './db.service';
 import { ImageService } from './image.service';
+import { validateMagicBytes } from './media.service';
 import { StorageService } from './storage.service';
 
 // =============================================================================
@@ -63,6 +64,17 @@ export const makeMediaProcessorQueue = Effect.gen(function* () {
 
       // Download original from bucket
       const buffer = yield* storage.getObject(job.uploadKey);
+
+      // Validate magic bytes against declared MIME type - SEC-006
+      const bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+      const isValidMagic = validateMagicBytes(job.mimeType, bytes);
+      if (!isValidMagic) {
+        yield* Effect.logError(
+          `Magic bytes validation failed for ${job.mediaId}: declared ${job.mimeType}`
+        );
+        yield* updateStatus(job.mediaId, 'failed');
+        return;
+      }
 
       // Process image variants (creates webp variants and uploads them)
       const processed = yield* imageService.process(job.mediaId, buffer, job.filename);

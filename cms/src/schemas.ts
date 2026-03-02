@@ -355,6 +355,35 @@ export type LoginResponse = typeof LoginResponse.Type;
 // MEDIA MANAGEMENT SCHEMAS
 // =============================================================================
 
+/** Allowed MIME types for media uploads - SEC-005 */
+export const AllowedMimeType = Schema.Literal(
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'video/mp4',
+  'video/webm',
+  'application/pdf'
+);
+export type AllowedMimeType = typeof AllowedMimeType.Type;
+
+/** Maximum file size for uploads: 50MB - SEC-005 */
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+/** Media upload input schema with MIME type and size validation - SEC-005 */
+export const MediaUploadInput = Schema.Struct({
+  filename: Schema.String.pipe(Schema.minLength(1)),
+  contentType: AllowedMimeType,
+  size: Schema.Number.pipe(
+    Schema.int(),
+    Schema.positive(),
+    Schema.lessThanOrEqualTo(MAX_FILE_SIZE)
+  ),
+  alt: Schema.optional(Schema.String),
+});
+export type MediaUploadInput = typeof MediaUploadInput.Type;
+
 export const UpdateMediaInput = Schema.Struct({
   alt: Schema.optional(Schema.String),
 });

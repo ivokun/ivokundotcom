@@ -27,6 +27,7 @@ const mockMediaService = () =>
       findById: () => Effect.die('not implemented') as any,
       findByIds: () => Effect.succeed([]),
       findAll: () => Effect.die('not implemented') as any,
+      cleanupOrphanedUploads: () => Effect.succeed(0),
     })
   );
 

@@ -13,7 +13,7 @@ import {
 } from '@effect/platform';
 import { BunHttpServer, BunRuntime } from '@effect/platform-bun';
 import { createId } from '@paralleldrive/cuid2';
-import { Console, Effect, Layer, ParseResult, Redacted, Schema } from 'effect';
+import { Console, Duration, Effect, Layer, ParseResult, Redacted, Schema, Schedule } from 'effect';
 
 import { AppConfig, AppConfigLive } from './config';
 import {
@@ -36,6 +36,7 @@ import {
   ListQueryParams,
   Locale,
   LoginInput,
+  MediaUploadInput,
   PostListQueryParams,
   UpdateCategoryInput,
   UpdateGalleryInput,
@@ -907,17 +908,7 @@ const adminMiscRouter = HttpRouter.empty.pipe(
     '/admin/api/media/upload',
     Effect.gen(function* () {
       const req = yield* HttpServerRequest.HttpServerRequest;
-      const body = yield* Effect.flatMap(
-        req.json,
-        Schema.decodeUnknown(
-          Schema.Struct({
-            filename: Schema.String,
-            contentType: Schema.String,
-            size: Schema.Number,
-            alt: Schema.optional(Schema.String),
-          })
-        )
-      );
+      const body = yield* decodeBody(MediaUploadInput)(req);
 
       const mediaService = yield* MediaService;
       const result = yield* mediaService.initUpload({
@@ -1232,11 +1223,43 @@ const AllServices = Layer.mergeAll(
   UserWithDb
 );
 
+// =============================================================================
+// ORPHANED UPLOAD CLEANUP JOB (DATA-013)
+// =============================================================================
+
+/** Effect that cleans up orphaned uploads and logs any errors */
+const orphanedUploadCleanupJob = Effect.gen(function* () {
+  const mediaService = yield* MediaService;
+  const count = yield* mediaService.cleanupOrphanedUploads();
+  if (count > 0) {
+    yield* Effect.log(`Cleaned up ${count} orphaned uploads`);
+  }
+}).pipe(
+  Effect.catchAll((error) =>
+    Effect.logError(`Orphaned upload cleanup failed: ${error}`)
+  )
+);
+
+/** Scheduled cleanup job that runs every hour */
+const scheduledCleanupJob = Effect.repeat(
+  orphanedUploadCleanupJob,
+  Schedule.fixed(Duration.hours(1))
+);
+
 // Final app layer with server
 const AppLive = serverEffect.pipe(Layer.provide(ServerLive), Layer.provide(AllServices));
 
 const program = Effect.gen(function* () {
   yield* Console.log('Starting CMS server...');
+
+  // Start the cleanup job in the background (providing the same services as the server)
+  yield* scheduledCleanupJob.pipe(
+    Effect.provide(AllServices),
+    Effect.forkDaemon
+  );
+
+  yield* Effect.log('Orphaned upload cleanup job started (runs every hour)');
+
   return yield* Layer.launch(AppLive);
 });
 
