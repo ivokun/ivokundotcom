@@ -6,14 +6,18 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Toaster } from 'sonner'
 
+import { ErrorBoundary } from '~/admin/components/error-boundary'
+
 import { queryClient } from './lib/query-client'
 import { router } from './router'
 
 ReactDOM.createRoot(document.getElementById('admin-app')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-      <Toaster richColors position="top-right" />
-    </QueryClientProvider>
-  </React.StrictMode>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster richColors position="top-right" />
+      </QueryClientProvider>
+    </ErrorBoundary>
+  </React.StrictMode>,
 )

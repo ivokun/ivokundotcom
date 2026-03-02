@@ -120,28 +120,14 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleCreateKey} className="flex gap-2">
-              <Input 
-                placeholder="Key Name (e.g. Website Production)" 
+              <Input
+                placeholder="Key Name (e.g. Website Production)"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
               />
-              <Button 
-                type="button"
+              <Button
+                type="submit"
                 disabled={!newKeyName || createApiKey.isPending}
-                onClick={() => {
-                  if (!newKeyName) {
-                    toast.error('Please enter a key name')
-                    return
-                  }
-                  createApiKey.mutate({ name: newKeyName }, {
-                    onSuccess: (data) => {
-                      toast.success('API Key created - Copy it now, it will not be shown again!')
-                      setNewlyCreatedKey({ key: data.key, name: newKeyName })
-                      setNewKeyName('')
-                    },
-                    onError: (err) => toast.error(err.message)
-                  })
-                }}
               >
                 <Plus className="mr-2 h-4 w-4" />
                 {createApiKey.isPending ? 'Creating...' : 'Generate'}
