@@ -144,9 +144,22 @@ export const makeMediaService = Effect.gen(function* () {
 
   const confirmUpload = (mediaId: string) =>
     Effect.gen(function* () {
-      const media = yield* findById(mediaId);
+      // Atomically transition from 'uploading' to 'processing' in a single UPDATE.
+      // This prevents a race condition where two concurrent confirmUpload calls
+      // both pass a status check and both enqueue processing jobs.
+      const updated = yield* query('confirm_upload_atomic', (db) =>
+        db
+          .updateTable('media')
+          .set({ status: 'processing' as MediaStatus })
+          .where('id', '=', mediaId)
+          .where('status', '=', 'uploading' as MediaStatus)
+          .returningAll()
+          .executeTakeFirst()
+      );
 
-      if (media.status !== 'uploading') {
+      if (!updated) {
+        // Either media doesn't exist or it's not in 'uploading' state
+        const media = yield* findById(mediaId); // will throw NotFound if missing
         return yield* Effect.fail(
           new ValidationError({
             errors: [{ path: 'status', message: `Media is in '${media.status}' state, expected 'uploading'` }],
@@ -154,31 +167,21 @@ export const makeMediaService = Effect.gen(function* () {
         );
       }
 
-      if (!media.upload_key) {
+      if (!updated.upload_key) {
         return yield* Effect.fail(
           new NotFound({ resource: 'Media upload_key', id: mediaId })
         );
       }
 
-      // Mark as processing
-      yield* query('update_media_status', (db) =>
-        db
-          .updateTable('media')
-          .set({ status: 'processing' as MediaStatus })
-          .where('id', '=', mediaId)
-          .execute()
-      );
-
       // Enqueue background image processing
       yield* processorQueue.enqueue({
         mediaId,
-        uploadKey: media.upload_key,
-        filename: media.filename,
-        mimeType: media.mime_type,
+        uploadKey: updated.upload_key,
+        filename: updated.filename,
+        mimeType: updated.mime_type,
       });
 
-      // Return the current media record (status = processing)
-      return yield* findById(mediaId);
+      return updated;
     });
 
   const update = (id: string, data: MediaUpdate) =>
