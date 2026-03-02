@@ -106,10 +106,10 @@ export function CategoriesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
+              <TableHead scope="col">Name</TableHead>
+              <TableHead scope="col">Slug</TableHead>
+              <TableHead scope="col">Created At</TableHead>
+              <TableHead scope="col" className="w-[100px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

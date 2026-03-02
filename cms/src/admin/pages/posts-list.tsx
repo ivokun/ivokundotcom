@@ -130,12 +130,12 @@ export function PostsListPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Locale</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
+              <TableHead scope="col">Title</TableHead>
+              <TableHead scope="col">Status</TableHead>
+              <TableHead scope="col">Locale</TableHead>
+              <TableHead scope="col">Category</TableHead>
+              <TableHead scope="col">Created At</TableHead>
+              <TableHead scope="col" className="w-[100px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

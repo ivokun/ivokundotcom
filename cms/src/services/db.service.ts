@@ -32,11 +32,16 @@ export class DbService extends Context.Tag('DbService')<
 // SERVICE IMPLEMENTATION
 // =============================================================================
 
-export const makeDbService = (connectionString: string) =>
+export interface DbServiceConfig {
+  connectionString: string;
+  poolMax?: number;
+}
+
+export const makeDbService = (config: DbServiceConfig) =>
   Effect.gen(function* () {
     const pool = new Pool({
-      connectionString,
-      max: 20,
+      connectionString: config.connectionString,
+      max: config.poolMax ?? 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     });
@@ -146,5 +151,5 @@ export const makeDbService = (connectionString: string) =>
 // LAYER
 // =============================================================================
 
-export const DbServiceLive = (connectionString: string) =>
-  Layer.scoped(DbService, makeDbService(connectionString));
+export const DbServiceLive = (config: DbServiceConfig) =>
+  Layer.scoped(DbService, makeDbService(config));

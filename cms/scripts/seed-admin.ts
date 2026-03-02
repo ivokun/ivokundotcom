@@ -56,7 +56,7 @@ const program = Effect.gen(function* () {
 });
 
 const MainLayer = AuthServiceLive.pipe(
-  Layer.provideMerge(DbServiceLive(DATABASE_URL))
+  Layer.provideMerge(DbServiceLive({ connectionString: DATABASE_URL }))
 );
 
 Effect.runPromise(program.pipe(Effect.provide(MainLayer), Effect.scoped))

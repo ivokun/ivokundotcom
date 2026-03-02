@@ -1,20 +1,36 @@
 import { Link } from '@tanstack/react-router'
-import { FileText, Image as ImageIcon, Plus,Tags } from 'lucide-react'
+import { AlertCircle, FileText, Image as ImageIcon, Plus, Tags } from 'lucide-react'
 
 import { PageHeader } from '~/admin/components/page-header'
 import { Badge } from '~/admin/components/ui/badge'
 import { Button } from '~/admin/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/admin/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/admin/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/admin/components/ui/table'
 import { useCategories } from '~/admin/hooks/use-categories'
 import { useMedia } from '~/admin/hooks/use-media'
 import { usePosts } from '~/admin/hooks/use-posts'
 import { cn, formatDate } from '~/admin/lib/utils'
 
+function SkeletonStat() {
+  return (
+    <div className="h-8 w-16 animate-pulse rounded bg-muted" />
+  )
+}
+
 export function DashboardPage() {
-  const { data: posts } = usePosts({ page: 1 })
-  const { data: media } = useMedia()
-  const { data: categories } = useCategories()
+  const { data: posts, isLoading: postsLoading, isError: postsError } = usePosts({ page: 1 })
+  const { data: media, isLoading: mediaLoading, isError: mediaError } = useMedia()
+  const { data: categories, isLoading: categoriesLoading, isError: categoriesError } = useCategories()
+
+  const isLoading = postsLoading || mediaLoading || categoriesLoading
+  const hasError = postsError || mediaError || categoriesError
 
   const stats = [
     { label: 'Total Posts', value: posts?.meta.total ?? 0, icon: FileText, color: 'text-blue-500' },
@@ -33,6 +49,13 @@ export function DashboardPage() {
         </Button>
       </PageHeader>
 
+      {hasError && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          <AlertCircle className="h-5 w-5" />
+          <p>Failed to load dashboard data. Please refresh the page to try again.</p>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.label}>
@@ -41,7 +64,9 @@ export function DashboardPage() {
               <stat.icon className={cn("h-4 w-4", stat.color)} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-2xl font-bold">
+                {isLoading ? <SkeletonStat /> : stat.value}
+              </div>
             </CardContent>
           </Card>
         ))}

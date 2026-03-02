@@ -56,7 +56,7 @@ import { MediaProcessorQueueLive } from './services/media-processor';
 import { PostService, PostServiceLive } from './services/post.service';
 import { makeR2StorageService, StorageService } from './services/storage.service';
 import { UserService, UserServiceLive } from './services/user.service';
-import type { Home, TipTapDocument } from './types';
+import type { Home, TipTapDocument, TipTapNode } from './types';
 
 // =============================================================================
 // EXPORTS FOR TESTING
@@ -232,6 +232,41 @@ const toNullableTipTap = (
 ): TipTapDocument | null | undefined => {
   if (value === undefined) return undefined;
   return toTipTapContent(value);
+};
+
+/**
+ * Recursively extract text from TipTap document nodes
+ */
+const extractTextFromTipTap = (node: TipTapNode): string => {
+  if (!node) return '';
+
+  // If it's a text node, return the text
+  if (node.text) {
+    return node.text;
+  }
+
+  // If it has content, recursively extract from children
+  if (node.content && Array.isArray(node.content)) {
+    return node.content.map(extractTextFromTipTap).join(' ');
+  }
+
+  return '';
+};
+
+/**
+ * Calculate read time in minutes from TipTap content
+ * Assumes average reading speed of 200 words per minute
+ */
+const calculateReadTime = (content: TipTapDocument | null | undefined): number | null => {
+  if (!content || !content.content) return null;
+
+  const text = content.content.map(extractTextFromTipTap).join(' ');
+  const wordCount = text.trim().split(/\s+/).filter((word) => word.length > 0).length;
+
+  if (wordCount === 0) return null;
+
+  // Round up to nearest minute, minimum 1 minute
+  return Math.max(1, Math.ceil(wordCount / 200));
 };
 
 // Default home content
@@ -552,16 +587,17 @@ const adminPostRouter = HttpRouter.empty.pipe(
       const req = yield* HttpServerRequest.HttpServerRequest;
       const body = yield* decodeBody(CreatePostInput)(req);
       const postService = yield* PostService;
+      const content = toTipTapContent(body.content);
       const post = yield* postService.create({
         title: body.title,
         slug: body.slug,
         excerpt: toNullable(body.excerpt),
-        content: toTipTapContent(body.content),
+        content: content,
         featured_image: toNullable(body.featured_image),
         category_id: toNullable(body.category_id),
         locale: body.locale ?? 'en',
         status: 'draft',
-        read_time_minute: null,
+        read_time_minute: calculateReadTime(content),
         published_at: null,
       });
       return yield* HttpServerResponse.json(post, { status: 201 });
@@ -591,14 +627,16 @@ const adminPostRouter = HttpRouter.empty.pipe(
       const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
       const body = yield* decodeBody(UpdatePostInput)(req);
       const postService = yield* PostService;
+      const content = toNullableTipTap(body.content);
       const post = yield* postService.update(id, {
         title: body.title,
         slug: body.slug,
         excerpt: body.excerpt,
-        content: toNullableTipTap(body.content),
+        content: content,
         featured_image: body.featured_image,
         category_id: body.category_id,
         locale: body.locale,
+        read_time_minute: content !== undefined ? calculateReadTime(content) : undefined,
       });
       return yield* HttpServerResponse.json(post);
     }).pipe(
@@ -1154,7 +1192,10 @@ const DbLive = Layer.scoped(
   DbService,
   Effect.gen(function* () {
     const config = yield* AppConfig;
-    return yield* makeDbService(Redacted.value(config.databaseUrl));
+    return yield* makeDbService({
+      connectionString: Redacted.value(config.databaseUrl),
+      poolMax: config.dbPoolMax,
+    });
   })
 );
 

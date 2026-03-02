@@ -73,7 +73,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 space-y-1 px-3 py-4" role="navigation" aria-label="Main navigation">
         {navItems.map((item) => (
           <Link
             key={item.href}

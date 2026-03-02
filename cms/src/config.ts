@@ -15,6 +15,7 @@ export class AppConfig extends Effect.Service<AppConfig>()('AppConfig', {
     const nodeEnv = yield* Config.string('NODE_ENV').pipe(Config.withDefault('development'));
     const databaseUrl = yield* Config.redacted('DATABASE_URL');
     const sessionSecret = yield* Config.redacted('SESSION_SECRET');
+    const dbPoolMax = yield* Config.number('DB_POOL_MAX').pipe(Config.withDefault(20));
 
     // R2 Configuration
     const r2AccessKeyId = yield* Config.redacted('R2_ACCESS_KEY_ID');
@@ -43,6 +44,7 @@ export class AppConfig extends Effect.Service<AppConfig>()('AppConfig', {
       nodeEnv,
       databaseUrl,
       sessionSecret,
+      dbPoolMax,
       r2: {
         accessKeyId: r2AccessKeyId,
         secretAccessKey: r2AccessSecret,

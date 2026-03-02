@@ -124,10 +124,10 @@ export function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
+              <TableHead scope="col">User</TableHead>
+              <TableHead scope="col">Role</TableHead>
+              <TableHead scope="col">Created At</TableHead>
+              <TableHead scope="col" className="w-[100px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -18,7 +18,7 @@ describe('DbService', () => {
 
     const scope = Effect.runSync(Scope.make());
     const result = await Effect.runPromise(
-      program.pipe(Effect.provide(DbServiceLive(TEST_DB_URL)), Effect.scoped)
+      program.pipe(Effect.provide(DbServiceLive({ connectionString: TEST_DB_URL })), Effect.scoped)
     );
 
     expect(result).toHaveLength(1);
@@ -37,7 +37,7 @@ describe('DbService', () => {
     });
 
     const result = await Effect.runPromise(
-      program.pipe(Effect.provide(DbServiceLive(TEST_DB_URL)), Effect.scoped, Effect.either)
+      program.pipe(Effect.provide(DbServiceLive({ connectionString: TEST_DB_URL })), Effect.scoped, Effect.either)
     );
 
     expect(result._tag).toBe('Left');

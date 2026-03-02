@@ -15,11 +15,11 @@ import {
   Redo,
   Undo,
 } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { MediaPicker } from '~/admin/components/media-picker'
 import { Button } from '~/admin/components/ui/button'
-import { getMediaUrl,parseEditorContent } from '~/admin/lib/utils'
+import { getMediaUrl, parseEditorContent } from '~/admin/lib/utils'
 
 interface RichTextEditorProps {
   content: string
@@ -28,6 +28,8 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ content, onChange, placeholder }: RichTextEditorProps) {
+  const [parseError, setParseError] = useState<string | null>(null)
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -52,8 +54,13 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
     if (editor && content) {
       const currentContent = JSON.stringify(editor.getJSON())
       if (content !== currentContent) {
-        const parsedContent = parseEditorContent(content)
-        editor.commands.setContent(parsedContent)
+        try {
+          const parsedContent = parseEditorContent(content)
+          editor.commands.setContent(parsedContent)
+          setParseError(null)
+        } catch {
+          setParseError('Failed to parse content. Raw text is displayed below.')
+        }
       }
     }
   }, [content, editor])
@@ -170,6 +177,11 @@ export function RichTextEditor({ content, onChange, placeholder }: RichTextEdito
           <Redo className="h-4 w-4" />
         </ToolbarButton>
       </div>
+      {parseError && (
+        <div className="border-b border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          {parseError}
+        </div>
+      )}
       <EditorContent editor={editor} className="prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none" />
     </div>
   )

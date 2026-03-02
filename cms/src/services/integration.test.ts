@@ -33,7 +33,7 @@ const r2Config: StorageConfig = {
 };
 
 describe('Service Integration', () => {
-  const DbLayer = DbServiceLive(TEST_DB_URL);
+  const DbLayer = DbServiceLive({ connectionString: TEST_DB_URL });
   const StorageLayer = R2StorageServiceLive(r2Config);
   const AuthLayer = AuthServiceLive.pipe(Layer.provide(DbLayer));
   const ImageLayer = ImageServiceLive.pipe(Layer.provide(StorageLayer));
