@@ -205,3 +205,12 @@ export const isAppError = (error: unknown): error is AppError => {
       isInfraError(error as AppError))
   );
 };
+
+export const isUniqueConstraintViolation = (error: unknown): boolean => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code: string }).code === '23505'
+  );
+};

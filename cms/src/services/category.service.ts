@@ -2,7 +2,13 @@ import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
 import slugify from 'slugify';
 
-import { DatabaseError, NotFound, SlugConflict, ValidationError } from '../errors';
+import {
+  DatabaseError,
+  isUniqueConstraintViolation,
+  NotFound,
+  SlugConflict,
+  ValidationError,
+} from '../errors';
 import type { Category, CategoryUpdate, NewCategory, PaginatedResponse } from '../types';
 import { DbService } from './db.service';
 
@@ -79,6 +85,17 @@ export const makeCategoryService = Effect.gen(function* () {
 
       return yield* query('create_category', (db) =>
         db.insertInto('categories').values(newCategory).returningAll().executeTakeFirstOrThrow()
+      ).pipe(
+        Effect.catchAll((error: DatabaseError) => {
+          // If the DB throws a unique constraint violation, convert to SlugConflict
+          if (isUniqueConstraintViolation(error.cause)) {
+            return Effect.fail(new SlugConflict({ slug })) as Effect.Effect<
+              never,
+              DatabaseError | SlugConflict
+            >;
+          }
+          return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
+        })
       );
     });
 
@@ -118,6 +135,17 @@ export const makeCategoryService = Effect.gen(function* () {
           .where('id', '=', id)
           .returningAll()
           .executeTakeFirstOrThrow()
+      ).pipe(
+        Effect.catchAll((error: DatabaseError) => {
+          // If the DB throws a unique constraint violation, convert to SlugConflict
+          if (isUniqueConstraintViolation(error.cause)) {
+            return Effect.fail(new SlugConflict({ slug: slug ?? current.slug })) as Effect.Effect<
+              never,
+              DatabaseError | SlugConflict
+            >;
+          }
+          return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
+        })
       );
     });
 

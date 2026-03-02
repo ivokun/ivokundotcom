@@ -3,7 +3,7 @@ import { Context, Effect, Layer } from 'effect';
 import { sql } from 'kysely';
 import slugify from 'slugify';
 
-import { DatabaseError, NotFound, SlugConflict } from '../errors';
+import { DatabaseError, isUniqueConstraintViolation, NotFound, SlugConflict } from '../errors';
 import type {
   GalleryUpdate,
   GalleryWithCategory,
@@ -234,6 +234,17 @@ export const makeGalleryService = Effect.gen(function* () {
           })
           .returningAll()
           .executeTakeFirstOrThrow()
+      ).pipe(
+        Effect.catchAll((error: DatabaseError) => {
+          // If the DB throws a unique constraint violation, convert to SlugConflict
+          if (isUniqueConstraintViolation(error.cause)) {
+            return Effect.fail(new SlugConflict({ slug })) as Effect.Effect<
+              never,
+              DatabaseError | SlugConflict
+            >;
+          }
+          return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
+        })
       );
 
       // Transform images to structured format for frontend
@@ -302,8 +313,19 @@ export const makeGalleryService = Effect.gen(function* () {
         }
 
         return q.returningAll().executeTakeFirstOrThrow();
-      });
-      
+      }).pipe(
+        Effect.catchAll((error: DatabaseError) => {
+          // If the DB throws a unique constraint violation, convert to SlugConflict
+          if (isUniqueConstraintViolation(error.cause)) {
+            return Effect.fail(new SlugConflict({ slug: slug ?? current.slug })) as Effect.Effect<
+              never,
+              DatabaseError | SlugConflict
+            >;
+          }
+          return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
+        })
+      );
+
       // Fetch category separately since the update query doesn't join
       let category = null;
       if (result.category_id) {

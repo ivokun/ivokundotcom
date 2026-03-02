@@ -2,7 +2,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
 import slugify from 'slugify';
 
-import { DatabaseError, NotFound, SlugConflict } from '../errors';
+import { DatabaseError, isUniqueConstraintViolation, NotFound, SlugConflict } from '../errors';
 import type {
   Locale,
   MediaStatus,
@@ -323,6 +323,17 @@ export const makePostService = Effect.gen(function* () {
 
       return yield* query('create_post', (db) =>
         db.insertInto('posts').values(newPost).returningAll().executeTakeFirstOrThrow()
+      ).pipe(
+        Effect.catchAll((error: DatabaseError) => {
+          // If the DB throws a unique constraint violation, convert to SlugConflict
+          if (isUniqueConstraintViolation(error.cause)) {
+            return Effect.fail(new SlugConflict({ slug, locale })) as Effect.Effect<
+              never,
+              DatabaseError | SlugConflict
+            >;
+          }
+          return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
+        })
       );
     });
 
@@ -372,6 +383,17 @@ export const makePostService = Effect.gen(function* () {
           .where('id', '=', id)
           .returningAll()
           .executeTakeFirstOrThrow()
+      ).pipe(
+        Effect.catchAll((error: DatabaseError) => {
+          // If the DB throws a unique constraint violation, convert to SlugConflict
+          if (isUniqueConstraintViolation(error.cause)) {
+            return Effect.fail(new SlugConflict({ slug: slug ?? current.slug, locale })) as Effect.Effect<
+              never,
+              DatabaseError | SlugConflict
+            >;
+          }
+          return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
+        })
       );
     });
 

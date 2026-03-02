@@ -608,7 +608,7 @@ const adminPostRouter = HttpRouter.empty.pipe(
       const req = yield* HttpServerRequest.HttpServerRequest;
       const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
       const postService = yield* PostService;
-      const post = yield* postService.update(id, { status: 'draft' });
+      const post = yield* postService.update(id, { status: 'draft', published_at: null });
       return yield* HttpServerResponse.json(post);
     })
   )
@@ -792,7 +792,7 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
       const req = yield* HttpServerRequest.HttpServerRequest;
       const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
       const galleryService = yield* GalleryService;
-      const gallery = yield* galleryService.update(id, { status: 'draft' });
+      const gallery = yield* galleryService.update(id, { status: 'draft', published_at: null });
       return yield* HttpServerResponse.json(gallery);
     })
   )
