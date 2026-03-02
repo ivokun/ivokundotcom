@@ -65,7 +65,7 @@ export const validateMagicBytes = (mimeType: string, bytes: Uint8Array): boolean
       // "a"
       return bytes[5] === 0x61;
 
-    case 'image/webp':
+    case 'image/webp': {
       // RIFF....WEBP format
       // Bytes 0-3: "RIFF" (52 49 46 46)
       // Bytes 8-11: "WEBP" (57 45 42 50)
@@ -75,8 +75,9 @@ export const validateMagicBytes = (mimeType: string, bytes: Uint8Array): boolean
       const isWebp =
         bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
       return isRiff && isWebp;
+    }
 
-    case 'image/svg+xml':
+    case 'image/svg+xml': {
       // Text-based format - check for SVG/XML signature in first 256 bytes
       if (bytes.length === 0) return false;
       // Decode as UTF-8 text
@@ -85,6 +86,7 @@ export const validateMagicBytes = (mimeType: string, bytes: Uint8Array): boolean
       const trimmed = text.trim().toLowerCase();
       // Check for XML declaration or SVG tag
       return trimmed.includes('<svg') || trimmed.includes('<?xml');
+    }
 
     case 'video/mp4':
       // MP4 uses ftyp box: bytes 4-7 = "ftyp" (66 74 79 70)
