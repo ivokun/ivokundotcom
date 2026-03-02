@@ -166,7 +166,9 @@ const transaction = <T, E>(
 | **File** | `post.service.ts:399-482` |
 | **Issue** | `findAll` executes two queries without transaction |
 | **Risk** | Inconsistent results if data changes between queries |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `findAll` uses `Effect.all([count, list])` for concurrent queries
 
 ---
 
@@ -185,9 +187,9 @@ const transaction = <T, E>(
 | **File** | `media-processor.ts:96-107` |
 | **Issue** | Immediate retry on any error, no rate limiting |
 | **Risk** | Resource exhaustion with malformed images |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
 
----
+**Fix Details:** `Effect.retry(Schedule.recurs(5).intersect(exponential+jitter))` wraps `processJob`
 
 ## 🟡 Medium
 
@@ -197,7 +199,9 @@ const transaction = <T, E>(
 | **File** | `types.ts:162`, `admin/api.ts:432-433` |
 | **Issue** | Stored as comma-separated, API uses array |
 | **Risk** | Keywords containing commas break parsing |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** Keywords parsed CSV→`string[]` on read, serialized `string[]`→CSV on write in `home.service.ts`
 
 ---
 

@@ -41,7 +41,9 @@ const transaction = <T, E>(fn) =>
 |---|---|
 | **File** | `config.ts:27`, `server.ts` |
 | **Issue** | `corsOrigin` configured but middleware never applied |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `corsMiddleware` reads `config.corsOrigin`, sets `Access-Control-Allow-Origin` + handles OPTIONS preflight; applied to public and admin routers
 
 ---
 
@@ -50,7 +52,9 @@ const transaction = <T, E>(fn) =>
 |---|---|
 | **File** | `post.service.ts:144-189, 240-286, 484-528` |
 | **Issue** | Same mapping logic repeated 3 times |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `mapPostDetailRow` and `mapPostListRow` helpers extracted in `post.service.ts`
 
 ---
 
@@ -70,7 +74,9 @@ const transaction = <T, E>(fn) =>
 |---|---|
 | **File** | `media-processor.ts:96-107` |
 | **Issue** | No delay, no backoff, no rate limiting |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** Same as DATA-011 (media processor retries 5x with exponential backoff before setting status `failed`)
 
 **Fix:**
 ```typescript
@@ -118,7 +124,9 @@ yield* processJob(job).pipe(
 |---|---|
 | **File** | `server.ts:288-392` |
 | **Issue** | No caching strategy for public endpoints |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `publicCacheMiddleware` sets `Cache-Control` headers on all public API routes
 
 ---
 
@@ -212,4 +220,6 @@ yield* processJob(job).pipe(
 |---|---|
 | **File** | `category.service.ts:156` |
 | **Issue** | Default of 10 too restrictive for admin interface |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** Default pagination limit increased from 10→20 in post/category/gallery services

@@ -123,7 +123,9 @@ const StatCard = ({ value, isLoading }) => (
 |---|---|
 | **File** | `media-picker.tsx:28-37` |
 | **Issue** | Upload errors only logged to console |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `toast.error(err.message)` called on upload failure in `media-picker.tsx`
 
 ---
 
@@ -161,7 +163,9 @@ const validate = () => {
 |---|---|
 | **File** | `post-form.tsx:126-132` |
 | **Issue** | Unpublish happens immediately without confirmation |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `AlertDialog` confirmation added before unpublish action in `post-form.tsx`
 
 ---
 
@@ -170,7 +174,9 @@ const validate = () => {
 |---|---|
 | **File** | `posts-list.tsx:57-67` |
 | **Issue** | No loading indicator while delete in progress |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** Delete button disabled with `deletePost.isPending` in `posts-list.tsx`
 
 ---
 
@@ -190,7 +196,9 @@ const validate = () => {
 |---|---|
 | **File** | `posts-list.tsx:87-92` |
 | **Issue** | Search triggers re-render on every keystroke |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** 300ms debounce with `useEffect` cleanup on search input in `posts-list.tsx`
 
 ---
 
@@ -208,7 +216,9 @@ const validate = () => {
 |---|---|
 | **File** | `layout.tsx:124-128, 152-157` |
 | **Issue** | Missing `aria-label`, `aria-expanded`, `aria-controls` |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `aria-expanded`, `aria-controls`, `id="mobile-sidebar"` added to mobile sidebar in `layout.tsx`
 
 ---
 
@@ -235,7 +245,9 @@ const validate = () => {
 |---|---|
 | **File** | `login.tsx:62-64` |
 | **Issue** | No spinner, inputs remain editable during submission |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** Login inputs and submit button disabled while `login.isPending`
 
 ---
 
@@ -309,7 +321,9 @@ const validate = () => {
 |---|---|
 | **File** | `layout.tsx:19` |
 | **Issue** | Could implement user avatars |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** Unused `AvatarImage` import removed from `layout.tsx`
 
 ---
 
@@ -327,7 +341,9 @@ const validate = () => {
 |---|---|
 | **File** | `post-form.tsx:134-143, 294-310` |
 | **Issue** | Could add backspace to remove last tag |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** Backspace removes last keyword tag when input is empty in `post-form.tsx`
 
 ---
 
@@ -336,7 +352,9 @@ const validate = () => {
 |---|---|
 | **File** | `layout.tsx:99` |
 | **Issue** | Always shows first letter, no color variation |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** Avatar colour derived from username hash (6-colour palette) in `layout.tsx`
 
 ---
 
@@ -345,7 +363,9 @@ const validate = () => {
 |---|---|
 | **File** | `users.tsx:218-252` |
 | **Issue** | Only HTML5 validation, no inline errors |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** Inline validation on invite form (name ≥2 chars, email regex) in `users.tsx`
 
 ---
 
@@ -354,7 +374,9 @@ const validate = () => {
 |---|---|
 | **File** | `posts-list.tsx:168` |
 | **Issue** | O(n*m) complexity with `.find()` |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `useMemo` categoryMap for O(1) category lookup in `posts-list.tsx`
 
 **Fix:**
 ```typescript

@@ -62,7 +62,9 @@ result = HttpServerResponse.setHeader(result, 'Permissions-Policy', 'camera=(), 
 | **File** | `server.ts:288-392`, `server.ts:466-993` |
 | **Issue** | Only `/admin/api/login` has rate limiting |
 | **Risk** | DDoS, brute force attacks, resource exhaustion |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `adminWriteRateLimitMiddleware` (60/min) and `publicApiRateLimitMiddleware` (100/min) added; applied to admin and public routers
 
 **Recommended Fix:**
 ```typescript
@@ -80,7 +82,9 @@ const publicRouter = HttpRouter.empty.pipe(
 | **File** | `server.ts:1119` |
 | **Issue** | No limit on request body size |
 | **Risk** | DoS via large payloads, memory exhaustion |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `maxRequestBodySize: 10MB` added to `BunHttpServer.layer`
 
 **Recommended Fix:**
 ```typescript
@@ -236,7 +240,9 @@ return HttpServerResponse.json(
 | **File** | `server.ts:400-414` |
 | **Issue** | Existing sessions not invalidated on new login |
 | **Risk** | Session fixation attacks |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `deleteSessionsByUserId` called before `createSession` on login
 
 ---
 
@@ -335,4 +341,6 @@ return HttpServerResponse.json(
 |---|---|
 | **File** | `schemas.ts:357-360` |
 | **Issue** | No maxLength on alt text |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
+
+**Fix Details:** `Schema.maxLength(500)` added to alt text in `MediaUploadInput` and `UpdateMediaInput`
