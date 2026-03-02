@@ -86,7 +86,10 @@ export const sessionMiddleware = HttpMiddleware.make((app) =>
     const request = yield* HttpServerRequest.HttpServerRequest;
     const authService = yield* AuthService;
 
-    const sessionId = request.cookies['session'];
+    // Support __Host- prefixed cookie in production
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieName = isProduction ? '__Host-session' : 'session';
+    const sessionId = request.cookies[cookieName] ?? request.cookies['session'];
 
     if (!sessionId) {
       return yield* HttpServerResponse.json(

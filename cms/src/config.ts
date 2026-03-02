@@ -24,7 +24,19 @@ export class AppConfig extends Effect.Service<AppConfig>()('AppConfig', {
     const r2PublicUrl = yield* Config.string('R2_PUBLIC_URL');
 
     // CORS
-    const corsOrigin = yield* Config.string('CORS_ORIGIN').pipe(Config.withDefault('*'));
+    const isDevelopment = nodeEnv === 'development';
+    const isProduction = nodeEnv === 'production';
+    const corsOrigin = yield* Config.string('CORS_ORIGIN').pipe(
+      Config.withDefault(isDevelopment ? '*' : '')
+    );
+
+    if (isProduction && (!corsOrigin || corsOrigin === '*')) {
+      yield* Effect.logWarning(
+        'CORS_ORIGIN is not set or set to wildcard (*) in production. ' +
+          'This allows any origin to access the API. ' +
+          'Set CORS_ORIGIN to your production domain (e.g. https://yourdomain.com).'
+      );
+    }
 
     return {
       port,
@@ -39,8 +51,8 @@ export class AppConfig extends Effect.Service<AppConfig>()('AppConfig', {
         publicUrl: r2PublicUrl,
       },
       corsOrigin,
-      isDevelopment: nodeEnv === 'development',
-      isProduction: nodeEnv === 'production',
+      isDevelopment,
+      isProduction,
     };
   }),
 }) {}

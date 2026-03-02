@@ -244,6 +244,27 @@ const applySecurityHeaders = (
   result = HttpServerResponse.setHeader(result, 'X-Content-Type-Options', 'nosniff');
   result = HttpServerResponse.setHeader(result, 'X-Frame-Options', 'DENY');
   result = HttpServerResponse.setHeader(result, 'Referrer-Policy', 'strict-origin-when-cross-origin');
+  result = HttpServerResponse.setHeader(result, 'X-DNS-Prefetch-Control', 'off');
+  result = HttpServerResponse.setHeader(
+    result,
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+  );
+  result = HttpServerResponse.setHeader(
+    result,
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self'",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
+  );
   if (isProduction) {
     result = HttpServerResponse.setHeader(
       result,
@@ -408,8 +429,9 @@ const authRouter = HttpRouter.empty.pipe(
 
       const response = yield* HttpServerResponse.json({ user });
 
-      const isProduction = process.env.NODE_ENV === 'production';
-      const cookieValue = `session=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}${isProduction ? '; Secure' : ''}`;
+      // Use __Host- prefix in production for added security (prevents subdomain override)
+      const cookieName = isProduction ? '__Host-session' : 'session';
+      const cookieValue = `${cookieName}=${session.id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}${isProduction ? '; Secure' : ''}`;
 
       return HttpServerResponse.setHeader(response, 'Set-Cookie', cookieValue);
     }).pipe(
@@ -443,17 +465,21 @@ const authRouter = HttpRouter.empty.pipe(
     '/admin/api/logout',
     Effect.gen(function* () {
       const req = yield* HttpServerRequest.HttpServerRequest;
-      const sessionId = req.cookies['session'];
+      // Check both cookie names (production uses __Host- prefix)
+      const cookieName = isProduction ? '__Host-session' : 'session';
+      const sessionId = req.cookies[cookieName] ?? req.cookies['session'];
       const authService = yield* AuthService;
       if (sessionId) {
         yield* authService.destroySession(sessionId);
       }
 
+      const secureSuffix = isProduction ? '; Secure' : '';
+      // __Host- prefix requires Secure flag even when clearing
       const response = HttpServerResponse.empty();
       return HttpServerResponse.setHeader(
         response,
         'Set-Cookie',
-        'session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0'
+        `${cookieName}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secureSuffix}`
       );
     })
   )
