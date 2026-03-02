@@ -10,6 +10,7 @@ import { Button } from '~/admin/components/ui/button'
 import { Card, CardContent, CardDescription,CardHeader, CardTitle } from '~/admin/components/ui/card'
 import { Input } from '~/admin/components/ui/input'
 import { Label } from '~/admin/components/ui/label'
+import { Textarea } from '~/admin/components/ui/textarea'
 import { useHome, useUpdateHome } from '~/admin/hooks/use-home'
 import { useMedia } from '~/admin/hooks/use-media'
 
@@ -24,18 +25,22 @@ export function HomePageEditor() {
   ) || {}
 
   const [formData, setFormData] = useState({
+    title: '',
+    shortDescription: '',
     description: '',
     heroImageId: '',
-    keywords: [] as string[]
+    keywords: [] as string[],
   })
   const [newKeyword, setNewKeyword] = useState('')
 
   useEffect(() => {
     if (home) {
       setFormData({
+        title: home.title || '',
+        shortDescription: home.shortDescription || '',
         description: home.description || '',
         heroImageId: home.heroImageId || '',
-        keywords: home.keywords || []
+        keywords: home.keywords || [],
       })
     }
   }, [home])
@@ -114,11 +119,32 @@ export function HomePageEditor() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label>Short Description</Label>
-              <RichTextEditor 
-                content={formData.description} 
-                onChange={(v) => setFormData(prev => ({ ...prev, description: v }))}
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Enter page title..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="shortDescription">Short Description</Label>
+              <Textarea
+                id="shortDescription"
+                value={formData.shortDescription}
+                onChange={(e) => setFormData((prev) => ({ ...prev, shortDescription: e.target.value }))}
                 placeholder="Briefly describe what your site is about..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <RichTextEditor
+                content={formData.description}
+                onChange={(v) => setFormData((prev) => ({ ...prev, description: v }))}
+                placeholder="Detailed description with rich formatting..."
               />
             </div>
 

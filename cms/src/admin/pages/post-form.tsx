@@ -51,6 +51,7 @@ export function PostFormPage() {
   })
 
   const [newKeyword, setNewKeyword] = useState('')
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (post) {
@@ -78,19 +79,45 @@ export function PostFormPage() {
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       title,
-      slug: isNew ? slugify(title, { lower: true, strict: true }) : prev.slug
+      slug: isNew ? slugify(title, { lower: true, strict: true }) : prev.slug,
     }))
+    // Clear title error when user types
+    if (formErrors['title']) {
+      setFormErrors((prev) => {
+        const { ['title']: _, ...rest } = prev
+        return rest
+      })
+    }
   }
 
   const onSave = (publish: boolean = false) => {
+    // Validate form
+    const errors: Record<string, string> = {}
+
+    if (!formData.title.trim()) {
+      errors['title'] = 'Title is required'
+    }
+
+    if (!formData.slug.trim()) {
+      errors['slug'] = 'Slug is required'
+    } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(formData.slug)) {
+      errors['slug'] = 'Slug must contain only lowercase letters, numbers, and hyphens'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      toast.error('Please fix the errors before saving')
+      return
+    }
+
     const data = { ...formData, status: publish ? 'published' : formData.status }
-    
+
     if (isNew) {
       createPost.mutate(data, {
-        onSuccess: (newPost: any) => {
+        onSuccess: (newPost: { id: string }) => {
           toast.success('Post created')
           if (publish) {
             publishPost.mutate(newPost.id, {
@@ -100,18 +127,21 @@ export function PostFormPage() {
           }
           navigate({ to: `/admin/posts/${newPost.id}/edit` })
         },
-        onError: (err) => toast.error(err.message),
+        onError: (err: Error) => toast.error(err.message),
       })
     } else {
-      updatePost.mutate({ id: id!, data }, {
-        onSuccess: () => {
-          toast.success('Post updated')
-          if (publish && post?.status !== 'published') {
-            handlePublish()
-          }
-        },
-        onError: (err) => toast.error(err.message)
-      })
+      updatePost.mutate(
+        { id: id!, data },
+        {
+          onSuccess: () => {
+            toast.success('Post updated')
+            if (publish && post?.status !== 'published') {
+              handlePublish()
+            }
+          },
+          onError: (err: Error) => toast.error(err.message),
+        }
+      )
     }
   }
 
@@ -181,26 +211,41 @@ export function PostFormPage() {
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
-                <Input 
-                  id="title" 
-                  value={formData.title} 
+                <Input
+                  id="title"
+                  value={formData.title}
                   onChange={handleTitleChange}
                   placeholder="Enter post title"
                   className="text-lg font-semibold"
                 />
+                {formErrors['title'] && (
+                  <p className="text-sm text-destructive mt-1">{formErrors['title']}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="slug">Slug</Label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">ivokun.com/blog/</span>
-                  <Input 
-                    id="slug" 
-                    value={formData.slug} 
-                    onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                  <Input
+                    id="slug"
+                    value={formData.slug}
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, slug: e.target.value }))
+                      // Clear slug error when user types
+                      if (formErrors['slug']) {
+                        setFormErrors((prev) => {
+                          const { ['slug']: _, ...rest } = prev
+                          return rest
+                        })
+                      }
+                    }}
                     placeholder="post-slug"
                     className="flex-1"
                   />
                 </div>
+                {formErrors['slug'] && (
+                  <p className="text-sm text-destructive mt-1">{formErrors['slug']}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="excerpt">Excerpt</Label>

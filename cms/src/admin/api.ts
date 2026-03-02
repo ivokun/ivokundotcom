@@ -416,6 +416,8 @@ async function deleteMedia(id: string) {
 async function getHomePage() {
   const home = await request<{
     id: string;
+    title: string | null;
+    short_description: string | null;
     hero: string | null;
     description: string | object | null;
     keywords: string | null;
@@ -423,6 +425,8 @@ async function getHomePage() {
   }>('/home');
   return {
     id: home.id,
+    title: home.title || '',
+    shortDescription: home.short_description || '',
     heroImageId: home.hero || '',
     description: home.description
       ? typeof home.description === 'object'
@@ -435,11 +439,15 @@ async function getHomePage() {
 }
 
 async function updateHomePage(data: {
+  title?: string;
+  shortDescription?: string;
   heroImageId?: string;
   description?: string;
   keywords?: string[];
 }) {
   const payload: Record<string, unknown> = {};
+  if (data.title !== undefined) payload['title'] = data.title || null;
+  if (data.shortDescription !== undefined) payload['short_description'] = data.shortDescription || null;
   if (data.heroImageId !== undefined) payload['hero'] = data.heroImageId || null;
   if (data.description !== undefined) {
     try {
