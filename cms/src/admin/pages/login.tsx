@@ -47,6 +47,7 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={login.isPending}
               />
             </div>
             <div className="space-y-2">
@@ -57,6 +58,7 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={login.isPending}
               />
             </div>
             <Button type="submit" className="w-full" disabled={login.isPending}>

@@ -62,6 +62,68 @@ export const loginRateLimitMiddleware = HttpMiddleware.make((app) =>
     return yield* app;
   })
 );
+
+// =============================================================================
+// ADMIN WRITE RATE LIMITING (SEC-003)
+// =============================================================================
+
+const adminWriteAttempts = new Map<string, { count: number; resetTime: number }>();
+
+export const adminWriteRateLimitMiddleware = HttpMiddleware.make((app) =>
+  Effect.gen(function* () {
+    const req = yield* HttpServerRequest.HttpServerRequest;
+    const ip = req.headers['x-forwarded-for'] ?? req.remoteAddress ?? 'unknown';
+    const now = Date.now();
+    const windowMs = 60 * 1000;
+    const maxRequests = 60;
+    const key = `admin:${ip}`;
+
+    const current = adminWriteAttempts.get(key);
+    if (!current || now > current.resetTime) {
+      adminWriteAttempts.set(key, { count: 1, resetTime: now + windowMs });
+    } else if (current.count >= maxRequests) {
+      return yield* HttpServerResponse.json(
+        { error: 'TooManyRequests', message: 'Rate limit exceeded' },
+        { status: 429 }
+      );
+    } else {
+      current.count++;
+    }
+
+    return yield* app;
+  })
+);
+
+// =============================================================================
+// PUBLIC API RATE LIMITING (SEC-003)
+// =============================================================================
+
+const publicApiAttempts = new Map<string, { count: number; resetTime: number }>();
+
+export const publicApiRateLimitMiddleware = HttpMiddleware.make((app) =>
+  Effect.gen(function* () {
+    const req = yield* HttpServerRequest.HttpServerRequest;
+    const ip = req.headers['x-forwarded-for'] ?? req.remoteAddress ?? 'unknown';
+    const now = Date.now();
+    const windowMs = 60 * 1000;
+    const maxRequests = 100;
+    const key = `public:${ip}`;
+
+    const current = publicApiAttempts.get(key);
+    if (!current || now > current.resetTime) {
+      publicApiAttempts.set(key, { count: 1, resetTime: now + windowMs });
+    } else if (current.count >= maxRequests) {
+      return yield* HttpServerResponse.json(
+        { error: 'TooManyRequests', message: 'Rate limit exceeded' },
+        { status: 429 }
+      );
+    } else {
+      current.count++;
+    }
+
+    return yield* app;
+  })
+);
 import { AuthService } from './services/auth.service';
 import type { Session } from './types';
 

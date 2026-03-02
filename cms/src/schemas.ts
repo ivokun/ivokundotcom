@@ -239,7 +239,7 @@ export const UpdateHomeInput = Schema.Struct({
   short_description: Schema.optional(Schema.NullOr(Schema.String)),
   description: Schema.optional(Schema.NullOr(TipTapDocument)),
   hero: Schema.optional(Schema.NullOr(Cuid2)),
-  keywords: Schema.optional(Schema.NullOr(Schema.String)),
+  keywords: Schema.optionalWith(Schema.Array(Schema.String), { default: () => [] }),
 });
 export type UpdateHomeInput = typeof UpdateHomeInput.Type;
 
@@ -380,12 +380,12 @@ export const MediaUploadInput = Schema.Struct({
     Schema.positive(),
     Schema.lessThanOrEqualTo(MAX_FILE_SIZE)
   ),
-  alt: Schema.optional(Schema.String),
+  alt: Schema.optional(Schema.String.pipe(Schema.maxLength(500))),
 });
 export type MediaUploadInput = typeof MediaUploadInput.Type;
 
 export const UpdateMediaInput = Schema.Struct({
-  alt: Schema.optional(Schema.String),
+  alt: Schema.optional(Schema.String.pipe(Schema.maxLength(500))),
 });
 export type UpdateMediaInput = typeof UpdateMediaInput.Type;
 

@@ -15,7 +15,6 @@ import {
 } from '~/admin/components/ui/alert-dialog'
 import { Badge } from '~/admin/components/ui/badge'
 import { Button } from '~/admin/components/ui/button'
-import { Card, CardContent } from '~/admin/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -63,10 +62,33 @@ export function UsersPage() {
   } | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [copiedPassword, setCopiedPassword] = useState(false)
+  const [inviteErrors, setInviteErrors] = useState<{
+    name?: string
+    email?: string
+  }>({})
+
+  const validateInviteForm = (): boolean => {
+    const errors: { name?: string; email?: string } = {}
+
+    if (!inviteName.trim()) {
+      errors.name = 'Name is required'
+    } else if (inviteName.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters'
+    }
+
+    if (!inviteEmail.trim()) {
+      errors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
+      errors.email = 'Please enter a valid email address'
+    }
+
+    setInviteErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inviteName || !inviteEmail) return
+    if (!validateInviteForm()) return
 
     inviteUser.mutate(
       { name: inviteName, email: inviteEmail },
@@ -80,6 +102,7 @@ export function UsersPage() {
           })
           setInviteName('')
           setInviteEmail('')
+          setInviteErrors({})
           setInviteOpen(false)
         },
         onError: (err) => toast.error(err.message),
@@ -221,10 +244,18 @@ export function UsersPage() {
               <Input
                 id="name"
                 value={inviteName}
-                onChange={(e) => setInviteName(e.target.value)}
+                onChange={(e) => {
+                  setInviteName(e.target.value)
+                  if (inviteErrors.name) {
+                    setInviteErrors((prev) => ({ ...prev, name: undefined }))
+                  }
+                }}
                 placeholder="User's full name"
-                required
+                aria-invalid={inviteErrors.name ? 'true' : 'false'}
               />
+              {inviteErrors.name && (
+                <p className="text-xs text-destructive">{inviteErrors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -232,10 +263,18 @@ export function UsersPage() {
                 id="email"
                 type="email"
                 value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
+                onChange={(e) => {
+                  setInviteEmail(e.target.value)
+                  if (inviteErrors.email) {
+                    setInviteErrors((prev) => ({ ...prev, email: undefined }))
+                  }
+                }}
                 placeholder="user@example.com"
-                required
+                aria-invalid={inviteErrors.email ? 'true' : 'false'}
               />
+              {inviteErrors.email && (
+                <p className="text-xs text-destructive">{inviteErrors.email}</p>
+              )}
             </div>
             <DialogFooter>
               <Button

@@ -6,13 +6,31 @@ import { DbService } from './db.service';
 
 const HOME_ID = 'singleton';
 
+/** Home data with keywords as string array for API */
+export interface HomeWithArrayKeywords extends Omit<Home, 'keywords'> {
+  keywords: string[];
+}
+
+/** Input for updating home with keywords as string array */
+export interface UpdateHomeInput extends Omit<HomeUpdate, 'keywords'> {
+  keywords?: string[];
+}
+
 export class HomeService extends Context.Tag('HomeService')<
   HomeService,
   {
-    readonly get: () => Effect.Effect<Home, DatabaseError | NotFound>;
-    readonly update: (data: HomeUpdate) => Effect.Effect<Home, DatabaseError>;
+    readonly get: () => Effect.Effect<HomeWithArrayKeywords, DatabaseError | NotFound>;
+    readonly update: (data: UpdateHomeInput) => Effect.Effect<HomeWithArrayKeywords, DatabaseError>;
   }
 >() {}
+
+/** Convert DB keywords string to array */
+const parseKeywords = (keywords: string | null): string[] =>
+  keywords ? keywords.split(',').map((k) => k.trim()).filter(Boolean) : [];
+
+/** Convert keywords array to DB string */
+const serializeKeywords = (keywords: string[] | undefined): string | null =>
+  keywords && keywords.length > 0 ? keywords.join(',') : null;
 
 export const makeHomeService = Effect.gen(function* () {
   const { query } = yield* DbService;
@@ -23,22 +41,26 @@ export const makeHomeService = Effect.gen(function* () {
     ).pipe(
       Effect.flatMap((home) =>
         home
-          ? Effect.succeed(home)
+          ? Effect.succeed({
+              ...home,
+              keywords: parseKeywords(home.keywords),
+            })
           : Effect.fail(new NotFound({ resource: 'Home', id: HOME_ID }))
       )
     );
 
-  const update = (data: HomeUpdate) =>
+  const update = (data: UpdateHomeInput) =>
     Effect.gen(function* () {
       // Upsert pattern: update if exists, insert if not (with ID='singleton')
       // Kysely `onConflict` can be used.
 
-      const updateData = {
+      const updateData: HomeUpdate = {
         ...data,
+        keywords: serializeKeywords(data.keywords),
         updated_at: new Date(),
       };
 
-      return yield* query('update_home', (db) =>
+      const result = yield* query('update_home', (db) =>
         db
           .insertInto('home')
           .values({
@@ -53,6 +75,11 @@ export const makeHomeService = Effect.gen(function* () {
           .returningAll()
           .executeTakeFirstOrThrow()
       );
+
+      return {
+        ...result,
+        keywords: parseKeywords(result.keywords),
+      };
     });
 
   return { get, update };

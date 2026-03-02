@@ -26,7 +26,14 @@ import {
   Unauthorized,
   ValidationError,
 } from './errors';
-import { apiKeyMiddleware, loginRateLimitMiddleware, sessionMiddleware, UserContext } from './middleware';
+import {
+  adminWriteRateLimitMiddleware,
+  apiKeyMiddleware,
+  loginRateLimitMiddleware,
+  publicApiRateLimitMiddleware,
+  sessionMiddleware,
+  UserContext,
+} from './middleware';
 import {
   CreateApiKeyInput,
   CreateCategoryInput,
@@ -325,6 +332,60 @@ const applySecurityHeaders = (
 };
 
 // =============================================================================
+// CORS MIDDLEWARE - ARCH-003
+// =============================================================================
+
+const corsMiddleware = HttpMiddleware.make((app) =>
+  Effect.gen(function* () {
+    const config = yield* AppConfig;
+    const req = yield* HttpServerRequest.HttpServerRequest;
+
+    // Handle OPTIONS preflight requests
+    if (req.method === 'OPTIONS') {
+      return HttpServerResponse.empty({ status: 204 }).pipe(
+        HttpServerResponse.setHeader('Access-Control-Allow-Origin', config.corsOrigin),
+        HttpServerResponse.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS'),
+        HttpServerResponse.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization'),
+        HttpServerResponse.setHeader('Access-Control-Max-Age', '86400')
+      );
+    }
+
+    // For non-OPTIONS requests, add CORS header to the response
+    return yield* Effect.map(app, (response) =>
+      HttpServerResponse.setHeader(response, 'Access-Control-Allow-Origin', config.corsOrigin)
+    );
+  })
+);
+
+// =============================================================================
+// CACHE-CONTROL MIDDLEWARE - ARCH-010
+// =============================================================================
+
+const publicCacheMiddleware = HttpMiddleware.make((app) =>
+  Effect.gen(function* () {
+    const req = yield* HttpServerRequest.HttpServerRequest;
+    const url = new URL(req.url, 'http://localhost');
+    const pathname = url.pathname;
+
+    // Determine if this is a list or single-item endpoint
+    // List endpoints: /api/posts, /api/categories, /api/galleries
+    // Single-item endpoints: /api/posts/:slug, /api/categories/:slug, /api/galleries/:slug
+    const isListEndpoint =
+      pathname === '/api/posts' ||
+      pathname === '/api/categories' ||
+      pathname === '/api/galleries';
+
+    const cacheHeader = isListEndpoint
+      ? 'public, max-age=60, stale-while-revalidate=300'
+      : 'public, max-age=300, stale-while-revalidate=600';
+
+    return yield* Effect.map(app, (response) =>
+      HttpServerResponse.setHeader(response, 'Cache-Control', cacheHeader)
+    );
+  })
+);
+
+// =============================================================================
 // ERROR HANDLING
 // =============================================================================
 
@@ -458,7 +519,10 @@ const publicRouter = HttpRouter.empty.pipe(
     })
   ),
 
-  HttpRouter.use(apiKeyMiddleware)
+  HttpRouter.use(publicCacheMiddleware),
+  HttpRouter.use(publicApiRateLimitMiddleware),
+  HttpRouter.use(apiKeyMiddleware),
+  HttpRouter.use(corsMiddleware)
 );
 
 // =============================================================================
@@ -474,6 +538,7 @@ const authRouter = HttpRouter.empty.pipe(
       const body = yield* decodeBody(LoginInput)(req);
       const authService = yield* AuthService;
       const user = yield* authService.validateCredentials(body.email, body.password);
+      yield* authService.deleteSessionsByUserId(user.id);
       const session = yield* authService.createSession(user.id);
 
       const response = yield* HttpServerResponse.json({ user });
@@ -893,7 +958,7 @@ const adminMiscRouter = HttpRouter.empty.pipe(
         short_description: body.short_description,
         description: toTipTapContent(body.description),
         hero: body.hero,
-        keywords: body.keywords,
+        keywords: body.keywords ? [...body.keywords] : undefined,
       });
       return yield* HttpServerResponse.json(home);
     })
@@ -1086,7 +1151,9 @@ const adminRouter = HttpRouter.empty.pipe(
   HttpRouter.concat(adminCategoryRouter),
   HttpRouter.concat(adminGalleryRouter),
   HttpRouter.concat(adminMiscRouter),
-  HttpRouter.use(sessionMiddleware)
+  HttpRouter.use(sessionMiddleware),
+  HttpRouter.use(adminWriteRateLimitMiddleware),
+  HttpRouter.use(corsMiddleware)
 );
 
 // =============================================================================
@@ -1206,7 +1273,7 @@ const DbLive = Layer.scoped(
 // Read port from environment or use default
 const PORT = process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 3000;
 
-const ServerLive = BunHttpServer.layer({ port: PORT });
+const ServerLive = BunHttpServer.layer({ port: PORT, maxRequestBodySize: 10 * 1024 * 1024 });
 
 const serverEffect = appRouter.pipe(HttpServer.serve(errorHandler), HttpServer.withLogAddress);
 

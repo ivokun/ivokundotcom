@@ -181,7 +181,7 @@ export const makeCategoryService = Effect.gen(function* () {
 
   const findAll = (options?: { limit?: number; offset?: number }) =>
     Effect.gen(function* () {
-      const limit = options?.limit ?? 10;
+      const limit = options?.limit ?? 20;
       const offset = options?.offset ?? 0;
 
       const [data, countResult] = yield* Effect.all([

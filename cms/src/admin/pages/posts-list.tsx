@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { FileEdit, Globe, MoreHorizontal, Plus, Search, Trash } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '~/admin/components/page-header'
@@ -43,6 +43,7 @@ export function PostsListPage() {
   const [categoryId, setCategoryId] = useState<string>('all')
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
 
   const { data: posts, isLoading } = usePosts({
     page,
@@ -53,6 +54,16 @@ export function PostsListPage() {
 
   const { data: categories } = useCategories()
   const deletePost = useDeletePost()
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const categoryMap = useMemo(
+    () => new Map(categories?.data?.map((c) => [c.id, c.name]) ?? []),
+    [categories?.data],
+  )
 
   const handleDelete = () => {
     if (deleteId) {
@@ -66,9 +77,10 @@ export function PostsListPage() {
     }
   }
 
-  const filteredPosts = posts?.data.filter((post) =>
-    post.title.toLowerCase().includes(search.toLowerCase())
-  ) ?? []
+  const filteredPosts =
+    posts?.data.filter((post) =>
+      post.title.toLowerCase().includes(debouncedSearch.toLowerCase()),
+    ) ?? []
 
   return (
     <div className="space-y-6">
@@ -165,7 +177,7 @@ export function PostsListPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {categories?.data.find((c) => c.id === post.category_id)?.name || '-'}
+                    {(post.category_id && categoryMap.get(post.category_id)) ?? '-'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(post.created_at)}
@@ -242,8 +254,12 @@ export function PostsListPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete Post
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deletePost.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletePost.isPending ? 'Deleting...' : 'Delete Post'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

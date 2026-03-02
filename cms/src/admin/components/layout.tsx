@@ -12,11 +12,10 @@ import {
   Settings,
   Tags,
   Users,
-  X,
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '~/admin/components/ui/avatar'
+import { Avatar, AvatarFallback } from '~/admin/components/ui/avatar'
 import { Button } from '~/admin/components/ui/button'
 import { Separator } from '~/admin/components/ui/separator'
 import { useCurrentUser, useLogout } from '~/admin/hooks/use-auth'
@@ -31,6 +30,15 @@ const navItems = [
   { label: 'Home Page', icon: Home, href: '/admin/home' },
   { label: 'Users', icon: Users, href: '/admin/users' },
   { label: 'Settings', icon: Settings, href: '/admin/settings' },
+]
+
+const AVATAR_COLORS = [
+  'bg-red-500',
+  'bg-orange-500',
+  'bg-green-500',
+  'bg-blue-500',
+  'bg-purple-500',
+  'bg-pink-500',
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -62,6 +70,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     })
   }
 
+  const avatarColorClass = user.name
+    ? AVATAR_COLORS[user.name.charCodeAt(0) % AVATAR_COLORS.length]
+    : AVATAR_COLORS[0]
+
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center px-6">
@@ -73,7 +85,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-4" role="navigation" aria-label="Main navigation">
+      <nav className="flex-1 space-y-1 px-3 py-4" role="navigation" aria-label="Mobile navigation">
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -96,7 +108,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Separator className="mb-4" />
         <div className={cn("flex items-center gap-3", collapsed ? "justify-center" : "px-2")}>
           <Avatar className="h-8 w-8">
-            <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+            <AvatarFallback className={avatarColorClass}>
+              {user.name?.[0]?.toUpperCase() || 'U'}
+            </AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="flex-1 overflow-hidden">
@@ -122,7 +136,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-background">
       {/* Mobile Sidebar Overlay */}
       {mobileOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
@@ -130,6 +144,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <aside
+        id="mobile-sidebar"
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-64 border-r bg-card transition-transform lg:static lg:translate-x-0",
           collapsed ? "lg:w-20" : "lg:w-64",
@@ -150,7 +165,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="flex h-16 items-center border-b px-6 lg:hidden">
-          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileOpen(true)}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-sidebar"
+          >
             <Menu className="h-6 w-6" />
           </Button>
           <span className="ml-4 font-bold">ivokun</span>

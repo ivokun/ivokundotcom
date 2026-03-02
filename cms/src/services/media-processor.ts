@@ -3,7 +3,7 @@
  * Downloads uploaded originals from R2, processes image variants, updates DB.
  */
 
-import { Context, Effect, Layer, Queue } from 'effect';
+import { Context, Effect, Layer, Queue, Schedule } from 'effect';
 
 // Import errors from errors.ts as needed
 import type { MediaUrls } from '../types';
@@ -110,8 +110,26 @@ export const makeMediaProcessorQueue = Effect.gen(function* () {
     yield* Effect.logInfo('Media processor worker started');
     while (true) {
       const job = yield* Queue.take(queue);
-      // Process each job without crashing the worker loop
-      yield* processJob(job);
+      // Process each job with exponential backoff retry and permanent failure handling
+      yield* processJob(job).pipe(
+        Effect.retry(
+          Schedule.recurs(5).pipe(
+            Schedule.intersect(Schedule.exponential('1 second').pipe(Schedule.jittered))
+          )
+        ),
+        Effect.catchAll((error) =>
+          Effect.gen(function* () {
+            yield* Effect.logError('Media processing permanently failed after retries', {
+              mediaId: job.mediaId,
+              error: String(error),
+            });
+            // Set status to failed in DB
+            yield* query('mark_media_failed', (db) =>
+              db.updateTable('media').set({ status: 'failed' }).where('id', '=', job.mediaId).execute()
+            );
+          })
+        )
+      );
     }
   });
 

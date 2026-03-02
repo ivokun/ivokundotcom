@@ -1,5 +1,6 @@
 import { Check, ImageIcon,Upload } from 'lucide-react'
 import React, { useState } from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '~/admin/components/ui/button'
 import {
@@ -32,6 +33,7 @@ export function MediaPicker({ onSelect, selectedId, trigger }: MediaPickerProps)
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['media'] })
         },
+        onError: (err) => toast.error(err.message),
       })
     }
   }

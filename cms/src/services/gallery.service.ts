@@ -427,7 +427,7 @@ export const makeGalleryService = Effect.gen(function* () {
     filter?: GalleryFilter;
   }) =>
     Effect.gen(function* () {
-      const limit = options?.limit ?? 10;
+      const limit = options?.limit ?? 20;
       const offset = options?.offset ?? 0;
       const filter = options?.filter;
 

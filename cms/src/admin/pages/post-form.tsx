@@ -7,6 +7,16 @@ import { toast } from 'sonner'
 import { MediaPicker } from '~/admin/components/media-picker'
 import { PageHeader } from '~/admin/components/page-header'
 import { RichTextEditor } from '~/admin/components/rich-text-editor'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/admin/components/ui/alert-dialog'
 import { Badge } from '~/admin/components/ui/badge'
 import { Button } from '~/admin/components/ui/button'
 import { Card, CardContent } from '~/admin/components/ui/card'
@@ -52,6 +62,7 @@ export function PostFormPage() {
 
   const [newKeyword, setNewKeyword] = useState('')
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [unpublishDialogOpen, setUnpublishDialogOpen] = useState(false)
 
   useEffect(() => {
     if (post) {
@@ -188,7 +199,7 @@ export function PostFormPage() {
             Save Draft
           </Button>
           {post?.status === 'published' ? (
-            <Button variant="secondary" size="sm" onClick={handleUnpublish}>
+            <Button variant="secondary" size="sm" onClick={() => setUnpublishDialogOpen(true)}>
               Unpublish
             </Button>
           ) : (
@@ -377,6 +388,23 @@ export function PostFormPage() {
           )}
         </div>
       </div>
+
+      <AlertDialog open={unpublishDialogOpen} onOpenChange={setUnpublishDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the post from the public site. You can republish it at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { handleUnpublish(); setUnpublishDialogOpen(false); }}>
+              Unpublish
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

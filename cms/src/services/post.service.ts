@@ -101,6 +101,75 @@ export const makePostService = Effect.gen(function* () {
     return slugify(override || title, { lower: true, strict: true });
   };
 
+  // Helper to map category from query result
+  const mapCategory = (row: PostQueryResult) =>
+    row.cat_id
+      ? {
+          id: row.cat_id,
+          name: row.cat_name!,
+          slug: row.cat_slug!,
+          description: row.cat_desc ?? null,
+          created_at: row.cat_created_at!,
+          updated_at: row.cat_updated_at!,
+        }
+      : null;
+
+  // Helper to map featured media from query result
+  const mapFeaturedMedia = (row: PostQueryResult) =>
+    row.media_id
+      ? {
+          id: row.media_id,
+          filename: row.media_filename!,
+          mime_type: row.media_mime_type!,
+          size: row.media_size!,
+          alt: row.media_alt ?? null,
+          urls: (row.media_urls as import('../types').MediaUrls | null) ?? null,
+          width: row.media_width ?? null,
+          height: row.media_height ?? null,
+          status: row.media_status ?? 'ready',
+          upload_key: row.media_upload_key ?? null,
+          created_at: row.media_created_at!,
+        }
+      : null;
+
+  // Helper to map DB row to PostWithMedia (for findById/findBySlug with joins)
+  const mapPostDetailRow = (row: PostQueryResult): PostWithMedia => ({
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    excerpt: row.excerpt,
+    content: row.content as import('../types').TipTapDocument | null,
+    featured_image: row.featured_image,
+    read_time_minute: row.read_time_minute,
+    category_id: row.category_id,
+    locale: row.locale,
+    status: row.status,
+    published_at: row.published_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    category: mapCategory(row),
+    featured_media: mapFeaturedMedia(row),
+  });
+
+  // Helper to map DB row to PostWithCategory (for findAll with joins)
+  const mapPostListRow = (row: PostQueryResult): PostWithCategory => ({
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    excerpt: row.excerpt,
+    content: row.content as import('../types').TipTapDocument | null,
+    featured_image: row.featured_image,
+    read_time_minute: row.read_time_minute,
+    category_id: row.category_id,
+    locale: row.locale,
+    status: row.status,
+    published_at: row.published_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    category: mapCategory(row),
+    featured_media: mapFeaturedMedia(row),
+  });
+
   const findById = (id: string) =>
     query('find_post_by_id', (db) =>
       db
@@ -146,53 +215,7 @@ export const makePostService = Effect.gen(function* () {
     ).pipe(
       Effect.flatMap((result) => {
         if (!result) return Effect.fail(new NotFound({ resource: 'Post', id }));
-
-        const category = result.cat_id
-          ? {
-              id: result.cat_id,
-              name: result.cat_name!,
-              slug: result.cat_slug!,
-              description: result.cat_desc ?? null,
-              created_at: result.cat_created_at!,
-              updated_at: result.cat_updated_at!,
-            }
-          : null;
-
-        const featured_media = result.media_id
-          ? {
-              id: result.media_id,
-              filename: result.media_filename!,
-              mime_type: result.media_mime_type!,
-              size: result.media_size!,
-              alt: result.media_alt ?? null,
-              urls: result.media_urls ?? null,
-              width: result.media_width ?? null,
-              height: result.media_height ?? null,
-              status: (result as PostQueryResult).media_status ?? 'ready',
-              upload_key: (result as PostQueryResult).media_upload_key ?? null,
-              created_at: result.media_created_at!,
-            }
-          : null;
-
-        const post: PostWithMedia = {
-          id: result.id,
-          title: result.title,
-          slug: result.slug,
-          excerpt: result.excerpt,
-          content: result.content,
-          featured_image: result.featured_image,
-          read_time_minute: result.read_time_minute,
-          category_id: result.category_id,
-          locale: result.locale,
-          status: result.status,
-          published_at: result.published_at,
-          created_at: result.created_at,
-          updated_at: result.updated_at,
-          category,
-          featured_media,
-        };
-
-        return Effect.succeed(post);
+        return Effect.succeed(mapPostDetailRow(result as PostQueryResult));
       })
     );
 
@@ -242,53 +265,7 @@ export const makePostService = Effect.gen(function* () {
     ).pipe(
       Effect.flatMap((result) => {
         if (!result) return Effect.fail(new NotFound({ resource: 'Post', id: slug }));
-
-        const category = result.cat_id
-          ? {
-              id: result.cat_id,
-              name: result.cat_name!,
-              slug: result.cat_slug!,
-              description: result.cat_desc ?? null,
-              created_at: result.cat_created_at!,
-              updated_at: result.cat_updated_at!,
-            }
-          : null;
-
-        const featured_media = result.media_id
-          ? {
-              id: result.media_id,
-              filename: result.media_filename!,
-              mime_type: result.media_mime_type!,
-              size: result.media_size!,
-              alt: result.media_alt ?? null,
-              urls: result.media_urls ?? null,
-              width: result.media_width ?? null,
-              height: result.media_height ?? null,
-              status: (result as PostQueryResult).media_status ?? 'ready',
-              upload_key: (result as PostQueryResult).media_upload_key ?? null,
-              created_at: result.media_created_at!,
-            }
-          : null;
-
-        const post: PostWithMedia = {
-          id: result.id,
-          title: result.title,
-          slug: result.slug,
-          excerpt: result.excerpt,
-          content: result.content,
-          featured_image: result.featured_image,
-          read_time_minute: result.read_time_minute,
-          category_id: result.category_id,
-          locale: result.locale,
-          status: result.status,
-          published_at: result.published_at,
-          created_at: result.created_at,
-          updated_at: result.updated_at,
-          category,
-          featured_media,
-        };
-
-        return Effect.succeed(post);
+        return Effect.succeed(mapPostDetailRow(result as PostQueryResult));
       })
     );
 
@@ -440,7 +417,7 @@ export const makePostService = Effect.gen(function* () {
     filter?: PostFilter;
   }) =>
     Effect.gen(function* () {
-      const limit = options?.limit ?? 10;
+      const limit = options?.limit ?? 20;
       const offset = options?.offset ?? 0;
       const filter = options?.filter;
 
@@ -529,52 +506,9 @@ export const makePostService = Effect.gen(function* () {
         }),
       ]);
 
-      const mappedData: PostWithCategory[] = data.map((row) => {
-        const category = row.cat_id
-          ? {
-              id: row.cat_id,
-              name: row.cat_name!,
-              slug: row.cat_slug!,
-              description: row.cat_desc ?? null,
-              created_at: row.cat_created_at!,
-              updated_at: row.cat_updated_at!,
-            }
-          : null;
-
-        const featured_media = row.media_id
-          ? {
-              id: row.media_id,
-              filename: row.media_filename!,
-              mime_type: row.media_mime_type!,
-              size: row.media_size!,
-              alt: row.media_alt ?? null,
-              urls: row.media_urls ?? null,
-              width: row.media_width ?? null,
-              height: row.media_height ?? null,
-              status: (row as PostQueryResult).media_status ?? 'ready',
-              upload_key: (row as PostQueryResult).media_upload_key ?? null,
-              created_at: row.media_created_at!,
-            }
-          : null;
-
-        return {
-          id: row.id,
-          title: row.title,
-          slug: row.slug,
-          excerpt: row.excerpt,
-          content: row.content,
-          featured_image: row.featured_image,
-          read_time_minute: row.read_time_minute,
-          category_id: row.category_id,
-          locale: row.locale,
-          status: row.status,
-          published_at: row.published_at,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-          category,
-          featured_media,
-        };
-      });
+      const mappedData: PostWithCategory[] = data.map((row) =>
+        mapPostListRow(row as PostQueryResult)
+      );
 
       return {
         data: mappedData,

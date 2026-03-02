@@ -44,6 +44,7 @@ export class AuthService extends Context.Tag('AuthService')<
       sessionId: string
     ) => Effect.Effect<Session, SessionExpired | DatabaseError>;
     readonly destroySession: (sessionId: string) => Effect.Effect<void, DatabaseError>;
+    readonly deleteSessionsByUserId: (userId: string) => Effect.Effect<void, DatabaseError>;
     readonly validateCredentials: (
       email: string,
       password: string
@@ -119,6 +120,11 @@ export const makeAuthService = Effect.gen(function* () {
     query('destroy_session', (db) =>
       db.deleteFrom('sessions').where('id', '=', sessionId).execute()
     ).pipe(Effect.map(() => undefined));
+
+  const deleteSessionsByUserId = (userId: string): Effect.Effect<void, DatabaseError> =>
+    query('delete_sessions_by_user', (db) =>
+      db.deleteFrom('sessions').where('user_id', '=', userId).execute()
+    ).pipe(Effect.asVoid);
 
   const validateCredentials = (
     email: string,
@@ -202,6 +208,7 @@ export const makeAuthService = Effect.gen(function* () {
     createSession,
     validateSession,
     destroySession,
+    deleteSessionsByUserId,
     validateCredentials,
     generateApiKey,
     verifyApiKey,
