@@ -3,10 +3,10 @@ import { useMutation,useQuery } from '@tanstack/react-query'
 import { api } from '~/admin/api'
 import { queryClient } from '~/admin/lib/query-client'
 
-export function useCategories() {
+export function useCategories(params?: Parameters<typeof api.categories.list>[0]) {
   return useQuery({
-    queryKey: ['categories'],
-    queryFn: api.categories.list,
+    queryKey: ['categories', params],
+    queryFn: () => api.categories.list(params),
   })
 }
 

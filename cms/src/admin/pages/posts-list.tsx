@@ -165,10 +165,10 @@ export function PostsListPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {categories?.data.find(c => c.id === (post.categoryId || (post as any).category_id))?.name || '-'}
+                    {categories?.data.find((c) => c.id === post.category_id)?.name || '-'}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDate(post.createdAt || (post as any).created_at)}
+                    {formatDate(post.created_at)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -210,22 +210,22 @@ export function PostsListPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {filteredPosts.length} of {posts?.total || 0} posts
+          Showing {filteredPosts.length} of {posts?.meta.total ?? 0} posts
         </p>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setPage(p => Math.max(1, p - 1))}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
           >
             Previous
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
-            onClick={() => setPage(p => p + 1)}
-            disabled={!posts || posts.data.length < (posts.pageSize || 10)}
+            onClick={() => setPage((p) => p + 1)}
+            disabled={!posts || (page - 1) * 20 + posts.data.length >= posts.meta.total}
           >
             Next
           </Button>

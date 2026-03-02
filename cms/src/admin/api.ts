@@ -8,11 +8,15 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+interface PaginationMeta {
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 interface PaginatedResponse<T> {
   data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
+  meta: PaginationMeta;
 }
 
 // Authentication is handled by HttpOnly session cookies set by the server.
@@ -79,12 +83,20 @@ async function getCurrentUser() {
 }
 
 // Categories
-async function getCategories() {
-  return request<PaginatedResponse<{ id: string; name: string; slug: string; createdAt: string }>>('/categories');
+async function getCategories(params?: { page?: number; pageSize?: number }) {
+  const pageSize = params?.pageSize ?? 100;
+  const page = params?.page ?? 1;
+  const offset = (page - 1) * pageSize;
+  const searchParams = new URLSearchParams();
+  searchParams.set('limit', pageSize.toString());
+  searchParams.set('offset', offset.toString());
+  return request<PaginatedResponse<{ id: string; name: string; slug: string; created_at: string }>>(
+    `/categories?${searchParams.toString()}`
+  );
 }
 
 async function getCategory(id: string) {
-  return request<{ id: string; name: string; slug: string; createdAt: string }>(`/categories/${id}`);
+  return request<{ id: string; name: string; slug: string; created_at: string }>(`/categories/${id}`);
 }
 
 async function createCategory(data: { name: string; slug?: string }) {
@@ -106,13 +118,23 @@ async function deleteCategory(id: string) {
 }
 
 // Posts
-async function getPosts(params?: { status?: string; locale?: string; categoryId?: string; page?: number }) {
+async function getPosts(params?: {
+  status?: string;
+  locale?: string;
+  categoryId?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const pageSize = params?.pageSize ?? 20;
+  const page = params?.page ?? 1;
+  const offset = (page - 1) * pageSize;
   const searchParams = new URLSearchParams();
   if (params?.status) searchParams.set('status', params.status);
   if (params?.locale) searchParams.set('locale', params.locale);
-  if (params?.categoryId) searchParams.set('categoryId', params.categoryId);
-  if (params?.page) searchParams.set('page', params.page.toString());
-  
+  if (params?.categoryId) searchParams.set('category_id', params.categoryId);
+  searchParams.set('limit', pageSize.toString());
+  searchParams.set('offset', offset.toString());
+
   const query = searchParams.toString();
   return request<PaginatedResponse<{
     id: string;
@@ -120,10 +142,10 @@ async function getPosts(params?: { status?: string; locale?: string; categoryId?
     slug: string;
     status: string;
     locale: string;
-    categoryId: string | null;
+    category_id: string | null;
     featuredImageId: string | null;
     publishedAt: string | null;
-    createdAt: string;
+    created_at: string;
   }>>(`/posts${query ? `?${query}` : ''}`);
 }
 
@@ -247,11 +269,15 @@ async function unpublishPost(id: string) {
 }
 
 // Galleries
-async function getGalleries(params?: { status?: string; page?: number }) {
+async function getGalleries(params?: { status?: string; page?: number; pageSize?: number }) {
+  const pageSize = params?.pageSize ?? 20;
+  const page = params?.page ?? 1;
+  const offset = (page - 1) * pageSize;
   const searchParams = new URLSearchParams();
   if (params?.status) searchParams.set('status', params.status);
-  if (params?.page) searchParams.set('page', params.page.toString());
-  
+  searchParams.set('limit', pageSize.toString());
+  searchParams.set('offset', offset.toString());
+
   const query = searchParams.toString();
   return request<PaginatedResponse<{
     id: string;
@@ -316,7 +342,15 @@ async function unpublishGallery(id: string) {
 }
 
 // Media
-async function getMedia() {
+async function getMedia(params?: { page?: number; pageSize?: number }) {
+  const pageSize = params?.pageSize ?? 50;
+  const page = params?.page ?? 1;
+  const offset = (page - 1) * pageSize;
+  const searchParams = new URLSearchParams();
+  searchParams.set('limit', pageSize.toString());
+  searchParams.set('offset', offset.toString());
+
+  const query = searchParams.toString();
   return request<PaginatedResponse<{
     id: string;
     filename: string;
@@ -326,7 +360,7 @@ async function getMedia() {
     urls: { original: string; thumbnail: string; small: string; large: string } | null;
     status: 'uploading' | 'processing' | 'ready' | 'failed';
     created_at: string;
-  }>>('/media');
+  }>>(`/media${query ? `?${query}` : ''}`);
 }
 
 async function getMediaById(id: string) {

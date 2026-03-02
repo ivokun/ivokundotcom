@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { api } from '~/admin/api'
 import { queryClient } from '~/admin/lib/query-client'
 
-export function useMedia() {
+export function useMedia(params?: Parameters<typeof api.media.list>[0]) {
   return useQuery({
-    queryKey: ['media'],
-    queryFn: api.media.list,
+    queryKey: ['media', params],
+    queryFn: () => api.media.list(params),
     // Refetch periodically to pick up processing completions
     refetchInterval: (query) => {
       const data = query.state.data

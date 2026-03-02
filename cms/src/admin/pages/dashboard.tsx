@@ -17,9 +17,9 @@ export function DashboardPage() {
   const { data: categories } = useCategories()
 
   const stats = [
-    { label: 'Total Posts', value: posts?.total || 0, icon: FileText, color: 'text-blue-500' },
-    { label: 'Media Items', value: media?.total || 0, icon: ImageIcon, color: 'text-green-500' },
-    { label: 'Categories', value: categories?.total || 0, icon: Tags, color: 'text-purple-500' },
+    { label: 'Total Posts', value: posts?.meta.total ?? 0, icon: FileText, color: 'text-blue-500' },
+    { label: 'Media Items', value: media?.meta.total ?? 0, icon: ImageIcon, color: 'text-green-500' },
+    { label: 'Categories', value: categories?.meta.total ?? 0, icon: Tags, color: 'text-purple-500' },
   ]
 
   return (
@@ -75,7 +75,7 @@ export function DashboardPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
-                      {formatDate(post.createdAt || (post as any).created_at)}
+                      {formatDate(post.created_at)}
                     </TableCell>
                   </TableRow>
                 ))}
