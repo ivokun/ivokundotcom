@@ -250,7 +250,8 @@ export type UpdateHomeInput = typeof UpdateHomeInput.Type;
 export const ApiKey = Schema.Struct({
   id: Cuid2,
   name: NonEmptyString,
-  prefix: Schema.String.pipe(Schema.length(8)),
+  // Prefix is first 12 characters of the key — aligned with auth.service.ts and middleware.ts
+  prefix: Schema.String.pipe(Schema.minLength(8), Schema.maxLength(12)),
   last_used_at: Schema.NullOr(Schema.Date),
   created_at: Schema.Date,
 });
