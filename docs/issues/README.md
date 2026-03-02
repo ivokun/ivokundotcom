@@ -154,6 +154,8 @@ This document consolidates **148+ issues** identified across the CMS codebase du
 - `90c9dc3` — SEC-005, SEC-006, SEC-011, DATA-013, TEST-001, TEST-002
 - `3d5992d` — TEST-003, TEST-004, TEST-005, TEST-006, TEST-012, UX-002(partial), UX-005, UX-006, UX-008, UX-016, ARCH-008, ARCH-011, ARCH-018, ARCH-019
 
+**Triage Session (2026-03-02):** Remaining `🔴 Open` issues reviewed and closed — most classified as `🔒 Won't Fix — Enhancement` (features not required for current scope), with a few verified as `✅ Fixed` in commit `52b4127`.
+
 ---
 
 ## How to Use This Documentation

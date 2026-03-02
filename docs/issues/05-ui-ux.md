@@ -53,7 +53,7 @@ export class ErrorBoundary extends React.Component {
 |---|---|
 | **File** | `rich-text-editor.tsx:63-86, 151-153` |
 | **Issue** | `onMouseDown` breaks keyboard navigation, missing `aria-pressed` |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 **Fix:**
 ```tsx
@@ -185,7 +185,7 @@ const validate = () => {
 |---|---|
 | **File** | `user.service.ts`, `settings.tsx` |
 | **Issue** | No UI or API for password change |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement (requires backend endpoint first)
 
 ---
 
@@ -236,7 +236,7 @@ const validate = () => {
 |---|---|
 | **File** | `media-picker.tsx:68-105` |
 | **Issue** | Empty grid without guidance when no media |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -256,7 +256,7 @@ const validate = () => {
 |---|---|
 | **Files** | `galleries-list.tsx`, `posts-list.tsx` |
 | **Issue** | No bulk delete, status changes |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -265,7 +265,7 @@ const validate = () => {
 |---|---|
 | **File** | `media.tsx:117-136` |
 | **Issue** | Basic file input, no drag-and-drop zone |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -274,7 +274,7 @@ const validate = () => {
 |---|---|
 | **File** | `image.service.ts`, `media.tsx` |
 | **Issue** | No rotate, crop, or adjust images |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -283,7 +283,7 @@ const validate = () => {
 |---|---|
 | **File** | `use-media.ts:47-48` |
 | **Issue** | Only global `isPending`, no per-file states |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -292,7 +292,7 @@ const validate = () => {
 |---|---|
 | **File** | `gallery-form.tsx` |
 | **Issue** | No UI for selecting category despite schema support |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -301,7 +301,7 @@ const validate = () => {
 |---|---|
 | **File** | `categories.tsx` |
 | **Issue** | No visibility into category usage |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -332,7 +332,7 @@ const validate = () => {
 |---|---|
 | **File** | `settings.tsx:30-35` |
 | **Issue** | Check happens after mount |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 

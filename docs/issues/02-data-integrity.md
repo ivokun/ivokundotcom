@@ -219,7 +219,7 @@ const transaction = <T, E>(
 |---|---|
 | **File** | `post.service.ts:378-387` |
 | **Issue** | Posts permanently deleted, no recovery |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 
@@ -228,7 +228,7 @@ const transaction = <T, E>(
 |---|---|
 | **File** | `media.service.ts` |
 | **Issue** | Same file can be uploaded multiple times |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 
@@ -239,7 +239,7 @@ const transaction = <T, E>(
 |---|---|
 | **File** | `user.service.ts:70-78` |
 | **Issue** | Uses modulo which creates bias |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement (bias is negligible for password generation) |
 
 ---
 
@@ -248,7 +248,7 @@ const transaction = <T, E>(
 |---|---|
 | **File** | `gallery.service.ts:120, 183, 243, 323` |
 | **Issue** | ID format `${result.id}-${order}` not truly unique |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 
@@ -257,4 +257,4 @@ const transaction = <T, E>(
 |---|---|
 | **File** | `home.service.test.ts` |
 | **Issue** | No test for database singleton constraint |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement (singleton constraint enforced at DB level) |

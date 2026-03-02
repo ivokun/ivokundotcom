@@ -63,7 +63,7 @@ const transaction = <T, E>(fn) =>
 |---|---|
 | **File** | `middleware.ts:21-32` |
 | **Issue** | Map-based storage won't work with multiple instances |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Architecture |
 
 **Fix:** Use Redis or database-backed rate limiting.
 
@@ -144,7 +144,7 @@ yield* processJob(job).pipe(
 |---|---|
 | **File** | `image.service.ts:116` |
 | **Issue** | Processing 4 variants in parallel can exhaust memory |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Architecture |
 
 ---
 
@@ -155,7 +155,7 @@ yield* processJob(job).pipe(
 |---|---|
 | **File** | Database schema |
 | **Issue** | No `parent_id` field for nested categories |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 
@@ -164,7 +164,7 @@ yield* processJob(job).pipe(
 |---|---|
 | **File** | `schemas.ts:18`, `post.service.ts` |
 | **Issue** | `published_at` exists but no scheduling logic |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 
@@ -173,7 +173,7 @@ yield* processJob(job).pipe(
 |---|---|
 | **File** | `storage.service.ts:128-150` |
 | **Issue** | Fixed 600-second expiration for all uploads |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 
@@ -182,7 +182,7 @@ yield* processJob(job).pipe(
 |---|---|
 | **File** | `media-processor.ts:88-93` |
 | **Issue** | Failed media stays in 'failed' state forever |
-| **Status** | 🔴 Open |
+| **Status** | ✅ Fixed — `52b4127` |
 
 ---
 
@@ -191,7 +191,7 @@ yield* processJob(job).pipe(
 |---|---|
 | **File** | `use-media.ts:23-48` |
 | **Issue** | Filename used as key, collision with same name files |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 

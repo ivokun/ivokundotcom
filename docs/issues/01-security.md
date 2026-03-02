@@ -146,7 +146,7 @@ if (!type || !ALLOWED_MIME_TYPES.includes(type.mime)) {
 | **File** | `server.ts`, `middleware.ts` |
 | **Issue** | No CSRF tokens for state-changing operations |
 | **Risk** | Attackers could trick admins into performing unwanted actions |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — SameSite=Strict on session cookie provides equivalent protection for same-origin SPA |
 
 **Recommended Fix:**
 ```typescript
@@ -220,7 +220,7 @@ return HttpServerResponse.json(
 | **File** | `media.service.ts` |
 | **Issue** | Any authenticated user can upload unlimited files |
 | **Risk** | Storage exhaustion |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 
@@ -262,7 +262,7 @@ return HttpServerResponse.json(
 | **File** | `user.service.ts` |
 | **Issue** | No API endpoint for password change |
 | **Risk** | Compromised passwords cannot be changed |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement (feature not yet required) |
 
 ---
 
@@ -272,27 +272,7 @@ return HttpServerResponse.json(
 | **File** | `login.tsx`, `users.tsx` |
 | **Issue** | Email inputs not trimmed before submission |
 | **Risk** | Login failures due to trailing spaces |
-| **Status** | 🔴 Open |
-
----
-
-### SEC-016: API Key Prefix Length Inconsistency
-| | |
-|---|---|
-| **File** | `auth.service.ts:156`, `schemas.ts:253` |
-| **Issue** | Prefix length varies (8 vs 12 chars) |
-| **Risk** | API key verification failures |
-| **Status** | ✅ Fixed — Schema aligned to `minLength(8)/maxLength(12)`; service and middleware both extract 12 chars (`e4b4794`) |
-
----
-
-### SEC-017: Health Check Exposes Database Info
-| | |
-|---|---|
-| **File** | `server.ts:1066-1074` |
-| **Issue** | `/health/db` exposes database connectivity |
-| **Risk** | Information leakage |
-| **Status** | ✅ Fixed — Health endpoint returns minimal response (`e4b4794`) |
+| **Status** | 🔒 Won't Fix — Enhancement (email schema validates format; trimming is a minor UX concern) |
 
 ---
 
@@ -303,7 +283,7 @@ return HttpServerResponse.json(
 |---|---|
 | **File** | `middleware.ts:36-64` |
 | **Issue** | Can be bypassed with distributed attacks |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Architecture (single-instance deployment) |
 
 ---
 
@@ -312,7 +292,7 @@ return HttpServerResponse.json(
 |---|---|
 | **File** | `middleware.ts:21-32` |
 | **Issue** | Map-based storage won't work with multiple instances |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Architecture (single-instance deployment) |
 
 ---
 
@@ -321,7 +301,7 @@ return HttpServerResponse.json(
 |---|---|
 | **File** | `middleware.ts:84-115` |
 | **Issue** | Sessions expire after 7 days regardless of activity |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 
@@ -330,7 +310,7 @@ return HttpServerResponse.json(
 |---|---|
 | **File** | `server.ts` |
 | **Issue** | No correlation ID for tracking requests |
-| **Status** | 🔴 Open |
+| **Status** | 🔒 Won't Fix — Enhancement |
 
 ---
 

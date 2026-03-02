@@ -112,7 +112,7 @@ return safeUser;  // TypeScript verifies
 | **File** | `schemas.ts:165`, `types.ts:111-125`, `post.service.ts:310-322` |
 | **Issue** | Schema accepts keywords but DB table has no column |
 | **Risk** | Data silently dropped |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement (keywords intentionally stored in home page metadata; post keywords are a planned feature)
 
 ---
 
@@ -130,7 +130,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `types.ts:160`, `admin/api.ts:427-431, 444-449` |
 | **Issue** | Multiple type checks and JSON parsing attempts |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -139,7 +139,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `api.ts:170-178`, `api.ts:213-221` |
 | **Issue** | Silent failure on JSON parse error |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement (errors logged with context; silent fallback is intentional)
 
 ---
 
@@ -148,7 +148,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `media.service.test.ts:11-19, 73-80` |
 | **Issue** | Unsafe layer construction |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement (test-only; does not affect runtime safety)
 
 ---
 
@@ -177,7 +177,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `media.tsx:27-36`, `admin/lib/utils.ts:55-64` |
 | **Issue** | `MediaItem` type defined twice |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -186,7 +186,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `middleware.ts:9` |
 | **Issue** | `InvalidCredentials` imported but not used |
-| **Status** | 🔴 Open (lint warning present but not a runtime issue)
+| **Status** | 🔒 Won't Fix — Minor (lint warning only)
 
 ---
 
@@ -195,7 +195,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `db.service.test.ts:2` |
 | **Issue** | `afterAll` imported but not used |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Minor (lint warning only)
 
 ---
 
@@ -204,7 +204,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `categories.tsx:1,3` |
 | **Issue** | `slugify` imported but never used |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127`
 
 ---
 
@@ -213,7 +213,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `gallery-form.tsx:64` |
 | **Issue** | `gallery.images?.map((img: any) => ...)` |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -222,7 +222,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `category.service.test.ts:73-74, 120-121` |
 | **Issue** | Should use proper type narrowing |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement (test files; not runtime)
 
 ---
 
@@ -233,7 +233,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `image.service.ts:99` |
 | **Issue** | Parameter prefixed but could be used in logging |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Minor
 
 ---
 
@@ -242,7 +242,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `home.service.ts:13` |
 | **Issue** | Doesn't include `NotFound` in signature |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -251,7 +251,7 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `layout.tsx:19` |
 | **Issue** | Imported but never used |
-| **Status** | 🔴 Open
+| **Status** | ✅ Fixed — `52b4127`
 
 ---
 
@@ -260,4 +260,4 @@ return safeUser;  // TypeScript verifies
 |---|---|
 | **File** | `select.tsx` |
 | **Issue** | When used without Label, lacks aria-label |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement

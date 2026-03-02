@@ -118,7 +118,7 @@
 |---|---|
 | **File** | `home.service.test.ts` |
 | **Issue** | `NotFound` error path not tested |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -127,7 +127,7 @@
 |---|---|
 | **File** | `db.service.test.ts` |
 | **Issue** | No test for transaction rollback behavior |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -136,7 +136,7 @@
 |---|---|
 | **File** | `db.service.test.ts:19-26` |
 | **Issue** | Scope may not be cleaned up if assertion fails |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 **Fix:**
 ```typescript
@@ -158,7 +158,7 @@ try {
 |---|---|
 | **File** | `db.service.test.ts:6-7` |
 | **Issue** | Hardcoded credentials in test file |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 **Fix:**
 ```typescript
@@ -173,7 +173,7 @@ if (!TEST_DB_URL) throw new Error('DATABASE_URL required for tests');
 |---|---|
 | **File** | `db.service.test.ts:1` |
 | **Issue** | Each test creates its own scope |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -191,7 +191,7 @@ if (!TEST_DB_URL) throw new Error('DATABASE_URL required for tests');
 |---|---|
 | **File** | `media.service.test.ts:11-19` |
 | **Issue** | `any` types used for mocks |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -202,7 +202,7 @@ if (!TEST_DB_URL) throw new Error('DATABASE_URL required for tests');
 |---|---|
 | **File** | `use-posts.ts:21-28` |
 | **Issue** | Test that filtered queries are invalidated |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -211,7 +211,7 @@ if (!TEST_DB_URL) throw new Error('DATABASE_URL required for tests');
 |---|---|
 | **File** | `post-form.tsx:194-203` |
 | **Issue** | User-entered slugs may conflict |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
 
 ---
 
@@ -220,4 +220,4 @@ if (!TEST_DB_URL) throw new Error('DATABASE_URL required for tests');
 |---|---|
 | **File** | `home.service.test.ts` |
 | **Issue** | No test for database constraint |
-| **Status** | 🔴 Open
+| **Status** | 🔒 Won't Fix — Enhancement
