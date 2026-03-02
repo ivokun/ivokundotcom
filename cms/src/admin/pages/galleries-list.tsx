@@ -74,13 +74,13 @@ export function GalleriesListPage() {
                   <Badge variant={gallery.status === 'published' ? 'default' : 'secondary'}>
                     {gallery.status}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">{gallery.imageCount} images</span>
+                  <span className="text-xs text-muted-foreground">{gallery.image_count} images</span>
                 </div>
                 <CardTitle className="truncate text-lg">{gallery.title}</CardTitle>
               </CardHeader>
               <CardContent className="flex-1 p-4 pt-0">
                 <p className="text-xs text-muted-foreground">
-                  Created {formatDate(gallery.createdAt || (gallery as any).created_at)}
+                  Created {formatDate(gallery.created_at)}
                 </p>
               </CardContent>
               <CardFooter className="flex gap-2 p-4 pt-0">

@@ -158,7 +158,7 @@ export function UsersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDate(user.createdAt)}
+                    {formatDate(user.created_at)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

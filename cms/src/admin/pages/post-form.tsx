@@ -61,7 +61,7 @@ export function PostFormPage() {
         : '';
       
       // Handle both camelCase and snake_case for featured image
-      const featuredImageId = post.featuredImageId || (post as any).featured_image || '';
+      const featuredImageId = post.featuredImageId || post.featured_image || '';
       
       setFormData({
         title: post.title || '',
@@ -366,11 +366,11 @@ export function PostFormPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Created</span>
-                  <span>{post ? formatDate(post.createdAt || (post as any).created_at) : '-'}</span>
+                  <span>{post ? formatDate(post.createdAt || post.created_at) : '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Last Updated</span>
-                  <span>{post ? formatDate(post.updatedAt || (post as any).updated_at) : '-'}</span>
+                  <span>{post ? formatDate(post.updatedAt || post.updated_at) : '-'}</span>
                 </div>
               </CardContent>
             </Card>

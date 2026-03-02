@@ -17,10 +17,13 @@ import { Console, Effect, Layer, ParseResult, Redacted, Schema } from 'effect';
 
 import { AppConfig, AppConfigLive } from './config';
 import {
+  CategoryNotFound,
   isAppError,
+  MediaNotFound,
   NotFound,
   toHttpStatus,
   toJsonResponse,
+  Unauthorized,
   ValidationError,
 } from './errors';
 import { apiKeyMiddleware, loginRateLimitMiddleware, sessionMiddleware, UserContext } from './middleware';
@@ -211,13 +214,23 @@ const decodeParams =
 // Convert optional to nullable for DB compatibility
 const toNullable = <T>(value: T | undefined): T | null => (value === undefined ? null : value);
 
-// Convert TipTap content
+// Convert TipTap content safely - validates shape before casting
+const toTipTapContent = (value: unknown): TipTapDocument | null => {
+  if (value === null) return null;
+  if (typeof value !== 'object' || value === null) return null;
+  const obj = value as Record<string, unknown>;
+  // TipTap document must have type: 'doc' and content array
+  if (obj['type'] !== 'doc') return null;
+  if (!Array.isArray(obj['content'])) return null;
+  return value as TipTapDocument;
+};
+
+// Convert TipTap content for update (allows undefined)
 const toNullableTipTap = (
   value: typeof UpdatePostInput.Type.content
 ): TipTapDocument | null | undefined => {
   if (value === undefined) return undefined;
-  if (value === null) return null;
-  return value as TipTapDocument;
+  return toTipTapContent(value);
 };
 
 // Default home content
@@ -542,7 +555,7 @@ const adminPostRouter = HttpRouter.empty.pipe(
         title: body.title,
         slug: body.slug,
         excerpt: toNullable(body.excerpt),
-        content: toNullable(body.content) as TipTapDocument | null,
+        content: toTipTapContent(body.content),
         featured_image: toNullable(body.featured_image),
         category_id: toNullable(body.category_id),
         locale: body.locale ?? 'en',
@@ -551,7 +564,14 @@ const adminPostRouter = HttpRouter.empty.pipe(
         published_at: null,
       });
       return yield* HttpServerResponse.json(post, { status: 201 });
-    })
+    }).pipe(
+      Effect.catchTag('CategoryNotFound', (error) =>
+        HttpServerResponse.json(
+          { error: 'CategoryNotFound', message: error.message },
+          { status: 422 }
+        )
+      )
+    )
   ),
   HttpRouter.get(
     '/admin/api/posts/:id',
@@ -580,7 +600,14 @@ const adminPostRouter = HttpRouter.empty.pipe(
         locale: body.locale,
       });
       return yield* HttpServerResponse.json(post);
-    })
+    }).pipe(
+      Effect.catchTag('CategoryNotFound', (error) =>
+        HttpServerResponse.json(
+          { error: 'CategoryNotFound', message: error.message },
+          { status: 422 }
+        )
+      )
+    )
   ),
   HttpRouter.del(
     '/admin/api/posts/:id',
@@ -690,16 +717,16 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
         limit: query.limit,
         offset: query.offset,
       });
-      // Transform response to match frontend expectations
+      // Return snake_case to match DB and other endpoints
       const transformed = {
         data: result.data.map((g) => ({
           id: g.id,
           title: g.title,
           slug: g.slug,
           status: g.status,
-          imageCount: g.images.length,
-          publishedAt: g.published_at,
-          createdAt: g.created_at,
+          image_count: g.images.length,
+          published_at: g.published_at,
+          created_at: g.created_at,
         })),
         meta: result.meta,
       };
@@ -722,7 +749,14 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
         published_at: null,
       });
       return yield* HttpServerResponse.json(gallery, { status: 201 });
-    })
+    }).pipe(
+      Effect.catchTag('MediaNotFound', (error) =>
+        HttpServerResponse.json(
+          { error: 'MediaNotFound', message: error.message },
+          { status: 422 }
+        )
+      )
+    )
   ),
   HttpRouter.get(
     '/admin/api/galleries/:id',
@@ -731,14 +765,8 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
       const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
       const galleryService = yield* GalleryService;
       const gallery = yield* galleryService.findById(id);
-      // Transform snake_case dates to camelCase for frontend
-      const transformed = {
-        ...gallery,
-        publishedAt: gallery.published_at,
-        createdAt: gallery.created_at,
-        updatedAt: gallery.updated_at,
-      };
-      return yield* HttpServerResponse.json(transformed);
+      // Return snake_case consistently
+      return yield* HttpServerResponse.json(gallery);
     })
   ),
   HttpRouter.patch(
@@ -761,7 +789,14 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
         category_id: body.category_id,
       });
       return yield* HttpServerResponse.json(gallery);
-    })
+    }).pipe(
+      Effect.catchTag('MediaNotFound', (error) =>
+        HttpServerResponse.json(
+          { error: 'MediaNotFound', message: error.message },
+          { status: 422 }
+        )
+      )
+    )
   ),
   HttpRouter.del(
     '/admin/api/galleries/:id',
@@ -817,7 +852,7 @@ const adminMiscRouter = HttpRouter.empty.pipe(
       const home = yield* homeService.update({
         title: body.title,
         short_description: body.short_description,
-        description: body.description as TipTapDocument | null | undefined,
+        description: toTipTapContent(body.description),
         hero: body.hero,
         keywords: body.keywords,
       });
@@ -921,15 +956,8 @@ const adminMiscRouter = HttpRouter.empty.pipe(
           .orderBy('created_at', 'desc')
           .execute()
       );
-      // Transform snake_case to camelCase for frontend
-      const transformedKeys = keys.map((key) => ({
-        id: key.id,
-        name: key.name,
-        prefix: key.prefix,
-        lastUsedAt: key.last_used_at,
-        createdAt: key.created_at,
-      }));
-      return yield* HttpServerResponse.json({ data: transformedKeys });
+      // Return snake_case consistently
+      return yield* HttpServerResponse.json({ data: keys });
     })
   ),
   HttpRouter.post(
@@ -956,17 +984,17 @@ const adminMiscRouter = HttpRouter.empty.pipe(
           .executeTakeFirstOrThrow()
       );
 
-      // Transform snake_case to camelCase and include the generated key
-      const transformedKey = {
+      // Return snake_case consistently, include the generated key
+      const responseKey = {
         id: apiKey.id,
         name: apiKey.name,
         prefix: apiKey.prefix,
-        lastUsedAt: apiKey.last_used_at,
-        createdAt: apiKey.created_at,
+        last_used_at: apiKey.last_used_at,
+        created_at: apiKey.created_at,
         key: result.key, // Include the plaintext key (only returned once)
       };
 
-      return yield* HttpServerResponse.json({ data: transformedKey }, { status: 201 });
+      return yield* HttpServerResponse.json({ data: responseKey }, { status: 201 });
     })
   ),
   HttpRouter.del(
@@ -986,14 +1014,8 @@ const adminMiscRouter = HttpRouter.empty.pipe(
     Effect.gen(function* () {
       const userService = yield* UserService;
       const users = yield* userService.findAll();
-      // Transform snake_case to camelCase for frontend
-      const transformedUsers = users.map((user) => ({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        createdAt: user.created_at,
-      }));
-      return yield* HttpServerResponse.json({ data: transformedUsers });
+      // Return snake_case consistently
+      return yield* HttpServerResponse.json({ data: users });
     })
   ),
   HttpRouter.post(
@@ -1011,6 +1033,16 @@ const adminMiscRouter = HttpRouter.empty.pipe(
     Effect.gen(function* () {
       const req = yield* HttpServerRequest.HttpServerRequest;
       const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
+      const { session } = yield* UserContext;
+
+      // Prevent self-deletion
+      if (id === session.user_id) {
+        return yield* HttpServerResponse.json(
+          { error: 'Forbidden', message: 'Cannot delete your own account' },
+          { status: 403 }
+        );
+      }
+
       const userService = yield* UserService;
       yield* userService.deleteUser(id);
       return yield* HttpServerResponse.empty();

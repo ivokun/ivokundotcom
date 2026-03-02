@@ -284,9 +284,9 @@ async function getGalleries(params?: { status?: string; page?: number; pageSize?
     title: string;
     slug: string;
     status: string;
-    imageCount: number;
-    publishedAt: string | null;
-    createdAt: string;
+    image_count: number;
+    published_at: string | null;
+    created_at: string;
   }>>(`/galleries${query ? `?${query}` : ''}`);
 }
 
@@ -297,9 +297,9 @@ async function getGallery(id: string) {
     slug: string;
     description: string;
     status: string;
-    images: Array<{ id: string; mediaId: string; order: number }>;
-    publishedAt: string | null;
-    createdAt: string;
+    images: Array<{ id: string; media_id: string; order: number }>;
+    published_at: string | null;
+    created_at: string;
   }>(`/galleries/${id}`);
 }
 
@@ -503,15 +503,14 @@ async function getApiKeys() {
     id: string;
     name: string;
     prefix: string;
-    keyHash: string;
-    createdAt: string;
-    lastUsedAt: string | null;
+    created_at: string;
+    last_used_at: string | null;
   }> }>('/api-keys');
   return response.data;
 }
 
 async function createApiKey(data: { name: string }) {
-  const response = await request<{ data: { id: string; key: string; name: string; prefix: string; keyHash: string; createdAt: string } }>('/api-keys', {
+  const response = await request<{ data: { id: string; key: string; name: string; prefix: string; created_at: string; last_used_at: string | null } }>('/api-keys', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -524,7 +523,7 @@ async function deleteApiKey(id: string) {
 
 // Users
 async function getUsers() {
-  return request<{ data: Array<{ id: string; email: string; name: string | null; createdAt: string }> }>('/users');
+  return request<{ data: Array<{ id: string; email: string; name: string | null; created_at: string }> }>('/users');
 }
 
 async function inviteUser(data: { name: string; email: string }) {

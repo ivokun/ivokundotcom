@@ -2,7 +2,13 @@ import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
 import slugify from 'slugify';
 
-import { DatabaseError, isUniqueConstraintViolation, NotFound, SlugConflict } from '../errors';
+import {
+  CategoryNotFound,
+  DatabaseError,
+  isUniqueConstraintViolation,
+  NotFound,
+  SlugConflict,
+} from '../errors';
 import type {
   Locale,
   MediaStatus,
@@ -67,11 +73,11 @@ export class PostService extends Context.Tag('PostService')<
   {
     readonly create: (
       data: Omit<NewPost, 'id' | 'created_at' | 'updated_at' | 'slug'> & { slug?: string }
-    ) => Effect.Effect<Post, DatabaseError | SlugConflict>;
+    ) => Effect.Effect<Post, DatabaseError | SlugConflict | CategoryNotFound>;
     readonly update: (
       id: string,
       data: PostUpdate
-    ) => Effect.Effect<Post, DatabaseError | NotFound | SlugConflict>;
+    ) => Effect.Effect<Post, DatabaseError | NotFound | SlugConflict | CategoryNotFound>;
     readonly delete: (id: string) => Effect.Effect<void, DatabaseError | NotFound>;
     readonly findById: (id: string) => Effect.Effect<PostWithMedia, DatabaseError | NotFound>;
     readonly findBySlug: (
@@ -307,6 +313,16 @@ export const makePostService = Effect.gen(function* () {
         return yield* Effect.fail(new SlugConflict({ slug, locale }));
       }
 
+      // Validate category_id if provided
+      if (data.category_id) {
+        const category = yield* query('check_category_exists', (db) =>
+          db.selectFrom('categories').select('id').where('id', '=', data.category_id!).executeTakeFirst()
+        );
+        if (!category) {
+          return yield* Effect.fail(new CategoryNotFound({ categoryId: data.category_id }));
+        }
+      }
+
       const newPost: NewPost = {
         id: createId(),
         title: data.title,
@@ -339,10 +355,10 @@ export const makePostService = Effect.gen(function* () {
 
   const update = (id: string, data: PostUpdate) =>
     Effect.gen(function* () {
-      const current = yield* query('get_post_for_update', (db) => 
-          db.selectFrom('posts').select(['title', 'slug', 'locale']).where('id', '=', id).executeTakeFirst()
+      const current = yield* query('get_post_for_update', (db) =>
+        db.selectFrom('posts').select(['title', 'slug', 'locale']).where('id', '=', id).executeTakeFirst()
       );
-      
+
       if (!current) return yield* Effect.fail(new NotFound({ resource: 'Post', id }));
 
       let slug = undefined;
@@ -350,23 +366,33 @@ export const makePostService = Effect.gen(function* () {
 
       if (data.title || data.slug || data.locale) {
         const candidate = generateSlug(data.title ?? current.title, data.slug);
-        
+
         // If slug changed OR locale changed (conflict scope changed), check conflict
         if (candidate !== current.slug || locale !== current.locale) {
-             const existing = yield* query('check_post_slug_update', (db) =>
-                db
-                .selectFrom('posts')
-                .select('id')
-                .where('slug', '=', candidate)
-                .where('locale', '=', locale)
-                .where('id', '!=', id)
-                .executeTakeFirst()
-            );
+          const existing = yield* query('check_post_slug_update', (db) =>
+            db
+              .selectFrom('posts')
+              .select('id')
+              .where('slug', '=', candidate)
+              .where('locale', '=', locale)
+              .where('id', '!=', id)
+              .executeTakeFirst()
+          );
 
-            if (existing) {
-                return yield* Effect.fail(new SlugConflict({ slug: candidate, locale }));
-            }
-            slug = candidate;
+          if (existing) {
+            return yield* Effect.fail(new SlugConflict({ slug: candidate, locale }));
+          }
+          slug = candidate;
+        }
+      }
+
+      // Validate category_id if provided
+      if (data.category_id !== undefined && data.category_id !== null) {
+        const category = yield* query('check_category_exists_update', (db) =>
+          db.selectFrom('categories').select('id').where('id', '=', data.category_id!).executeTakeFirst()
+        );
+        if (!category) {
+          return yield* Effect.fail(new CategoryNotFound({ categoryId: data.category_id }));
         }
       }
 

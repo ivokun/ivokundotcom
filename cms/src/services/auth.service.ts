@@ -9,7 +9,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { Context, Effect, Layer } from 'effect';
 
 import { DatabaseError, InvalidCredentials, SessionExpired } from '../errors';
-import type { NewSession, Session, User } from '../types';
+import type { NewSession, SafeUser, Session, User } from '../types';
 import { DbService } from './db.service';
 
 // =============================================================================
@@ -47,7 +47,7 @@ export class AuthService extends Context.Tag('AuthService')<
     readonly validateCredentials: (
       email: string,
       password: string
-    ) => Effect.Effect<User, InvalidCredentials | DatabaseError>;
+    ) => Effect.Effect<SafeUser, InvalidCredentials | DatabaseError>;
     readonly generateApiKey: () => {
       key: string;
       prefix: string;
@@ -123,7 +123,7 @@ export const makeAuthService = Effect.gen(function* () {
   const validateCredentials = (
     email: string,
     password: string
-  ): Effect.Effect<User, InvalidCredentials | DatabaseError> =>
+  ): Effect.Effect<SafeUser, InvalidCredentials | DatabaseError> =>
     Effect.gen(function* () {
       const user = yield* query('get_user_by_email', (db) =>
         db
@@ -148,7 +148,7 @@ export const makeAuthService = Effect.gen(function* () {
       // Return user without password_hash
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password_hash: _, ...safeUser } = user;
-      return safeUser as User;
+      return safeUser as SafeUser;
     });
 
   const generateApiKey = () => {

@@ -3,7 +3,13 @@ import { Context, Effect, Layer } from 'effect';
 import { sql } from 'kysely';
 import slugify from 'slugify';
 
-import { DatabaseError, isUniqueConstraintViolation, NotFound, SlugConflict } from '../errors';
+import {
+  DatabaseError,
+  isUniqueConstraintViolation,
+  MediaNotFound,
+  NotFound,
+  SlugConflict,
+} from '../errors';
 import type {
   GalleryUpdate,
   GalleryWithCategory,
@@ -36,11 +42,11 @@ export class GalleryService extends Context.Tag('GalleryService')<
   {
     readonly create: (
       data: Omit<NewGallery, 'id' | 'created_at' | 'updated_at' | 'slug'> & { slug?: string }
-    ) => Effect.Effect<GalleryWithCategory, DatabaseError | SlugConflict>;
+    ) => Effect.Effect<GalleryWithCategory, DatabaseError | SlugConflict | MediaNotFound>;
     readonly update: (
       id: string,
       data: GalleryUpdate
-    ) => Effect.Effect<GalleryWithCategory, DatabaseError | NotFound | SlugConflict>;
+    ) => Effect.Effect<GalleryWithCategory, DatabaseError | NotFound | SlugConflict | MediaNotFound>;
     readonly delete: (id: string) => Effect.Effect<void, DatabaseError | NotFound>;
     readonly findById: (id: string) => Effect.Effect<GalleryWithCategory, DatabaseError | NotFound>;
     readonly findBySlug: (slug: string) => Effect.Effect<GalleryWithCategory, DatabaseError | NotFound>;
@@ -211,6 +217,28 @@ export const makeGalleryService = Effect.gen(function* () {
         return yield* Effect.fail(new SlugConflict({ slug }));
       }
 
+      // Validate media existence if images provided
+      if (data.images && data.images.length > 0) {
+        const mediaIds = data.images;
+        const mediaItems = yield* query('check_media_exists', (db) =>
+          db
+            .selectFrom('media')
+            .select(['id', 'status'])
+            .where('id', 'in', mediaIds)
+            .execute()
+        );
+
+        const readyMediaIds = new Set(
+          mediaItems.filter((m) => m.status === 'ready').map((m) => m.id)
+        );
+
+        for (const mediaId of mediaIds) {
+          if (!readyMediaIds.has(mediaId)) {
+            return yield* Effect.fail(new MediaNotFound({ mediaId }));
+          }
+        }
+      }
+
       const id = createId();
       const imagesJson = JSON.stringify(data.images ?? []);
 
@@ -247,7 +275,7 @@ export const makeGalleryService = Effect.gen(function* () {
         })
       );
 
-      // Transform images to structured format for frontend
+      // Transform images to structured format for response
       const imageIds = asStringArray(result.images);
       return {
         ...result,
@@ -287,6 +315,28 @@ export const makeGalleryService = Effect.gen(function* () {
             return yield* Effect.fail(new SlugConflict({ slug: candidate }));
           }
           slug = candidate;
+        }
+      }
+
+      // Validate media existence if images provided
+      if (data.images !== undefined && data.images.length > 0) {
+        const mediaIds = data.images;
+        const mediaItems = yield* query('check_media_exists_update', (db) =>
+          db
+            .selectFrom('media')
+            .select(['id', 'status'])
+            .where('id', 'in', mediaIds)
+            .execute()
+        );
+
+        const readyMediaIds = new Set(
+          mediaItems.filter((m) => m.status === 'ready').map((m) => m.id)
+        );
+
+        for (const mediaId of mediaIds) {
+          if (!readyMediaIds.has(mediaId)) {
+            return yield* Effect.fail(new MediaNotFound({ mediaId }));
+          }
         }
       }
 

@@ -31,6 +31,13 @@ import {
 import { useCategories, useCreateCategory, useDeleteCategory,useUpdateCategory } from '~/admin/hooks/use-categories'
 import { formatDate } from '~/admin/lib/utils'
 
+// Local type for category being edited
+interface EditingCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export function CategoriesPage() {
   const { data: categories, isLoading } = useCategories()
   const createCategory = useCreateCategory()
@@ -38,7 +45,7 @@ export function CategoriesPage() {
   const deleteCategory = useDeleteCategory()
 
   const [modalOpen, setModalOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<any>(null)
+  const [editingCategory, setEditingCategory] = useState<EditingCategory | null>(null)
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
 
@@ -49,7 +56,7 @@ export function CategoriesPage() {
     setModalOpen(true)
   }
 
-  const openEdit = (cat: any) => {
+  const openEdit = (cat: EditingCategory) => {
     setEditingCategory(cat)
     setName(cat.name)
     setSlug(cat.slug)

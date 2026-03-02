@@ -48,6 +48,12 @@ export type NewUser = Insertable<UsersTable>;
 export type UserUpdate = Updateable<UsersTable>;
 
 /**
+ * Safe user type without sensitive fields (password_hash)
+ * Used for API responses to avoid exposing credentials
+ */
+export type SafeUser = Omit<User, 'password_hash'>;
+
+/**
  * Sessions table - PRD Section 6.2.2
  * User sessions - 7 day expiry (SEC-9.1.3)
  */

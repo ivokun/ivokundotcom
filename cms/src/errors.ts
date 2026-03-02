@@ -55,6 +55,22 @@ export class DuplicateEmail extends Data.TaggedError('DuplicateEmail')<{
   }
 }
 
+export class CategoryNotFound extends Data.TaggedError('CategoryNotFound')<{
+  readonly categoryId: string;
+}> {
+  get message(): string {
+    return `Category '${this.categoryId}' not found`;
+  }
+}
+
+export class MediaNotFound extends Data.TaggedError('MediaNotFound')<{
+  readonly mediaId: string;
+}> {
+  get message(): string {
+    return `Media '${this.mediaId}' not found or not ready`;
+  }
+}
+
 export interface ValidationFieldError {
   readonly path: string;
   readonly message: string;
@@ -108,7 +124,13 @@ export class ConfigError extends Data.TaggedError('ConfigError')<{
 
 export type AuthError = InvalidCredentials | SessionExpired | InvalidApiKey | Unauthorized;
 
-export type ResourceError = NotFound | SlugConflict | ValidationError | DuplicateEmail;
+export type ResourceError =
+  | NotFound
+  | SlugConflict
+  | ValidationError
+  | DuplicateEmail
+  | CategoryNotFound
+  | MediaNotFound;
 
 export type InfraError = DatabaseError | StorageError | ImageProcessingError | ConfigError;
 
@@ -138,6 +160,8 @@ export const toHttpStatus = (error: AppError): number =>
       NotFound: () => 404,
       SlugConflict: () => 409,
       DuplicateEmail: () => 409,
+      CategoryNotFound: () => 422,
+      MediaNotFound: () => 422,
       ValidationError: () => 400,
       DatabaseError: () => 500,
       StorageError: () => 500,
@@ -182,7 +206,9 @@ export const isResourceError = (error: AppError): error is ResourceError => {
     error._tag === 'NotFound' ||
     error._tag === 'SlugConflict' ||
     error._tag === 'ValidationError' ||
-    error._tag === 'DuplicateEmail'
+    error._tag === 'DuplicateEmail' ||
+    error._tag === 'CategoryNotFound' ||
+    error._tag === 'MediaNotFound'
   );
 };
 

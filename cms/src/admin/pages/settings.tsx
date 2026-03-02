@@ -178,7 +178,7 @@ export function SettingsPage() {
                             <span>{key.prefix}••••••••••</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{formatDate(key.createdAt || (key as any).created_at)}</TableCell>
+                         <TableCell className="text-xs text-muted-foreground">{formatDate(key.created_at)}</TableCell>
                         <TableCell>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteKey(key.id)}>
                             <Trash className="h-4 w-4 text-destructive" />
