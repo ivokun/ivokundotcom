@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Black background -->
+  <rect width="100" height="100" fill="#000000"/>
+  
+  <!-- Blue accent bar on left -->
+  <rect x="8" y="15" width="12" height="70" fill="#2563eb"/>
+  
+  <!-- White I letter (brutalist style) -->
+  <rect x="32" y="15" width="20" height="70" fill="#ffffff"/>
+  
+  <!-- White top bar of I -->
+  <rect x="32" y="15" width="50" height="16" fill="#ffffff"/>
+  
+  <!-- White bottom bar of I -->
+  <rect x="32" y="69" width="50" height="16" fill="#ffffff"/>
+</svg>

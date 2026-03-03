@@ -1175,6 +1175,16 @@ const getPublicPath = (relativePath: string): string => {
   return `${basePath}/${relativePath}`;
 };
 
+// Serve favicon
+const faviconRouter = HttpRouter.empty.pipe(
+  HttpRouter.get(
+    '/favicon.svg',
+    HttpServerResponse.file(getPublicPath('public/favicon.svg'), {
+      contentType: 'image/svg+xml',
+    })
+  )
+);
+
 // Serve admin SPA
 const adminStaticRouter = HttpRouter.empty.pipe(
   // Serve index.html for the admin root
@@ -1228,6 +1238,7 @@ const healthRouter = HttpRouter.empty.pipe(
 );
 
 const appRouter = healthRouter.pipe(
+  HttpRouter.concat(faviconRouter),
   HttpRouter.concat(authRouter),
   HttpRouter.concat(publicRouter),
   HttpRouter.concat(adminRouter),

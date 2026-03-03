@@ -297,6 +297,7 @@ async function getGallery(id: string) {
     slug: string;
     description: string;
     status: string;
+    category_id: string | null;
     images: Array<{ id: string; media_id: string; order: number }>;
     published_at: string | null;
     created_at: string;
@@ -308,6 +309,7 @@ async function createGallery(data: {
   slug?: string;
   description?: string;
   status: string;
+  categoryId?: string;
   images?: Array<{ mediaId: string; order: number }>;
 }) {
   return request('/galleries', {
@@ -321,6 +323,7 @@ async function updateGallery(id: string, data: Partial<{
   slug: string;
   description: string;
   status: string;
+  categoryId?: string;
   images: Array<{ id: string; mediaId: string; order: number }>;
 }>) {
   return request(`/galleries/${id}`, {

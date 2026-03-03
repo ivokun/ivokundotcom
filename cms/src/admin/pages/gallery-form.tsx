@@ -11,7 +11,15 @@ import { Button } from '~/admin/components/ui/button'
 import { Card, CardContent } from '~/admin/components/ui/card'
 import { Input } from '~/admin/components/ui/input'
 import { Label } from '~/admin/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/admin/components/ui/select'
 import { Textarea } from '~/admin/components/ui/textarea'
+import { useCategories } from '~/admin/hooks/use-categories'
 import {
   useCreateGallery,
   useGallery,
@@ -28,6 +36,7 @@ export function GalleryFormPage() {
   const navigate = useNavigate()
 
   const { data: gallery, isLoading: galleryLoading } = useGallery(id || '')
+  const { data: categoriesData } = useCategories()
   const { data: mediaData } = useMedia()
 
   const createGallery = useCreateGallery()
@@ -40,6 +49,7 @@ export function GalleryFormPage() {
     slug: '',
     description: '',
     status: 'draft',
+    categoryId: 'none',
     images: [] as Array<{ id: string; mediaId: string; order: number }>,
   })
 
@@ -60,6 +70,7 @@ export function GalleryFormPage() {
         slug: gallery.slug || '',
         description: gallery.description || '',
         status: gallery.status || 'draft',
+        categoryId: gallery.category_id || 'none',
         images:
           gallery.images?.map((img: any) => ({
             id: img.id,
@@ -80,7 +91,12 @@ export function GalleryFormPage() {
   }
 
   const onSave = (publish: boolean = false) => {
-    const data = { ...formData, status: publish ? 'published' : formData.status }
+    // Convert "none" to empty string for API (which will be sent as null)
+    const data = {
+      ...formData,
+      status: publish ? 'published' : formData.status,
+      categoryId: formData.categoryId === 'none' ? '' : formData.categoryId,
+    }
 
     if (isNew) {
       createGallery.mutate(data, {
@@ -247,6 +263,25 @@ export function GalleryFormPage() {
                 onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="Optional gallery description"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select
+                value={formData.categoryId}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, categoryId: value }))}
+              >
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select a category (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No category</SelectItem>
+                  {categoriesData?.data.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant={formData.status === 'published' ? 'default' : 'secondary'}>{formData.status}</Badge>

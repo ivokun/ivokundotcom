@@ -1,16 +1,12 @@
 ---
 import NewLayout from '@layouts/NewLayout.astro';
 import Navigation from '@components/Navigation.astro';
-import GalleryGrid from '@components/GalleryGrid.astro';
-import { fetchGalleries, type Gallery, convertToGalleryItems } from '@api/gallery';
+import { fetchGalleries, type Gallery, getGalleryImageUrl } from '@api/gallery';
 import { fetchCategories, type Category, formatCategoryName } from "@api/category";
 
 // Fetch gallery data from API
 const galleriesResponse = await fetchGalleries();
 const galleries = galleriesResponse.data;
-
-// Convert API response to gallery items for the component
-const galleryItems = convertToGalleryItems(galleries);
 
 // Fetch categories
 const categoriesResponse = await fetchCategories();
@@ -19,6 +15,27 @@ const allCategories = categoriesResponse.data;
 // Filter categories that have galleries (check which categories are used)
 const categoryIdsWithGalleries = new Set(galleries.map(g => g.category_id).filter(Boolean));
 const galleryCategories = allCategories.filter(c => categoryIdsWithGalleries.has(c.id));
+
+// Helper to get category name for a gallery
+function getCategoryName(gallery: Gallery): string {
+  return gallery.category?.name?.toLowerCase() ?? 'uncategorized';
+}
+
+// Helper to get first image URL from gallery
+function getFirstImageUrl(gallery: Gallery, size: 'thumbnail' | 'small' | 'large' = 'large'): string {
+  if (gallery.images.length === 0) {
+    return '/placeholder-gallery.jpg';
+  }
+  const firstImage = gallery.images[0];
+  return getGalleryImageUrl(firstImage, size) || '/placeholder-gallery.jpg';
+}
+
+// Helper to get image count text
+function getImageCountText(count: number): string {
+  if (count === 0) return 'No images';
+  if (count === 1) return '1 image';
+  return `${count} images`;
+}
 ---
 
 <NewLayout 
@@ -39,7 +56,75 @@ const galleryCategories = allCategories.filter(c => categoryIdsWithGalleries.has
           ))}
         </div>
         
-        <GalleryGrid items={galleryItems} />
+        <div class="galleries-grid">
+          {galleries.map((gallery) => (
+            <article class="gallery-card" data-category={getCategoryName(gallery)}>
+              <a href={`/gallery/${gallery.slug}`} class="gallery-card-link">
+                <div class="gallery-preview">
+                  {gallery.images.length <= 1 ? (
+                    // Single image layout
+                    <div class="gallery-single-image">
+                      <img 
+                        src={getFirstImageUrl(gallery, 'large')} 
+                        alt={gallery.title}
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    // Multiple images - show first as main with overlay count
+                    <div class="gallery-multi-preview">
+                      <div class="gallery-main-image">
+                        <img 
+                          src={getFirstImageUrl(gallery, 'large')} 
+                          alt={gallery.title}
+                          loading="lazy"
+                        />
+                      </div>
+                      {gallery.images.length > 1 && (
+                        <div class="gallery-image-count">
+                          <span class="count-icon">+</span>
+                          <span class="count-text">{gallery.images.length - 1} more</span>
+                        </div>
+                      )}
+                      {/* Show thumbnails of additional images */}
+                      {gallery.images.length > 1 && (
+                        <div class="gallery-thumbnails">
+                          {gallery.images.slice(1, 4).map((image, index) => (
+                            <div class="thumbnail-item" style={`--delay: ${index * 0.1}s`}>
+                              <img 
+                                src={getGalleryImageUrl(image, 'thumbnail') || ''} 
+                                alt=""
+                                loading="lazy"
+                              />
+                            </div>
+                          ))}
+                          {gallery.images.length > 4 && (
+                            <div class="thumbnail-more">
+                              <span>+{gallery.images.length - 4}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <div class="gallery-card-info">
+                  <div class="gallery-card-meta">
+                    <span class="gallery-card-category" data-category={getCategoryName(gallery)}>
+                      {getCategoryName(gallery).toUpperCase()}
+                    </span>
+                    <span class="gallery-card-count">{getImageCountText(gallery.images.length)}</span>
+                  </div>
+                  <h3 class="gallery-card-title">{gallery.title}</h3>
+                  {gallery.description && (
+                    <p class="gallery-card-description">{gallery.description}</p>
+                  )}
+                </div>
+              </a>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   </main>
@@ -82,6 +167,263 @@ const galleryCategories = allCategories.filter(c => categoryIdsWithGalleries.has
     box-shadow: 4px 4px 0 var(--color-blue);
   }
 
+  /* Gallery Grid Layout */
+  .galleries-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2.5rem;
+  }
+
+  .gallery-card {
+    background: var(--color-white);
+    border: 4px solid var(--color-black);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .gallery-card:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 8px 8px 0 var(--color-blue);
+  }
+
+  .gallery-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* Gallery Preview Area */
+  .gallery-preview {
+    position: relative;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background: var(--color-gray-light, #f5f5f5);
+  }
+
+  /* Single Image Layout */
+  .gallery-single-image {
+    width: 100%;
+    height: 100%;
+  }
+
+  .gallery-single-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .gallery-card:hover .gallery-single-image img {
+    transform: scale(1.05);
+  }
+
+  /* Multi Image Preview Layout */
+  .gallery-multi-preview {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .gallery-main-image {
+    width: 100%;
+    height: 100%;
+  }
+
+  .gallery-main-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .gallery-card:hover .gallery-main-image img {
+    transform: scale(1.05);
+  }
+
+  /* Image Count Badge */
+  .gallery-image-count {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--color-black);
+    color: var(--color-white);
+    padding: 0.5rem 1rem;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    box-shadow: 3px 3px 0 var(--color-blue);
+  }
+
+  .count-icon {
+    font-size: 1rem;
+  }
+
+  /* Thumbnails Strip */
+  .gallery-thumbnails {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+  }
+
+  .gallery-card:hover .gallery-thumbnails {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .thumbnail-item {
+    width: 50px;
+    height: 50px;
+    border: 2px solid var(--color-white);
+    overflow: hidden;
+    flex-shrink: 0;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: thumbnailFadeIn 0.3s ease forwards;
+    animation-delay: var(--delay, 0s);
+  }
+
+  @keyframes thumbnailFadeIn {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .thumbnail-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .thumbnail-more {
+    width: 50px;
+    height: 50px;
+    background: var(--color-blue);
+    color: var(--color-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  /* Gallery Card Info */
+  .gallery-card-info {
+    padding: 1.5rem;
+  }
+
+  .gallery-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .gallery-card-category {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    border: 2px solid var(--color-black);
+    color: var(--color-black);
+  }
+
+  .gallery-card-category[data-category="tech"],
+  .gallery-card-category[data-category="technology"] {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+  }
+
+  .gallery-card-category[data-category="photography"] {
+    border-color: var(--color-black);
+    color: var(--color-black);
+  }
+
+  .gallery-card-category[data-category="travel"] {
+    border-color: #e74c3c;
+    color: #e74c3c;
+  }
+
+  .gallery-card-category[data-category="food"] {
+    border-color: #f39c12;
+    color: #f39c12;
+  }
+
+  .gallery-card-category[data-category="science"] {
+    border-color: #27ae60;
+    color: #27ae60;
+  }
+
+  .gallery-card-category[data-category="business"] {
+    border-color: #3498db;
+    color: #3498db;
+  }
+
+  .gallery-card-category[data-category="music"] {
+    border-color: #9b59b6;
+    color: #9b59b6;
+  }
+
+  .gallery-card-category[data-category="lifestyle"] {
+    border-color: #e91e63;
+    color: #e91e63;
+  }
+
+  .gallery-card-category[data-category="programming"] {
+    border-color: #00bcd4;
+    color: #00bcd4;
+  }
+
+  .gallery-card-category[data-category="design"] {
+    border-color: #ff5722;
+    color: #ff5722;
+  }
+
+  .gallery-card-category[data-category="uncategorized"] {
+    border-color: var(--color-gray);
+    color: var(--color-gray);
+  }
+
+  .gallery-card-count {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--color-gray);
+  }
+
+  .gallery-card-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    text-transform: none;
+    line-height: 1.3;
+  }
+
+  .gallery-card-description {
+    font-size: 0.9rem;
+    color: var(--color-gray);
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Mobile Styles */
   @media (max-width: 768px) {
     .section {
       padding: 2rem 0;
@@ -89,11 +431,38 @@ const galleryCategories = allCategories.filter(c => categoryIdsWithGalleries.has
 
     .gallery-filters {
       margin-bottom: 2rem;
+      gap: 0.5rem;
     }
 
     .filter-btn {
       padding: 0.5rem 1rem;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
+    }
+
+    .galleries-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .gallery-card-info {
+      padding: 1rem;
+    }
+
+    .gallery-card-title {
+      font-size: 1.1rem;
+    }
+
+    /* Always show thumbnails on mobile */
+    .gallery-thumbnails {
+      opacity: 1;
+      transform: translateY(0);
+      padding: 0.75rem;
+    }
+
+    .thumbnail-item {
+      opacity: 1;
+      transform: none;
+      animation: none;
     }
   }
 </style>
@@ -101,7 +470,7 @@ const galleryCategories = allCategories.filter(c => categoryIdsWithGalleries.has
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const filterBtns = document.querySelectorAll('.filter-btn');
-    const galleryItems = document.querySelectorAll('.gallery-item');
+    const galleryCards = document.querySelectorAll('.gallery-card');
 
     filterBtns.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -112,9 +481,9 @@ const galleryCategories = allCategories.filter(c => categoryIdsWithGalleries.has
 
         const filter = (btn as HTMLElement).dataset.filter;
 
-        // Show/hide gallery items based on filter
-        galleryItems.forEach(item => {
-          const el = item as HTMLElement;
+        // Show/hide gallery cards based on filter
+        galleryCards.forEach(card => {
+          const el = card as HTMLElement;
           if (filter === 'all' || el.dataset.category === filter) {
             el.style.display = 'block';
           } else {
