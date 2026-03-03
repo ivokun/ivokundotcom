@@ -3,6 +3,7 @@ import { Context, Effect, Layer } from 'effect';
 import { DatabaseError, NotFound } from '../errors';
 import type { Home, HomeUpdate } from '../types';
 import { DbService } from './db.service';
+import { WebhookService } from './webhook.service';
 
 const HOME_ID = 'singleton';
 
@@ -34,6 +35,17 @@ const serializeKeywords = (keywords: string[] | undefined): string | null =>
 
 export const makeHomeService = Effect.gen(function* () {
   const { query } = yield* DbService;
+  const webhookService = yield* WebhookService;
+
+  // Helper to trigger deploy in background (fire-and-forget)
+  const triggerDeploy = () =>
+    webhookService.triggerDeploy().pipe(
+      Effect.catchAll((error) =>
+        Effect.logWarning(`Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
+      ),
+      Effect.fork,
+      Effect.andThen(() => Effect.void)
+    );
 
   const get = () =>
     query('get_home', (db) =>
@@ -75,6 +87,8 @@ export const makeHomeService = Effect.gen(function* () {
           .returningAll()
           .executeTakeFirstOrThrow()
       );
+
+      yield* triggerDeploy();
 
       return {
         ...result,

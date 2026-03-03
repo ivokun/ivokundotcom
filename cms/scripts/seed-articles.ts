@@ -8,6 +8,7 @@ import { Effect, Layer } from 'effect';
 
 import { DbService, DbServiceLive } from '../src/services/db.service';
 import { PostService, PostServiceLive } from '../src/services/post.service';
+import { WebhookServiceLive } from '../src/services/webhook.service';
 
 const DATABASE_URL =
   process.env['DATABASE_URL'] ?? 'postgres://cms_user:cms_password@localhost:5432/ivokun_cms';
@@ -241,6 +242,7 @@ const program = Effect.gen(function* () {
 });
 
 const MainLayer = PostServiceLive.pipe(
+  Layer.provide(WebhookServiceLive),
   Layer.provideMerge(DbServiceLive({ connectionString: DATABASE_URL }))
 );
 

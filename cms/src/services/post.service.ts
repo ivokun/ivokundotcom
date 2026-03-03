@@ -21,6 +21,7 @@ import type {
   Status,
 } from '../types';
 import { DbService } from './db.service';
+import { WebhookService } from './webhook.service';
 
 export interface PostFilter {
   locale?: Locale;
@@ -96,6 +97,17 @@ export class PostService extends Context.Tag('PostService')<
 
 export const makePostService = Effect.gen(function* () {
   const { query } = yield* DbService;
+  const webhookService = yield* WebhookService;
+
+  // Helper to trigger deploy in background (fire-and-forget)
+  const triggerDeploy = () =>
+    webhookService.triggerDeploy().pipe(
+      Effect.catchAll((error) =>
+        Effect.logWarning(`Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
+      ),
+      Effect.fork,
+      Effect.andThen(() => Effect.void)
+    );
 
   const generateSlug = (title: string, override?: string): string => {
     return slugify(override || title, { lower: true, strict: true });
@@ -314,7 +326,7 @@ export const makePostService = Effect.gen(function* () {
         published_at: data.published_at ?? null,
       };
 
-      return yield* query('create_post', (db) =>
+      const result = yield* query('create_post', (db) =>
         db.insertInto('posts').values(newPost).returningAll().executeTakeFirstOrThrow()
       ).pipe(
         Effect.catchAll((error: DatabaseError) => {
@@ -328,6 +340,11 @@ export const makePostService = Effect.gen(function* () {
           return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
         })
       );
+
+      // Trigger deploy after successful create
+      yield* triggerDeploy();
+
+      return result;
     });
 
   const update = (id: string, data: PostUpdate) =>
@@ -379,7 +396,7 @@ export const makePostService = Effect.gen(function* () {
         updated_at: new Date(),
       };
 
-      return yield* query('update_post', (db) =>
+      const result = yield* query('update_post', (db) =>
         db
           .updateTable('posts')
           .set(updateData)
@@ -398,6 +415,11 @@ export const makePostService = Effect.gen(function* () {
           return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
         })
       );
+
+      // Trigger deploy after successful update
+      yield* triggerDeploy();
+
+      return result;
     });
 
   const delete_ = (id: string) =>
@@ -409,6 +431,9 @@ export const makePostService = Effect.gen(function* () {
       if (Number(result.numDeletedRows) === 0) {
         return yield* Effect.fail(new NotFound({ resource: 'Post', id }));
       }
+
+      // Trigger deploy after successful delete
+      yield* triggerDeploy();
     });
 
   const findAll = (options?: {

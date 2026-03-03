@@ -5,6 +5,7 @@ import type { GalleryWithCategory } from '../types';
 import { DbService } from './db.service';
 import { GalleryService, makeGalleryService } from './gallery.service';
 import { MediaService } from './media.service';
+import { WebhookService, WebhookServiceLive } from './webhook.service';
 
 const mockDbService = (queryFn: (op: string, fn: any) => Effect.Effect<any, any>) =>
   Layer.succeed(
@@ -70,7 +71,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -95,7 +98,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -120,7 +125,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -154,7 +161,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -176,7 +185,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -205,7 +216,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -227,7 +240,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -257,7 +272,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -288,7 +305,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -322,7 +341,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -375,7 +396,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -426,7 +449,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -449,7 +474,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -484,7 +511,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -519,7 +548,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -542,7 +573,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;
@@ -563,7 +596,9 @@ describe('GalleryService', () => {
       });
 
       const layer = mockDbService(queryStub);
-      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService);
+      const GalleryServiceLayer = Layer.effect(GalleryService, makeGalleryService).pipe(
+        Layer.provide(WebhookServiceLive)
+      );
 
       const program = Effect.gen(function* () {
         const service = yield* GalleryService;

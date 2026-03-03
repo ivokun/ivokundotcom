@@ -4,6 +4,7 @@ import { Effect, Layer } from 'effect';
 import type { Home } from '../types';
 import { DbService } from './db.service';
 import { HomeService, type HomeWithArrayKeywords,makeHomeService } from './home.service';
+import { WebhookServiceLive } from './webhook.service';
 
 const mockDbService = (queryFn: (op: string, fn: any) => Effect.Effect<any, any>) =>
   Layer.succeed(
@@ -49,7 +50,9 @@ describe('HomeService', () => {
     });
 
     const layer = mockDbService(queryStub);
-    const HomeServiceLayer = Layer.effect(HomeService, makeHomeService);
+    const HomeServiceLayer = Layer.effect(HomeService, makeHomeService).pipe(
+      Layer.provide(WebhookServiceLive)
+    );
 
     const program = Effect.gen(function* () {
       const service = yield* HomeService;
@@ -72,7 +75,9 @@ describe('HomeService', () => {
     });
 
     const layer = mockDbService(queryStub);
-    const HomeServiceLayer = Layer.effect(HomeService, makeHomeService);
+    const HomeServiceLayer = Layer.effect(HomeService, makeHomeService).pipe(
+      Layer.provide(WebhookServiceLive)
+    );
 
     const program = Effect.gen(function* () {
       const service = yield* HomeService;

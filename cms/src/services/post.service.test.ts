@@ -3,7 +3,8 @@ import { Effect, Layer } from 'effect';
 
 import type { Post, PostWithMedia } from '../types';
 import { DbService } from './db.service';
-import { makePostService,PostService } from './post.service';
+import { makePostService, PostService } from './post.service';
+import { WebhookService, WebhookServiceLive } from './webhook.service';
 
 const mockDbService = (queryFn: (op: string, fn: any) => Effect.Effect<any, any>) =>
   Layer.succeed(
@@ -32,6 +33,13 @@ const mockPost = (overrides: Partial<Post> = {}): Post => ({
   ...overrides,
 });
 
+const mockWebhookService = Layer.succeed(
+  WebhookService,
+  WebhookService.of({
+    triggerDeploy: () => Effect.void,
+  })
+);
+
 describe('PostService', () => {
   describe('create', () => {
     it('should create a post', async () => {
@@ -51,7 +59,11 @@ describe('PostService', () => {
     });
 
     const result = await Effect.runPromise(
-      program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
     );
 
     expect(result).toEqual(post);
@@ -73,13 +85,17 @@ describe('PostService', () => {
     });
 
     const result = await Effect.runPromiseExit(
-      program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
     );
 
     expect(result._tag).toBe('Failure');
-    });
+  });
 
-    it('should fail on category not found', async () => {
+  it('should fail on category not found', async () => {
       const queryStub = mock((op: string) => {
         if (op === 'check_post_slug') return Effect.succeed(undefined);
         if (op === 'check_category_exists') return Effect.succeed(undefined);
@@ -100,7 +116,11 @@ describe('PostService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(PostServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
@@ -135,7 +155,11 @@ describe('PostService', () => {
     });
 
     const result = await Effect.runPromise(
-      program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
     );
 
     expect(result.id).toBe('123');
@@ -158,7 +182,11 @@ describe('PostService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(PostServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
@@ -179,20 +207,24 @@ describe('PostService', () => {
         return Effect.die(`Unexpected op: ${op}`);
       });
 
-      const layer = mockDbService(queryStub);
-      const PostServiceLayer = Layer.effect(PostService, makePostService);
+    const layer = mockDbService(queryStub);
+    const PostServiceLayer = Layer.effect(PostService, makePostService);
 
-      const program = Effect.gen(function* () {
-        const service = yield* PostService;
-        return yield* service.findBySlug('test-post', 'en');
-      });
+    const program = Effect.gen(function* () {
+      const service = yield* PostService;
+      return yield* service.findBySlug('test-post', 'en');
+    });
 
-      const result = await Effect.runPromise(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
-      );
+    const result = await Effect.runPromise(
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
+    );
 
-      expect(result.id).toBe('123');
-      expect(result.slug).toBe('test-post');
+    expect(result.id).toBe('123');
+    expect(result.slug).toBe('test-post');
     });
 
     it('should fail findBySlug if not found', async () => {
@@ -210,7 +242,11 @@ describe('PostService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(PostServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
@@ -232,22 +268,26 @@ describe('PostService', () => {
         return Effect.die(`Unexpected op: ${op}`);
       });
 
-      const layer = mockDbService(queryStub);
-      const PostServiceLayer = Layer.effect(PostService, makePostService);
+    const layer = mockDbService(queryStub);
+    const PostServiceLayer = Layer.effect(PostService, makePostService);
 
-      const program = Effect.gen(function* () {
-        const service = yield* PostService;
-        return yield* service.findAll({ limit: 10, offset: 0 });
-      });
+    const program = Effect.gen(function* () {
+      const service = yield* PostService;
+      return yield* service.findAll({ limit: 10, offset: 0 });
+    });
 
-      const result = await Effect.runPromise(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
-      );
+    const result = await Effect.runPromise(
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
+    );
 
-      expect(result.data).toHaveLength(1);
-      expect(result.meta.total).toBe(1);
-      expect(result.meta.limit).toBe(10);
-      expect(result.meta.offset).toBe(0);
+    expect(result.data).toHaveLength(1);
+    expect(result.meta.total).toBe(1);
+    expect(result.meta.limit).toBe(10);
+    expect(result.meta.offset).toBe(0);
     });
 
     it('should find all posts with status filter', async () => {
@@ -264,19 +304,23 @@ describe('PostService', () => {
         return Effect.die(`Unexpected op: ${op}`);
       });
 
-      const layer = mockDbService(queryStub);
-      const PostServiceLayer = Layer.effect(PostService, makePostService);
+    const layer = mockDbService(queryStub);
+    const PostServiceLayer = Layer.effect(PostService, makePostService);
 
-      const program = Effect.gen(function* () {
-        const service = yield* PostService;
-        return yield* service.findAll({ filter: { status: 'published' } });
-      });
+    const program = Effect.gen(function* () {
+      const service = yield* PostService;
+      return yield* service.findAll({ filter: { status: 'published' } });
+    });
 
-      const result = await Effect.runPromise(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
-      );
+    const result = await Effect.runPromise(
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
+    );
 
-      expect(result.data[0]?.status).toBe('published');
+    expect(result.data[0]?.status).toBe('published');
     });
 
     it('should find all posts with locale filter', async () => {
@@ -293,19 +337,23 @@ describe('PostService', () => {
         return Effect.die(`Unexpected op: ${op}`);
       });
 
-      const layer = mockDbService(queryStub);
-      const PostServiceLayer = Layer.effect(PostService, makePostService);
+    const layer = mockDbService(queryStub);
+    const PostServiceLayer = Layer.effect(PostService, makePostService);
 
-      const program = Effect.gen(function* () {
-        const service = yield* PostService;
-        return yield* service.findAll({ filter: { locale: 'id' } });
-      });
+    const program = Effect.gen(function* () {
+      const service = yield* PostService;
+      return yield* service.findAll({ filter: { locale: 'id' } });
+    });
 
-      const result = await Effect.runPromise(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
-      );
+    const result = await Effect.runPromise(
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
+    );
 
-      expect(result.data[0]?.locale).toBe('id');
+    expect(result.data[0]?.locale).toBe('id');
     });
 
     it('should find all posts with category filter', async () => {
@@ -327,21 +375,25 @@ describe('PostService', () => {
         return Effect.die(`Unexpected op: ${op}`);
       });
 
-      const layer = mockDbService(queryStub);
-      const PostServiceLayer = Layer.effect(PostService, makePostService);
+    const layer = mockDbService(queryStub);
+    const PostServiceLayer = Layer.effect(PostService, makePostService);
 
-      const program = Effect.gen(function* () {
-        const service = yield* PostService;
-        return yield* service.findAll({ filter: { categoryId: 'cat-123' } });
-      });
+    const program = Effect.gen(function* () {
+      const service = yield* PostService;
+      return yield* service.findAll({ filter: { categoryId: 'cat-123' } });
+    });
 
-      const result = await Effect.runPromise(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
-      );
+    const result = await Effect.runPromise(
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
+    );
 
-      const first = result.data[0];
-      expect(first?.category_id).toBe('cat-123');
-      expect(first?.category?.id).toBe('cat-123');
+    const first = result.data[0];
+    expect(first?.category_id).toBe('cat-123');
+    expect(first?.category?.id).toBe('cat-123');
     });
 
     it('should find all posts with search filter', async () => {
@@ -358,19 +410,23 @@ describe('PostService', () => {
         return Effect.die(`Unexpected op: ${op}`);
       });
 
-      const layer = mockDbService(queryStub);
-      const PostServiceLayer = Layer.effect(PostService, makePostService);
+    const layer = mockDbService(queryStub);
+    const PostServiceLayer = Layer.effect(PostService, makePostService);
 
-      const program = Effect.gen(function* () {
-        const service = yield* PostService;
-        return yield* service.findAll({ filter: { search: 'searchable' } });
-      });
+    const program = Effect.gen(function* () {
+      const service = yield* PostService;
+      return yield* service.findAll({ filter: { search: 'searchable' } });
+    });
 
-      const result = await Effect.runPromise(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
-      );
+    const result = await Effect.runPromise(
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
+    );
 
-      expect(result.data).toHaveLength(1);
+    expect(result.data).toHaveLength(1);
     });
   });
 
@@ -386,20 +442,24 @@ describe('PostService', () => {
         return Effect.die(`Unexpected op: ${op}`);
       });
 
-      const layer = mockDbService(queryStub);
-      const PostServiceLayer = Layer.effect(PostService, makePostService);
+    const layer = mockDbService(queryStub);
+    const PostServiceLayer = Layer.effect(PostService, makePostService);
 
-      const program = Effect.gen(function* () {
-        const service = yield* PostService;
-        return yield* service.update('123', { title: 'New Title' });
-      });
+    const program = Effect.gen(function* () {
+      const service = yield* PostService;
+      return yield* service.update('123', { title: 'New Title' });
+    });
 
-      const result = await Effect.runPromise(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
-      );
+    const result = await Effect.runPromise(
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
+    );
 
-      expect(result.title).toBe('New Title');
-      expect(result.slug).toBe('new-title');
+    expect(result.title).toBe('New Title');
+    expect(result.slug).toBe('new-title');
     });
 
     it('should fail update if post not found', async () => {
@@ -417,7 +477,11 @@ describe('PostService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(PostServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
@@ -441,7 +505,11 @@ describe('PostService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(PostServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
@@ -466,7 +534,11 @@ describe('PostService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(PostServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
@@ -486,21 +558,25 @@ describe('PostService', () => {
         return Effect.die(`Unexpected op: ${op}`);
       });
 
-      const layer = mockDbService(queryStub);
-      const PostServiceLayer = Layer.effect(PostService, makePostService);
+    const layer = mockDbService(queryStub);
+    const PostServiceLayer = Layer.effect(PostService, makePostService);
 
-      const program = Effect.gen(function* () {
-        const service = yield* PostService;
-        return yield* service.update('123', {
-          content: { type: 'doc', content: [{ type: 'paragraph' }] },
-        });
+    const program = Effect.gen(function* () {
+      const service = yield* PostService;
+      return yield* service.update('123', {
+        content: { type: 'doc', content: [{ type: 'paragraph' }] },
       });
+    });
 
-      const result = await Effect.runPromise(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
-      );
+    const result = await Effect.runPromise(
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
+    );
 
-      expect(result.slug).toBe('same-title');
+    expect(result.slug).toBe('same-title');
     });
   });
 
@@ -511,19 +587,23 @@ describe('PostService', () => {
         return Effect.die(`Unexpected op: ${op}`);
       });
 
-      const layer = mockDbService(queryStub);
-      const PostServiceLayer = Layer.effect(PostService, makePostService);
+    const layer = mockDbService(queryStub);
+    const PostServiceLayer = Layer.effect(PostService, makePostService);
 
-      const program = Effect.gen(function* () {
-        const service = yield* PostService;
-        return yield* service.delete('123');
-      });
+    const program = Effect.gen(function* () {
+      const service = yield* PostService;
+      return yield* service.delete('123');
+    });
 
-      await Effect.runPromise(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
-      );
+    await Effect.runPromise(
+      program.pipe(
+        Effect.provide(PostServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
+    );
 
-      expect(true).toBe(true);
+    expect(true).toBe(true);
     });
 
     it('should fail delete if post not found', async () => {
@@ -541,7 +621,11 @@ describe('PostService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(PostServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(PostServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');

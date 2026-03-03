@@ -12,6 +12,7 @@ import { AuthService, AuthServiceLive } from '../src/services/auth.service';
 import { CategoryService, CategoryServiceLive } from '../src/services/category.service';
 import { DbService, DbServiceLive } from '../src/services/db.service';
 import { PostService, PostServiceLive } from '../src/services/post.service';
+import { WebhookServiceLive } from '../src/services/webhook.service';
 import type { TipTapDocument } from '../src/types';
 
 const DATABASE_URL =
@@ -664,7 +665,8 @@ const program = Effect.gen(function* () {
 const MainLayer = PostServiceLive.pipe(
   Layer.provideMerge(CategoryServiceLive),
   Layer.provideMerge(AuthServiceLive),
-  Layer.provideMerge(DbServiceLive({ connectionString: DATABASE_URL }))
+  Layer.provideMerge(DbServiceLive({ connectionString: DATABASE_URL })),
+  Layer.provide(WebhookServiceLive)
 );
 
 // =============================================================================

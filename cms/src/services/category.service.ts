@@ -11,6 +11,7 @@ import {
 } from '../errors';
 import type { Category, CategoryUpdate, NewCategory, PaginatedResponse } from '../types';
 import { DbService } from './db.service';
+import { WebhookService } from './webhook.service';
 
 export class CategoryService extends Context.Tag('CategoryService')<
   CategoryService,
@@ -34,6 +35,17 @@ export class CategoryService extends Context.Tag('CategoryService')<
 
 export const makeCategoryService = Effect.gen(function* () {
   const { query } = yield* DbService;
+  const webhookService = yield* WebhookService;
+
+  // Helper to trigger deploy in background (fire-and-forget)
+  const triggerDeploy = () =>
+    webhookService.triggerDeploy().pipe(
+      Effect.catchAll((error) =>
+        Effect.logWarning(`Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
+      ),
+      Effect.fork,
+      Effect.andThen(() => Effect.void)
+    );
 
   const generateSlug = (name: string, override?: string): string => {
     return slugify(override || name, { lower: true, strict: true });
@@ -83,7 +95,7 @@ export const makeCategoryService = Effect.gen(function* () {
         description: data.description ?? null,
       };
 
-      return yield* query('create_category', (db) =>
+      const result = yield* query('create_category', (db) =>
         db.insertInto('categories').values(newCategory).returningAll().executeTakeFirstOrThrow()
       ).pipe(
         Effect.catchAll((error: DatabaseError) => {
@@ -97,6 +109,11 @@ export const makeCategoryService = Effect.gen(function* () {
           return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
         })
       );
+
+      // Trigger deploy after successful create
+      yield* triggerDeploy();
+
+      return result;
     });
 
   const update = (id: string, data: CategoryUpdate) =>
@@ -128,7 +145,7 @@ export const makeCategoryService = Effect.gen(function* () {
         updated_at: new Date(),
       };
 
-      return yield* query('update_category', (db) =>
+      const result = yield* query('update_category', (db) =>
         db
           .updateTable('categories')
           .set(updateData)
@@ -147,6 +164,11 @@ export const makeCategoryService = Effect.gen(function* () {
           return Effect.fail(error) as Effect.Effect<never, DatabaseError | SlugConflict>;
         })
       );
+
+      // Trigger deploy after successful update
+      yield* triggerDeploy();
+
+      return result;
     });
 
   const delete_ = (id: string) =>
@@ -177,6 +199,9 @@ export const makeCategoryService = Effect.gen(function* () {
       yield* query('delete_category', (db) =>
         db.deleteFrom('categories').where('id', '=', id).executeTakeFirst()
       );
+
+      // Trigger deploy after successful delete
+      yield* triggerDeploy();
     });
 
   const findAll = (options?: { limit?: number; offset?: number }) =>

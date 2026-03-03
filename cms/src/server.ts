@@ -63,6 +63,7 @@ import { MediaProcessorQueueLive } from './services/media-processor';
 import { PostService, PostServiceLive } from './services/post.service';
 import { makeR2StorageService, StorageService } from './services/storage.service';
 import { UserService, UserServiceLive } from './services/user.service';
+import { WebhookService, WebhookServiceLive } from './services/webhook.service';
 import type { Home, TipTapDocument, TipTapNode } from './types';
 
 // =============================================================================
@@ -150,6 +151,9 @@ export const createAppLayer = (
     Layer.provide(ProcessorQueueWithDeps)
   );
 
+  // Webhook service (no dependencies)
+  const WebhookLiveTest = WebhookServiceLive;
+
   const AllServices = Layer.mergeAll(
     ConfigLive,
     DbWithConfig,
@@ -157,10 +161,15 @@ export const createAppLayer = (
     ImageWithStorage,
     ProcessorQueueWithDeps,
     MediaWithDeps,
-    CategoryServiceLive.pipe(Layer.provide(DbWithConfig)),
-    PostServiceLive.pipe(Layer.provide(DbWithConfig)),
-    GalleryServiceLive.pipe(Layer.provide(DbWithConfig), Layer.provide(MediaWithDeps)),
-    HomeServiceLive.pipe(Layer.provide(DbWithConfig)),
+    WebhookLiveTest,
+    CategoryServiceLive.pipe(Layer.provide(DbWithConfig), Layer.provide(WebhookLiveTest)),
+    PostServiceLive.pipe(Layer.provide(DbWithConfig), Layer.provide(WebhookLiveTest)),
+    GalleryServiceLive.pipe(
+      Layer.provide(DbWithConfig),
+      Layer.provide(MediaWithDeps),
+      Layer.provide(WebhookLiveTest)
+    ),
+    HomeServiceLive.pipe(Layer.provide(DbWithConfig), Layer.provide(WebhookLiveTest)),
     AuthServiceLive.pipe(Layer.provide(DbWithConfig)),
     UserServiceLive.pipe(Layer.provide(DbWithConfig))
   );
@@ -1326,6 +1335,28 @@ const AuthWithDb = AuthServiceLive.pipe(Layer.provide(DbWithConfig));
 // UserServiceLive needs DbService
 const UserWithDb = UserServiceLive.pipe(Layer.provide(DbWithConfig));
 
+// Webhook service (no dependencies)
+const WebhookLive = WebhookServiceLive;
+
+// Content services with webhook dependency
+const CategoryWithWebhook = CategoryServiceLive.pipe(
+  Layer.provide(DbWithConfig),
+  Layer.provide(WebhookLive)
+);
+const PostWithWebhook = PostServiceLive.pipe(
+  Layer.provide(DbWithConfig),
+  Layer.provide(WebhookLive)
+);
+const GalleryWithWebhook = GalleryServiceLive.pipe(
+  Layer.provide(DbWithConfig),
+  Layer.provide(MediaWithDeps),
+  Layer.provide(WebhookLive)
+);
+const HomeWithWebhook = HomeServiceLive.pipe(
+  Layer.provide(DbWithConfig),
+  Layer.provide(WebhookLive)
+);
+
 // Combine all service layers
 const AllServices = Layer.mergeAll(
   AppConfigLive,
@@ -1334,10 +1365,11 @@ const AllServices = Layer.mergeAll(
   ImageWithStorage,
   ProcessorQueueWithDeps,
   MediaWithDeps,
-  CategoryWithDb,
-  PostWithDb,
-  GalleryWithDb,
-  HomeWithDb,
+  WebhookLive,
+  CategoryWithWebhook,
+  PostWithWebhook,
+  GalleryWithWebhook,
+  HomeWithWebhook,
   AuthWithDb,
   UserWithDb
 );

@@ -20,6 +20,7 @@ import type {
 } from '../types';
 import { DbService } from './db.service';
 import { MediaService } from './media.service';
+import { WebhookService } from './webhook.service';
 
 /**
  * Safely coerce a JSONB value returned by pg into a string[].
@@ -71,6 +72,17 @@ export class GalleryService extends Context.Tag('GalleryService')<
 export const makeGalleryService = Effect.gen(function* () {
   const { query } = yield* DbService;
   const mediaService = yield* MediaService;
+  const webhookService = yield* WebhookService;
+
+  // Helper to trigger deploy in background (fire-and-forget)
+  const triggerDeploy = () =>
+    webhookService.triggerDeploy().pipe(
+      Effect.catchAll((error) =>
+        Effect.logWarning(`Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
+      ),
+      Effect.fork,
+      Effect.andThen(() => Effect.void)
+    );
 
   const generateSlug = (title: string, override?: string): string => {
     return slugify(override || title, { lower: true, strict: true });
@@ -277,6 +289,10 @@ export const makeGalleryService = Effect.gen(function* () {
 
       // Transform images to structured format for response
       const imageIds = asStringArray(result.images);
+
+      // Trigger deploy after successful create
+      yield* triggerDeploy();
+
       return {
         ...result,
         images: imageIds.map((mediaId, order) => ({
@@ -390,6 +406,10 @@ export const makeGalleryService = Effect.gen(function* () {
       
       // Transform images to structured format for frontend
       const updateImageIds = asStringArray(result.images);
+
+      // Trigger deploy after successful update
+      yield* triggerDeploy();
+
       return {
         ...result,
         images: updateImageIds.map((mediaId, order) => ({
@@ -419,6 +439,9 @@ export const makeGalleryService = Effect.gen(function* () {
       if (Number(result.numDeletedRows) === 0) {
         return yield* Effect.fail(new NotFound({ resource: 'Gallery', id }));
       }
+
+      // Trigger deploy after successful delete
+      yield* triggerDeploy();
     });
 
   const findAll = (options?: {

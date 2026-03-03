@@ -4,6 +4,7 @@ import { Effect, Layer } from 'effect';
 import type { Category } from '../types';
 import { CategoryService, makeCategoryService } from './category.service';
 import { DbService } from './db.service';
+import { WebhookService } from './webhook.service';
 
 const mockDbService = (queryFn: (op: string, fn: any) => Effect.Effect<any, any>) =>
   Layer.succeed(
@@ -25,6 +26,13 @@ const mockCategory = (overrides: Partial<Category> = {}): Category => ({
   ...overrides,
 });
 
+const mockWebhookService = Layer.succeed(
+  WebhookService,
+  WebhookService.of({
+    triggerDeploy: () => Effect.void,
+  })
+);
+
 describe('CategoryService', () => {
   it('should create a category', async () => {
     const category = mockCategory();
@@ -43,7 +51,11 @@ describe('CategoryService', () => {
     });
 
     const result = await Effect.runPromise(
-      program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+      program.pipe(
+        Effect.provide(CategoryServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
     );
 
     expect(result).toEqual(category);
@@ -65,7 +77,11 @@ describe('CategoryService', () => {
     });
 
     const result = await Effect.runPromiseExit(
-      program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+      program.pipe(
+        Effect.provide(CategoryServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
     );
 
     expect(result._tag).toBe('Failure');
@@ -87,7 +103,11 @@ describe('CategoryService', () => {
     });
 
     const result = await Effect.runPromise(
-      program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+      program.pipe(
+        Effect.provide(CategoryServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
     );
 
     expect(result).toEqual(category);
@@ -108,7 +128,11 @@ describe('CategoryService', () => {
     });
 
     const result = await Effect.runPromiseExit(
-      program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+      program.pipe(
+        Effect.provide(CategoryServiceLayer),
+        Effect.provide(layer),
+        Effect.provide(mockWebhookService)
+      )
     );
 
     expect(result._tag).toBe('Failure');
@@ -135,7 +159,11 @@ describe('CategoryService', () => {
       });
 
       const result = await Effect.runPromise(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result).toEqual(newCategory);
@@ -164,7 +192,11 @@ describe('CategoryService', () => {
       });
 
       const result = await Effect.runPromise(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result.slug).toBe('same-name');
@@ -189,7 +221,11 @@ describe('CategoryService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
@@ -213,7 +249,11 @@ describe('CategoryService', () => {
       });
 
       const result = await Effect.runPromise(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result).toEqual(category);
@@ -234,7 +274,11 @@ describe('CategoryService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
@@ -259,7 +303,11 @@ describe('CategoryService', () => {
       });
 
       const result = await Effect.runPromise(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result.data).toHaveLength(1);
@@ -285,7 +333,11 @@ describe('CategoryService', () => {
       });
 
       const result = await Effect.runPromise(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result.meta.limit).toBe(5);
@@ -312,7 +364,11 @@ describe('CategoryService', () => {
       });
 
       await Effect.runPromise(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(true).toBe(true);
@@ -333,7 +389,11 @@ describe('CategoryService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
@@ -356,7 +416,11 @@ describe('CategoryService', () => {
       });
 
       const result = await Effect.runPromiseExit(
-        program.pipe(Effect.provide(CategoryServiceLayer), Effect.provide(layer))
+        program.pipe(
+          Effect.provide(CategoryServiceLayer),
+          Effect.provide(layer),
+          Effect.provide(mockWebhookService)
+        )
       );
 
       expect(result._tag).toBe('Failure');
