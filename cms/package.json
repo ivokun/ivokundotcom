@@ -23,6 +23,7 @@
     "db:status": "dbmate -d ./db/migrations status",
     "db:dump": "dbmate -d ./db/migrations dump",
     "seed:admin": "bun run scripts/seed-admin.ts",
+    "seed:features": "bun run scripts/seed-features.ts",
     "migrate:strapi": "bun run scripts/migrate-strapi.ts",
     "test": "bun test"
   },
