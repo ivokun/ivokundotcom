@@ -18,6 +18,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: cms
@@ -40,6 +41,7 @@ jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: cms
@@ -79,11 +81,13 @@ jobs:
         run: nix profile install --accept-flake-config github:cachix/devenv/latest
 
       - name: Run tests
-        run: devenv test
+        run: timeout 600 devenv test
+        # timeout returns 124 if killed by timeout, 0-123 for command exit
 
   build-spa:
     name: Build SPA
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: cms
@@ -106,6 +110,7 @@ jobs:
   build-binary:
     name: Build Binary
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: cms

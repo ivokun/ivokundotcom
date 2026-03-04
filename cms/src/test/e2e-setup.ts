@@ -145,8 +145,16 @@ export async function startTestServer(config?: Partial<Config>): Promise<TestSer
     })();
   }
 
-  // Wait for server to be ready (health check)
-  const isReady = await waitForServer(port, 30000); // 30 second timeout
+  // Wait for server to be ready (health check) with hard timeout
+  const serverTimeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Server start timeout')), 30000);
+  });
+
+  const isReady = await Promise.race([
+    waitForServer(port, 30000),
+    serverTimeout,
+  ]);
+
   if (!isReady) {
     proc.kill();
     // Log server output for debugging
