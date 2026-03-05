@@ -236,7 +236,7 @@ export function PostFormPage() {
               <div className="space-y-2">
                 <Label htmlFor="slug">Slug</Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">ivokun.com/blog/</span>
+                  <span className="text-sm text-muted-foreground">ivokun.com/articles/</span>
                   <Input
                     id="slug"
                     value={formData.slug}
