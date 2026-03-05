@@ -103,13 +103,13 @@ export const makePostService = Effect.gen(function* () {
   const triggerDeploy = () =>
     Effect.gen(function* () {
       yield* Effect.log('[PostService] Calling webhookService.triggerDeploy()');
-      yield* webhookService.triggerDeploy().pipe(
+      const forkedFiber = yield* webhookService.triggerDeploy().pipe(
         Effect.catchAll((error) =>
           Effect.logWarning(`[PostService] Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
         ),
         Effect.fork
       );
-      yield* Effect.log('[PostService] webhookService.triggerDeploy() forked');
+      yield* Effect.log(`[PostService] webhookService.triggerDeploy() forked, fiber id: ${forkedFiber.id()}`);
     });
 
   const generateSlug = (title: string, override?: string): string => {

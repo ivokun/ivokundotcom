@@ -32,6 +32,8 @@ export const makeWebhookService = Effect.gen(function* () {
   // Get deploy hook URL from environment (optional)
   const deployHookUrl = process.env['CF_DEPLOY_HOOK_URL'];
 
+  yield* Effect.log(`[Webhook] Service initialized, hook URL ${deployHookUrl ? 'is set' : 'is NOT set'}`);
+
   const triggerDeploy = (): Effect.Effect<void, WebhookError> =>
     Effect.gen(function* () {
       yield* Effect.log('[Webhook] Deploy hook triggered');
