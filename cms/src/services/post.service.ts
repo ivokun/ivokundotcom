@@ -99,17 +99,17 @@ export const makePostService = Effect.gen(function* () {
   const { query } = yield* DbService;
   const webhookService = yield* WebhookService;
 
-  // Helper to trigger deploy in background (fire-and-forget)
+  // Helper to trigger deploy - running synchronously for debugging
   const triggerDeploy = () =>
     Effect.gen(function* () {
-      yield* Effect.log('[PostService] Calling webhookService.triggerDeploy()');
-      const forkedFiber = yield* webhookService.triggerDeploy().pipe(
+      yield* Effect.log('[PostService] About to call webhookService.triggerDeploy() SYNCHRONOUSLY');
+      yield* webhookService.triggerDeploy().pipe(
         Effect.catchAll((error) =>
           Effect.logWarning(`[PostService] Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
-        ),
-        Effect.fork
+        )
+        // Note: Removed Effect.fork to run synchronously for debugging
       );
-      yield* Effect.log(`[PostService] webhookService.triggerDeploy() forked, fiber id: ${forkedFiber.id()}`);
+      yield* Effect.log('[PostService] webhookService.triggerDeploy() completed');
     });
 
   const generateSlug = (title: string, override?: string): string => {
