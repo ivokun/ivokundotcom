@@ -1128,7 +1128,14 @@ const adminMiscRouter = HttpRouter.empty.pipe(
       const body = yield* decodeBody(InviteUserInput)(req);
       const userService = yield* UserService;
       const user = yield* userService.invite(body.name, body.email);
-      return yield* HttpServerResponse.json({ data: user }, { status: 201 });
+      // Return flat object with snake_case for consistency
+      return yield* HttpServerResponse.json({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        initialPassword: user.initialPassword,
+        created_at: user.createdAt.toISOString(),
+      }, { status: 201 });
     })
   ),
   HttpRouter.del(

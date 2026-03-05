@@ -56,7 +56,7 @@ export function UsersPage() {
   const [inviteName, setInviteName] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
   const [newlyInvitedUser, setNewlyInvitedUser] = useState<{
-    name: string
+    name: string | null
     email: string
     initialPassword: string
   } | null>(null)
@@ -303,7 +303,7 @@ export function UsersPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              <strong>{newlyInvitedUser?.name}</strong> has been invited with email{' '}
+              <strong>{newlyInvitedUser?.name ?? 'User'}</strong> has been invited with email{' '}
               <strong>{newlyInvitedUser?.email}</strong>.
             </p>
             <div className="rounded-lg border-2 border-primary bg-primary/5 p-4 space-y-3">

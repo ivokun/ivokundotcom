@@ -57,16 +57,23 @@ export const MediaUrls = Schema.Struct({
 });
 export type MediaUrls = typeof MediaUrls.Type;
 
-/** Media entity - PRD Section 6.2.6 */
+/** Media processing status */
+export const MediaStatus = Schema.Literal('uploading', 'processing', 'ready', 'failed');
+export type MediaStatus = typeof MediaStatus.Type;
+
+/** Media entity - PRD Section 6.2.6
+ * Note: upload_key is internal and should not be exposed in API responses
+ */
 export const Media = Schema.Struct({
   id: Cuid2,
   filename: NonEmptyString,
   mime_type: Schema.String,
   size: PositiveInt,
   alt: Schema.NullOr(Schema.String),
-  urls: MediaUrls,
+  urls: Schema.NullOr(MediaUrls),
   width: Schema.NullOr(PositiveInt),
   height: Schema.NullOr(PositiveInt),
+  status: MediaStatus,
   created_at: Schema.Date,
 });
 export type Media = typeof Media.Type;

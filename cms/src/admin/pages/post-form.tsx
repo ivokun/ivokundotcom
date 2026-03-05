@@ -67,21 +67,18 @@ export function PostFormPage() {
   useEffect(() => {
     if (post) {
       // Content from API comes as TipTap JSON object, need to stringify for editor
-      const contentString = post.content 
+      const contentString = post.content
         ? (typeof post.content === 'object' ? JSON.stringify(post.content) : post.content)
         : '';
-      
-      // Handle both camelCase and snake_case for featured image
-      const featuredImageId = post.featuredImageId || post.featured_image || '';
-      
+
       setFormData({
         title: post.title || '',
         slug: post.slug || '',
         excerpt: post.excerpt || '',
         content: contentString,
         locale: post.locale || 'en',
-        categoryId: post.categoryId || '',
-        featuredImageId: featuredImageId,
+        categoryId: post.category_id || '',
+        featuredImageId: post.featured_image || '',
         status: post.status || 'draft',
         keywords: post.keywords || []
       })
@@ -377,11 +374,11 @@ export function PostFormPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Created</span>
-                  <span>{post ? formatDate(post.createdAt || post.created_at) : '-'}</span>
+                  <span>{post ? formatDate(post.created_at) : '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Last Updated</span>
-                  <span>{post ? formatDate(post.updatedAt || post.updated_at) : '-'}</span>
+                  <span>{post ? formatDate(post.updated_at) : '-'}</span>
                 </div>
               </CardContent>
             </Card>

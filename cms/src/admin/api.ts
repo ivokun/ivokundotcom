@@ -90,24 +90,55 @@ async function getCategories(params?: { page?: number; pageSize?: number }) {
   const searchParams = new URLSearchParams();
   searchParams.set('limit', pageSize.toString());
   searchParams.set('offset', offset.toString());
-  return request<PaginatedResponse<{ id: string; name: string; slug: string; created_at: string }>>(
-    `/categories?${searchParams.toString()}`
-  );
+  return request<
+    PaginatedResponse<{
+      id: string;
+      name: string;
+      slug: string;
+      description: string | null;
+      created_at: string;
+      updated_at: string;
+    }>
+  >(`/categories?${searchParams.toString()}`);
 }
 
 async function getCategory(id: string) {
-  return request<{ id: string; name: string; slug: string; created_at: string }>(`/categories/${id}`);
+  return request<{
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    created_at: string;
+    updated_at: string;
+  }>(`/categories/${id}`);
 }
 
-async function createCategory(data: { name: string; slug?: string }) {
-  return request('/categories', {
+async function createCategory(data: { name: string; slug?: string; description?: string }) {
+  return request<{
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    created_at: string;
+    updated_at: string;
+  }>('/categories', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
-async function updateCategory(id: string, data: { name: string; slug?: string }) {
-  return request(`/categories/${id}`, {
+async function updateCategory(
+  id: string,
+  data: { name?: string; slug?: string; description?: string | null }
+) {
+  return request<{
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    created_at: string;
+    updated_at: string;
+  }>(`/categories/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
@@ -140,12 +171,27 @@ async function getPosts(params?: {
     id: string;
     title: string;
     slug: string;
+    excerpt: string | null;
+    content: object | null;
     status: string;
     locale: string;
     category_id: string | null;
-    featuredImageId: string | null;
-    publishedAt: string | null;
+    featured_image: string | null;
+    published_at: string | null;
     created_at: string;
+    updated_at: string;
+    read_time_minute: number | null;
+    category: {
+      id: string;
+      name: string;
+      slug: string;
+    } | null;
+    featured_media: {
+      id: string;
+      filename: string;
+      urls: { original: string; thumbnail: string; small: string; large: string } | null;
+      alt: string | null;
+    } | null;
   }>>(`/posts${query ? `?${query}` : ''}`);
 }
 
@@ -158,21 +204,18 @@ async function getPost(id: string) {
     excerpt: string;
     status: string;
     locale: string;
-    categoryId: string | null;
-    featuredImageId: string | null;
-    featured_image?: string | null;
-    featured_media?: {
+    category_id: string | null;
+    featured_image: string | null;
+    featured_media: {
       id: string;
       filename: string;
       urls: { original: string; thumbnail: string; small: string; large: string } | null;
       alt: string | null;
     } | null;
-    publishedAt: string | null;
+    published_at: string | null;
     keywords: string[];
-    createdAt: string;
-    created_at?: string;
-    updatedAt: string;
-    updated_at?: string;
+    created_at: string;
+    updated_at: string;
   }>(`/posts/${id}`);
 }
 
@@ -210,7 +253,21 @@ async function createPost(data: {
     keywords: data.keywords || [],
   };
   
-  const response = await request<{ id: string; title: string; slug: string; status: string; createdAt: string }>('/posts', {
+  const response = await request<{
+    id: string;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    content: object | null;
+    status: string;
+    locale: string;
+    category_id: string | null;
+    featured_image: string | null;
+    published_at: string | null;
+    read_time_minute: number | null;
+    created_at: string;
+    updated_at: string;
+  }>('/posts', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -249,7 +306,21 @@ async function updatePost(id: string, data: Partial<{
   if (data.status !== undefined) payload['status'] = data.status;
   if (data.keywords !== undefined) payload['keywords'] = data.keywords || [];
 
-  const response = await request<{ id: string; title: string; slug: string; status: string; updatedAt: string }>(`/posts/${id}`, {
+  const response = await request<{
+    id: string;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    content: object | null;
+    status: string;
+    locale: string;
+    category_id: string | null;
+    featured_image: string | null;
+    published_at: string | null;
+    read_time_minute: number | null;
+    created_at: string;
+    updated_at: string;
+  }>(`/posts/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
@@ -298,9 +369,10 @@ async function getGallery(id: string) {
     description: string;
     status: string;
     category_id: string | null;
-    images: Array<{ id: string; media_id: string; order: number }>;
+    images: Array<{ id: string; mediaId: string; order: number }>;
     published_at: string | null;
     created_at: string;
+    updated_at: string;
   }>(`/galleries/${id}`);
 }
 
@@ -312,9 +384,19 @@ async function createGallery(data: {
   categoryId?: string;
   images?: Array<{ mediaId: string; order: number }>;
 }) {
-  return request('/galleries', {
+  // Transform camelCase to snake_case for backend
+  const payload = {
+    title: data.title,
+    slug: data.slug,
+    description: data.description,
+    status: data.status,
+    category_id: data.categoryId,
+    images: data.images,
+  };
+
+  return request<{ id: string; title: string; slug: string; status: string; created_at: string }>('/galleries', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -326,9 +408,18 @@ async function updateGallery(id: string, data: Partial<{
   categoryId?: string;
   images: Array<{ id: string; mediaId: string; order: number }>;
 }>) {
-  return request(`/galleries/${id}`, {
+  // Transform camelCase to snake_case for backend
+  const payload: Record<string, unknown> = {};
+  if (data.title !== undefined) payload['title'] = data.title;
+  if (data.slug !== undefined) payload['slug'] = data.slug;
+  if (data.description !== undefined) payload['description'] = data.description;
+  if (data.status !== undefined) payload['status'] = data.status;
+  if (data.categoryId !== undefined) payload['category_id'] = data.categoryId;
+  if (data.images !== undefined) payload['images'] = data.images;
+
+  return request<{ id: string; title: string; slug: string; status: string; updated_at: string }>(`/galleries/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -345,6 +436,7 @@ async function unpublishGallery(id: string) {
 }
 
 // Media
+// Note: Backend returns upload_key but this should be excluded - it's leaked in responses
 async function getMedia(params?: { page?: number; pageSize?: number }) {
   const pageSize = params?.pageSize ?? 50;
   const page = params?.page ?? 1;
@@ -361,6 +453,8 @@ async function getMedia(params?: { page?: number; pageSize?: number }) {
     size: number;
     alt: string | null;
     urls: { original: string; thumbnail: string; small: string; large: string } | null;
+    width: number | null;
+    height: number | null;
     status: 'uploading' | 'processing' | 'ready' | 'failed';
     created_at: string;
   }>>(`/media${query ? `?${query}` : ''}`);
@@ -374,6 +468,8 @@ async function getMediaById(id: string) {
     size: number;
     alt: string | null;
     urls: { original: string; thumbnail: string; small: string; large: string } | null;
+    width: number | null;
+    height: number | null;
     status: 'uploading' | 'processing' | 'ready' | 'failed';
     created_at: string;
   }>(`/media/${id}`);
@@ -389,7 +485,18 @@ async function uploadMedia(
   file: File,
   alt?: string,
   onProgress?: (pct: number) => void
-): Promise<{ id: string; status: string }> {
+): Promise<{
+  id: string;
+  filename: string;
+  mime_type: string;
+  size: number;
+  alt: string | null;
+  urls: { original: string; thumbnail: string; small: string; large: string } | null;
+  width: number | null;
+  height: number | null;
+  status: 'uploading' | 'processing' | 'ready' | 'failed';
+  created_at: string;
+}> {
   // Step 1: Get presigned URL
   const { uploadUrl, mediaId } = await request<{
     mediaId: string;
@@ -431,7 +538,18 @@ async function uploadMedia(
   });
 
   // Step 3: Confirm upload, trigger processing
-  const media = await request<{ id: string; status: string }>(`/media/${mediaId}/uploaded`, {
+  const media = await request<{
+    id: string;
+    filename: string;
+    mime_type: string;
+    size: number;
+    alt: string | null;
+    urls: { original: string; thumbnail: string; small: string; large: string } | null;
+    width: number | null;
+    height: number | null;
+    status: 'uploading' | 'processing' | 'ready' | 'failed';
+    created_at: string;
+  }>(`/media/${mediaId}/uploaded`, {
     method: 'POST',
   });
 
@@ -457,8 +575,8 @@ async function getHomePage() {
     short_description: string | null;
     hero: string | null;
     description: string | object | null;
-    keywords: string | null;
-    updatedAt: string;
+    keywords: string[];
+    updated_at: string;
   }>('/home');
   return {
     id: home.id,
@@ -470,8 +588,8 @@ async function getHomePage() {
         ? JSON.stringify(home.description)
         : home.description
       : '',
-    keywords: home.keywords ? home.keywords.split(',').map((k) => k.trim()).filter(Boolean) : [],
-    updatedAt: home.updatedAt,
+    keywords: home.keywords || [],
+    updatedAt: home.updated_at,
   };
 }
 
@@ -530,7 +648,7 @@ async function getUsers() {
 }
 
 async function inviteUser(data: { name: string; email: string }) {
-  return request<{ id: string; email: string; name: string; initialPassword: string; createdAt: string }>('/users/invite', {
+  return request<{ id: string; email: string; name: string | null; initialPassword: string; created_at: string }>('/users/invite', {
     method: 'POST',
     body: JSON.stringify(data),
   });
