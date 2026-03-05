@@ -32,15 +32,16 @@ export const makeWebhookService = Effect.gen(function* () {
   // Get deploy hook URL from environment (optional)
   const deployHookUrl = process.env['CF_DEPLOY_HOOK_URL'];
 
-  const triggerDeploy = (): Effect.Effect<void, WebhookError> => {
-    if (!deployHookUrl) {
-      return Effect.log('CF_DEPLOY_HOOK_URL not set, skipping deploy trigger').pipe(
-        Effect.andThen(() => Effect.void)
-      );
-    }
+  const triggerDeploy = (): Effect.Effect<void, WebhookError> =>
+    Effect.gen(function* () {
+      yield* Effect.log('[Webhook] Deploy hook triggered');
 
-    return Effect.gen(function* () {
-      yield* Effect.log('Triggering Cloudflare Pages deploy...');
+      if (!deployHookUrl) {
+        yield* Effect.log('[Webhook] CF_DEPLOY_HOOK_URL not set, skipping deploy trigger');
+        return;
+      }
+
+      yield* Effect.log('[Webhook] Sending Cloudflare Pages deploy request...');
 
       const response = yield* Effect.tryPromise({
         try: () =>
@@ -66,9 +67,8 @@ export const makeWebhookService = Effect.gen(function* () {
         );
       }
 
-      yield* Effect.log('Cloudflare Pages deploy triggered successfully');
+      yield* Effect.log('[Webhook] Cloudflare Pages deploy triggered successfully');
     });
-  };
 
   return {
     triggerDeploy,
