@@ -21,6 +21,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [009](./009-database-migration-strategy.md) | Database Migration Strategy with dbmate | Accepted | 2026-02-21 |
 | [010](./010-unified-api-client.md) | Unified API Client Architecture | Accepted | 2026-02-24 |
 | [011](./011-gallery-ordering-strategy.md) | Gallery Image Ordering and Resolution Strategy | Accepted | 2026-02-24 |
+| [012](./012-async-debounced-webhook.md) | Asynchronous Debounced Webhook Deployment | Accepted | 2026-03-05 |
 
 ## Summary
 
@@ -133,6 +134,16 @@ An Architecture Decision Record captures an important architectural decision mad
 - Clean separation of admin vs public API needs
 - First-image-as-cover convention
 - Synthetic IDs for React rendering
+
+### ADR-012: Asynchronous Debounced Webhook Deployment
+
+**Decision:** Implement queue-based, debounced webhook system using Effect.Queue with 5-minute debounce window.
+
+**Key Benefits:**
+- Non-blocking API responses (content mutations return immediately)
+- Deploy debouncing (batches rapid changes into single deploy)
+- Rate limit protection (max 1 deploy per 5 minutes)
+- Fault tolerant with auto-restarting daemon worker
 
 ## ADR Template
 
