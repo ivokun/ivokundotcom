@@ -100,13 +100,8 @@ export const makePostService = Effect.gen(function* () {
   const webhookService = yield* WebhookService;
 
   // Helper to trigger deploy after content changes
-  // Runs synchronously to ensure webhook completes before API response
-  const triggerDeploy = () =>
-    webhookService.triggerDeploy().pipe(
-      Effect.catchAll((error) =>
-        Effect.logWarning(`Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
-      )
-    );
+  // Non-blocking: queues the request with 5-minute debounce
+  const triggerDeploy = () => webhookService.triggerDeploy();
 
   const generateSlug = (title: string, override?: string): string => {
     return slugify(override || title, { lower: true, strict: true });
