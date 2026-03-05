@@ -101,13 +101,16 @@ export const makePostService = Effect.gen(function* () {
 
   // Helper to trigger deploy in background (fire-and-forget)
   const triggerDeploy = () =>
-    webhookService.triggerDeploy().pipe(
-      Effect.catchAll((error) =>
-        Effect.logWarning(`Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
-      ),
-      Effect.fork,
-      Effect.andThen(() => Effect.void)
-    );
+    Effect.gen(function* () {
+      yield* Effect.log('[PostService] Calling webhookService.triggerDeploy()');
+      yield* webhookService.triggerDeploy().pipe(
+        Effect.catchAll((error) =>
+          Effect.logWarning(`[PostService] Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
+        ),
+        Effect.fork
+      );
+      yield* Effect.log('[PostService] webhookService.triggerDeploy() forked');
+    });
 
   const generateSlug = (title: string, override?: string): string => {
     return slugify(override || title, { lower: true, strict: true });
@@ -342,6 +345,7 @@ export const makePostService = Effect.gen(function* () {
       );
 
       // Trigger deploy after successful create
+      yield* Effect.log('[PostService] Post created successfully, about to trigger deploy');
       yield* triggerDeploy();
 
       return result;
@@ -417,6 +421,7 @@ export const makePostService = Effect.gen(function* () {
       );
 
       // Trigger deploy after successful update
+      yield* Effect.log('[PostService] Post updated successfully, about to trigger deploy');
       yield* triggerDeploy();
 
       return result;
@@ -433,6 +438,7 @@ export const makePostService = Effect.gen(function* () {
       }
 
       // Trigger deploy after successful delete
+      yield* Effect.log('[PostService] Post deleted successfully, about to trigger deploy');
       yield* triggerDeploy();
     });
 
