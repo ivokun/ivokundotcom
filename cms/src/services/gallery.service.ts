@@ -74,14 +74,13 @@ export const makeGalleryService = Effect.gen(function* () {
   const mediaService = yield* MediaService;
   const webhookService = yield* WebhookService;
 
-  // Helper to trigger deploy in background (fire-and-forget)
+  // Helper to trigger deploy after content changes
+  // Runs synchronously to ensure webhook completes before API response
   const triggerDeploy = () =>
     webhookService.triggerDeploy().pipe(
       Effect.catchAll((error) =>
         Effect.logWarning(`Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
-      ),
-      Effect.fork,
-      Effect.andThen(() => Effect.void)
+      )
     );
 
   const generateSlug = (title: string, override?: string): string => {

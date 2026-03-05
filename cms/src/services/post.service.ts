@@ -99,18 +99,14 @@ export const makePostService = Effect.gen(function* () {
   const { query } = yield* DbService;
   const webhookService = yield* WebhookService;
 
-  // Helper to trigger deploy - running synchronously for debugging
+  // Helper to trigger deploy after content changes
+  // Runs synchronously to ensure webhook completes before API response
   const triggerDeploy = () =>
-    Effect.gen(function* () {
-      yield* Effect.log('[PostService] About to call webhookService.triggerDeploy() SYNCHRONOUSLY');
-      yield* webhookService.triggerDeploy().pipe(
-        Effect.catchAll((error) =>
-          Effect.logWarning(`[PostService] Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
-        )
-        // Note: Removed Effect.fork to run synchronously for debugging
-      );
-      yield* Effect.log('[PostService] webhookService.triggerDeploy() completed');
-    });
+    webhookService.triggerDeploy().pipe(
+      Effect.catchAll((error) =>
+        Effect.logWarning(`Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
+      )
+    );
 
   const generateSlug = (title: string, override?: string): string => {
     return slugify(override || title, { lower: true, strict: true });
@@ -345,7 +341,6 @@ export const makePostService = Effect.gen(function* () {
       );
 
       // Trigger deploy after successful create
-      yield* Effect.log('[PostService] Post created successfully, about to trigger deploy');
       yield* triggerDeploy();
 
       return result;
@@ -421,7 +416,6 @@ export const makePostService = Effect.gen(function* () {
       );
 
       // Trigger deploy after successful update
-      yield* Effect.log('[PostService] Post updated successfully, about to trigger deploy');
       yield* triggerDeploy();
 
       return result;
@@ -438,7 +432,6 @@ export const makePostService = Effect.gen(function* () {
       }
 
       // Trigger deploy after successful delete
-      yield* Effect.log('[PostService] Post deleted successfully, about to trigger deploy');
       yield* triggerDeploy();
     });
 

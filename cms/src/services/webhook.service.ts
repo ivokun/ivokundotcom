@@ -86,12 +86,11 @@ export const WebhookServiceLive = Layer.effect(WebhookService, makeWebhookServic
 /**
  * Helper to trigger deploy and log any errors without failing the main operation.
  * Use this in services after successful content mutations.
+ * Note: Runs synchronously to ensure deploy is triggered before response returns.
  */
 export const triggerDeployAndLog = (webhookService: typeof WebhookService.Service) =>
   webhookService.triggerDeploy().pipe(
     Effect.catchAll((error) =>
       Effect.logWarning(`Deploy webhook failed: ${error.message}`).pipe(Effect.andThen(() => Effect.void))
-    ),
-    Effect.fork, // Run in background, don't block response
-    Effect.andThen(() => Effect.void)
+    )
   );
