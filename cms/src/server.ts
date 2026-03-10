@@ -102,22 +102,43 @@ export const createAppLayer = (
 ): Layer.Layer<never, unknown, never> => {
   // Determine environment
   const nodeEnv = process.env['NODE_ENV'] ?? 'development';
+  const isProductionEnv = nodeEnv === 'production';
+
+  // SEC: Validate required secrets in production
+  // The main config path (AppConfigLive) already enforces this via Config.redacted(),
+  // but createAppLayer is used by tests with fallback defaults. Guard against
+  // accidental production use without proper secrets.
+  const resolvedSessionSecret =
+    config?.sessionSecret ?? process.env['SESSION_SECRET'];
+  if (isProductionEnv && (!resolvedSessionSecret || resolvedSessionSecret.length < 32)) {
+    throw new Error(
+      'SESSION_SECRET is required in production and must be at least 32 characters. ' +
+        'Generate one with: openssl rand -base64 48'
+    );
+  }
+
+  const resolvedCorsOrigin =
+    config?.corsOrigin ?? process.env['CORS_ORIGIN'] ?? (isProductionEnv ? '' : '*');
+  if (isProductionEnv && (!resolvedCorsOrigin || resolvedCorsOrigin === '*')) {
+    console.warn(
+      '[SECURITY] CORS_ORIGIN is not set or is wildcard (*) in production. ' +
+        'Set CORS_ORIGIN to your production domain (e.g. https://yourdomain.com).'
+    );
+  }
 
   // Build config layer with defaults merged with provided config
   const configValue = {
     port: config?.port ?? 3000,
     nodeEnv,
     isDevelopment: nodeEnv === 'development',
-    isProduction: nodeEnv === 'production',
+    isProduction: isProductionEnv,
     databaseUrl: Redacted.make(
       config?.databaseUrl ??
         process.env['DATABASE_URL'] ??
         'postgres://postgres:postgres@localhost:5432/ivokundotcom_dev?sslmode=disable'
     ),
     sessionSecret: Redacted.make(
-      config?.sessionSecret ??
-        process.env['SESSION_SECRET'] ??
-        'dev-secret-min-32-chars-long!!!'
+      resolvedSessionSecret ?? 'dev-secret-min-32-chars-long!!!'
     ),
     r2: {
       accessKeyId: Redacted.make(
@@ -130,7 +151,7 @@ export const createAppLayer = (
       bucket: config?.r2?.bucket ?? process.env['R2_BUCKET'] ?? '',
       publicUrl: config?.r2?.publicUrl ?? process.env['R2_PUBLIC_URL'] ?? '',
     },
-    corsOrigin: config?.corsOrigin ?? process.env['CORS_ORIGIN'] ?? '*',
+    corsOrigin: resolvedCorsOrigin,
   };
 
   const ConfigLive = Layer.succeed(AppConfig, configValue as unknown as AppConfig);
@@ -231,7 +252,96 @@ const decodeParams =
 // Convert optional to nullable for DB compatibility
 const toNullable = <T>(value: T | undefined): T | null => (value === undefined ? null : value);
 
-// Convert TipTap content safely - validates shape before casting
+// =============================================================================
+// TIPTAP CONTENT SANITIZATION — SEC: Defense-in-depth for stored XSS
+// =============================================================================
+
+/** Allowed TipTap node types — reject unknown node types */
+const ALLOWED_NODE_TYPES = new Set([
+  'doc',
+  'paragraph',
+  'heading',
+  'bulletList',
+  'orderedList',
+  'listItem',
+  'codeBlock',
+  'blockquote',
+  'hardBreak',
+  'horizontalRule',
+  'text',
+  'image',
+]);
+
+/** Allowed TipTap mark types */
+const ALLOWED_MARK_TYPES = new Set(['bold', 'italic', 'underline', 'strike', 'code', 'link']);
+
+/** Check if a URL uses a safe protocol (blocks javascript:, vbscript:, data:) */
+const isSafeUrl = (url: string): boolean => {
+  const trimmed = url.trim().toLowerCase();
+  if (
+    trimmed.startsWith('javascript:') ||
+    trimmed.startsWith('vbscript:') ||
+    trimmed.startsWith('data:')
+  ) {
+    return false;
+  }
+  return true;
+};
+
+/** Recursively sanitize a TipTap node — strips dangerous content */
+const sanitizeTipTapNode = (node: unknown): Record<string, unknown> | null => {
+  if (!node || typeof node !== 'object') return null;
+  const n = node as Record<string, unknown>;
+  const type = n['type'] as string | undefined;
+  if (!type || !ALLOWED_NODE_TYPES.has(type)) return null;
+
+  const sanitized: Record<string, unknown> = { type };
+
+  // Preserve text content
+  if (typeof n['text'] === 'string') sanitized['text'] = n['text'];
+
+  // Sanitize attributes — strip event handlers, validate URLs
+  if (n['attrs'] && typeof n['attrs'] === 'object') {
+    const attrs = { ...(n['attrs'] as Record<string, unknown>) };
+    for (const key of Object.keys(attrs)) {
+      if (key.toLowerCase().startsWith('on')) delete attrs[key];
+    }
+    if (type === 'image' && typeof attrs['src'] === 'string') {
+      if (!isSafeUrl(attrs['src'])) return null;
+    }
+    sanitized['attrs'] = attrs;
+  }
+
+  // Sanitize marks — filter to allowlist, validate link hrefs
+  if (Array.isArray(n['marks'])) {
+    sanitized['marks'] = (n['marks'] as Record<string, unknown>[])
+      .filter((mark) => mark && typeof mark === 'object' && ALLOWED_MARK_TYPES.has(mark['type'] as string))
+      .map((mark) => {
+        const sanitizedMark: Record<string, unknown> = { type: mark['type'] };
+        if (mark['attrs'] && typeof mark['attrs'] === 'object') {
+          const markAttrs = { ...(mark['attrs'] as Record<string, unknown>) };
+          for (const key of Object.keys(markAttrs)) {
+            if (key.toLowerCase().startsWith('on')) delete markAttrs[key];
+          }
+          if (mark['type'] === 'link' && typeof markAttrs['href'] === 'string') {
+            if (!isSafeUrl(markAttrs['href'])) return null;
+          }
+          sanitizedMark['attrs'] = markAttrs;
+        }
+        return sanitizedMark;
+      })
+      .filter(Boolean);
+  }
+
+  // Recursively sanitize child content
+  if (Array.isArray(n['content'])) {
+    sanitized['content'] = (n['content'] as unknown[]).map(sanitizeTipTapNode).filter(Boolean);
+  }
+
+  return sanitized;
+};
+
+// Convert TipTap content safely - validates shape and sanitizes before casting
 const toTipTapContent = (value: unknown): TipTapDocument | null => {
   if (value === null) return null;
   if (typeof value !== 'object' || value === null) return null;
@@ -239,7 +349,9 @@ const toTipTapContent = (value: unknown): TipTapDocument | null => {
   // TipTap document must have type: 'doc' and content array
   if (obj['type'] !== 'doc') return null;
   if (!Array.isArray(obj['content'])) return null;
-  return value as TipTapDocument;
+  // SEC: Deep sanitize the document to strip dangerous content
+  const sanitized = sanitizeTipTapNode(obj);
+  return sanitized as TipTapDocument | null;
 };
 
 // Convert TipTap content for update (allows undefined)
