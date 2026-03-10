@@ -19,10 +19,10 @@ jobs:
         working-directory: cms
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@ecf28ddc73e819eb6fa29df6b34ef8921c743461 # v2
         with:
           bun-version: '1.1.38'
 
@@ -60,24 +60,35 @@ jobs:
           bun install --production
           rm -f package.json bun.lock
 
+      # SEC: Use env block for secrets instead of direct ${{ secrets.* }} interpolation
+      # to prevent command injection via special characters in secret values
       - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
 
       - name: Deploy to orbit001
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           rsync -avz --delete \
             --chown=cms:cms \
             -e "ssh -i ~/.ssh/deploy_key" \
             dist/ \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ env.DEPLOY_DIR }}/
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${{ env.DEPLOY_DIR }}/"
 
       - name: Fix database ownership
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+          ssh -i ~/.ssh/deploy_key "${DEPLOY_USER}@${DEPLOY_HOST}" << 'EOF'
           sudo -u postgres psql -d cms -c "
             DO \$\$ 
             DECLARE 
@@ -101,6 +112,10 @@ jobs:
           EOF
 
       - name: Run database migrations
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           # Install dbmate on CI runner
           curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
@@ -108,10 +123,10 @@ jobs:
 
           # Open SSH tunnel to orbit001 postgres
           ssh -i ~/.ssh/deploy_key -f -N -L 15432:localhost:5432 \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+            "${DEPLOY_USER}@${DEPLOY_HOST}"
 
           # Parse and fix URL escaping for dbmate
-          export SAFE_DB_URL="$(RAW_URL="${{ secrets.DATABASE_URL }}" bun -e "
+          export SAFE_DB_URL="$(RAW_URL="$DATABASE_URL" bun -e "
             const url = new URL(process.env.RAW_URL);
             try { url.password = encodeURIComponent(decodeURIComponent(url.password)); }
             catch { url.password = encodeURIComponent(url.password); }
@@ -137,7 +152,15 @@ jobs:
           pkill -f "ssh.*-L 15432" || true
 
       - name: Restart CMS service
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           ssh -i ~/.ssh/deploy_key \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
             'chmod +x /opt/cms/cms && systemctl restart cms'
+
+      # SEC: Always clean up SSH key, even if previous steps fail
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
