@@ -37,7 +37,7 @@ function renderNode(node: TipTapNode): string {
     case 'image':
       const src = node.attrs?.src as string | undefined;
       const alt = node.attrs?.alt as string | undefined;
-      if (!src) return '';
+      if (!src || !isSafeUrl(src)) return '';
       return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt ?? '')}">`;
     default:
       return content;
@@ -60,8 +60,8 @@ function wrapWithMarks(html: string, marks: TipTapMark[]): string {
       case 'link':
         const href = mark.attrs?.href as string | undefined;
         const target = mark.attrs?.target as string | undefined;
-        if (!href) return acc;
-        return `<a href="${escapeHtml(href)}"${target ? ` target="${escapeHtml(target)}"` : ''}>${acc}</a>`;
+        if (!href || !isSafeUrl(href)) return acc;
+        return `<a href="${escapeHtml(href)}" rel="noopener noreferrer"${target ? ` target="${escapeHtml(target)}"` : ''}>${acc}</a>`;
       default:
         return acc;
     }
@@ -75,4 +75,20 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * SEC: Validate that a URL uses a safe protocol.
+ * Blocks javascript:, vbscript:, and data: URIs to prevent XSS.
+ */
+function isSafeUrl(url: string): boolean {
+  const trimmed = url.trim().toLowerCase();
+  if (
+    trimmed.startsWith('javascript:') ||
+    trimmed.startsWith('vbscript:') ||
+    trimmed.startsWith('data:')
+  ) {
+    return false;
+  }
+  return true;
 }
