@@ -66,9 +66,9 @@ async function request<T>(
 }
 
 // Auth
-// Server returns { user, session_id } and sets HttpOnly session cookie
+// Server returns { user } and sets HttpOnly session cookie (no token in body)
 async function login(email: string, password: string) {
-  return request<{ session_id: string; user: { id: string; email: string; name: string } }>('/login', {
+  return request<{ user: { id: string; email: string; name: string } }>('/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });

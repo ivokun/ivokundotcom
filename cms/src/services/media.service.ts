@@ -17,6 +17,15 @@ const ALLOWED_MIME_TYPES = [
   'image/png',
   'image/gif',
   'image/webp',
+  // SEC-TODO: SVG files can contain embedded <script> tags and event handlers.
+  // Since uploads go directly to R2 via presigned URL, the server never sees the
+  // file content during upload. SVG sanitization would need to be added to the
+  // media processing pipeline (download from R2 → sanitize → re-upload).
+  // Until then, SVGs are served from R2 with the default Content-Type which
+  // browsers will render inline. Consider either:
+  //   1. Adding SVG sanitization in the processing step
+  //   2. Serving SVGs with Content-Disposition: attachment via R2 response headers
+  //   3. Removing SVG from the allowlist if not needed
   'image/svg+xml',
   'video/mp4',
   'video/webm',

@@ -13,16 +13,36 @@ node_modules
 .devenv.flake.nix
 
 ############################
-# Strapi
+# Secrets & Credentials
+############################
+
+.env
+.env.*
+!.env.example
+.envrc
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+
+############################
+# Strapi (legacy)
 ############################
 
 .strapi
-.env
 license.txt
 exports
 *.cache
 dist
 build
 .strapi-updater.json
+
+############################
+# Tools
+############################
+
 .sisyphus/
 .gitnexus

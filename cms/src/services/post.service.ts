@@ -23,6 +23,10 @@ import type {
 import { DbService } from './db.service';
 import { WebhookService } from './webhook.service';
 
+/** SEC: Escape special LIKE/ILIKE metacharacters to prevent unintended wildcard matching */
+const escapeLikePattern = (term: string): string =>
+  term.replace(/[\\%_]/g, '\\$&');
+
 export interface PostFilter {
   locale?: Locale;
   status?: Status;
@@ -494,7 +498,7 @@ export const makePostService = Effect.gen(function* () {
             q = q.where('posts.category_id', '=', filter.categoryId);
           }
           if (filter?.search) {
-            const term = `%${filter.search}%`;
+            const term = `%${escapeLikePattern(filter.search)}%`;
             q = q.where((eb) =>
               eb.or([eb('posts.title', 'ilike', term), eb('posts.excerpt', 'ilike', term)])
             );
@@ -515,7 +519,7 @@ export const makePostService = Effect.gen(function* () {
             q = q.where('category_id', '=', filter.categoryId);
           }
           if (filter?.search) {
-            const term = `%${filter.search}%`;
+            const term = `%${escapeLikePattern(filter.search)}%`;
             q = q.where((eb) =>
               eb.or([eb('title', 'ilike', term), eb('excerpt', 'ilike', term)])
             );
