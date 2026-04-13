@@ -44,7 +44,7 @@ function getImageCountText(count: number): string {
 >
   <Navigation />
   
-  <main>
+  <main id="main-content">
     <section class="section">
       <div class="container">
         <div class="gallery-filters">
@@ -57,7 +57,13 @@ function getImageCountText(count: number): string {
         </div>
         
         <div class="galleries-grid">
-          {galleries.map((gallery) => (
+          {galleries.length === 0 ? (
+            <div class="empty-state">
+              <h2 class="empty-state-title">NO GALLERIES YET</h2>
+              <p class="empty-state-text">Check back soon for new galleries.</p>
+            </div>
+          ) : (
+            galleries.map((gallery) => (
             <article class="gallery-card" data-category={getCategoryName(gallery)}>
               <a href={`/gallery/${gallery.slug}`} class="gallery-card-link">
                 <div class="gallery-preview">
@@ -91,9 +97,10 @@ function getImageCountText(count: number): string {
                         <div class="gallery-thumbnails">
                           {gallery.images.slice(1, 4).map((image, index) => (
                             <div class="thumbnail-item" style={`--delay: ${index * 0.1}s`}>
-                              <img 
-                                src={getGalleryImageUrl(image, 'thumbnail') || ''} 
+                              <img
+                                src={getGalleryImageUrl(image, 'thumbnail') || ''}
                                 alt=""
+                                role="presentation"
                                 loading="lazy"
                               />
                             </div>
@@ -123,7 +130,8 @@ function getImageCountText(count: number): string {
                 </div>
               </a>
             </article>
-          ))}
+          ))
+          )}
         </div>
       </div>
     </section>
@@ -172,6 +180,26 @@ function getImageCountText(count: number): string {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 2.5rem;
+  }
+
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    border: 4px solid var(--color-black);
+    background: var(--color-white);
+  }
+
+  .empty-state-title {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--color-black);
+  }
+
+  .empty-state-text {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--color-gray);
   }
 
   .gallery-card {

@@ -34,17 +34,33 @@ const socialImageURL = new URL(ogImage, Astro.url.origin).href;
     <meta property="og:image" content={socialImageURL} />
     
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content={canonicalURL} />
-    <meta property="twitter:title" content={title} />
-    <meta property="twitter:description" content={description} />
-    <meta property="twitter:image" content={socialImageURL} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonicalURL} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageURL} />
+    
+    <link rel="canonical" href={canonicalURL} />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      "name": "IVOKUN BLOG",
+      "url": canonicalURL,
+      "description": description,
+      "author": {
+        "@type": "Person",
+        "name": author
+      }
+    })} />
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <slot />
   </body>
 </html>
@@ -166,6 +182,34 @@ const socialImageURL = new URL(ogImage, Astro.url.origin).href;
     outline: none;
     border-color: var(--color-blue);
     box-shadow: 0 0 0 3px var(--color-blue);
+  }
+
+  /* Skip navigation link */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0;
+    background: var(--color-blue);
+    color: var(--color-white);
+    padding: 1rem 2rem;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    z-index: 10000;
+    text-decoration: none;
+    border: none;
+  }
+
+  .skip-link:focus {
+    top: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   /* Desktop layout with sidebar */

@@ -2,7 +2,7 @@
 const currentPath = Astro.url.pathname;
 ---
 
-<nav class="sidebar-nav" id="sidebar-nav">
+<nav class="sidebar-nav" id="sidebar-nav" aria-label="Main navigation">
   <div class="sidebar-content">
     <a href="/" class="logo">
       <span class="logo-text">IVOKUN</span>
@@ -10,30 +10,30 @@ const currentPath = Astro.url.pathname;
     </a>
     
     <div class="nav-links">
-      <a href="/" class={currentPath === '/' ? 'active' : ''}>
+      <a href="/" class={currentPath === '/' ? 'active' : ''} aria-current={currentPath === '/' ? 'page' : undefined}>
         <span class="nav-text">HOME</span>
       </a>
-      <a href="/gallery" class={currentPath === '/gallery' ? 'active' : ''}>
+      <a href="/gallery" class={currentPath === '/gallery' ? 'active' : ''} aria-current={currentPath === '/gallery' ? 'page' : undefined}>
         <span class="nav-text">GALLERY</span>
       </a>
-      <a href="/articles" class={currentPath === '/articles' ? 'active' : ''}>
+      <a href="/articles" class={currentPath === '/articles' ? 'active' : ''} aria-current={currentPath === '/articles' ? 'page' : undefined}>
         <span class="nav-text">ARTICLES</span>
       </a>
-      <a href="/about" class={currentPath === '/about' ? 'active' : ''}>
+      <a href="/about" class={currentPath === '/about' ? 'active' : ''} aria-current={currentPath === '/about' ? 'page' : undefined}>
         <span class="nav-text">ABOUT</span>
       </a>
     </div>
 
     <div class="sidebar-footer">
       <div class="social-links">
-        <a href="https://instagram.com/ivokun" class="social-link">IG</a>
-        <a href="https://github.com/ivokun" class="social-link">GH</a>
-        <a href="https://x.com/ivokun" class="social-link" target="_blank">X</a>
+        <a href="https://instagram.com/ivokun" class="social-link" aria-label="Instagram">IG</a>
+        <a href="https://github.com/ivokun" class="social-link" aria-label="GitHub">GH</a>
+        <a href="https://x.com/ivokun" class="social-link" target="_blank" aria-label="Twitter / X">X</a>
       </div>
     </div>
   </div>
 
-  <button class="sidebar-toggle" id="sidebar-toggle">
+  <button class="sidebar-toggle" id="sidebar-toggle" aria-expanded="false" aria-controls="sidebar-nav" aria-label="Toggle navigation menu">
     <span></span>
     <span></span>
     <span></span>
@@ -57,30 +57,30 @@ const currentPath = Astro.url.pathname;
     </div>
     
     <div class="mobile-nav-links">
-      <a href="/" class={currentPath === '/' ? 'active' : ''}>
+      <a href="/" class={currentPath === '/' ? 'active' : ''} aria-current={currentPath === '/' ? 'page' : undefined}>
         <span class="nav-text">HOME</span>
       </a>
-      <a href="/gallery" class={currentPath === '/gallery' ? 'active' : ''}>
+      <a href="/gallery" class={currentPath === '/gallery' ? 'active' : ''} aria-current={currentPath === '/gallery' ? 'page' : undefined}>
         <span class="nav-text">GALLERY</span>
       </a>
-      <a href="/articles" class={currentPath === '/articles' ? 'active' : ''}>
+      <a href="/articles" class={currentPath === '/articles' ? 'active' : ''} aria-current={currentPath === '/articles' ? 'page' : undefined}>
         <span class="nav-text">ARTICLES</span>
       </a>
-      <a href="/about" class={currentPath === '/about' ? 'active' : ''}>
+      <a href="/about" class={currentPath === '/about' ? 'active' : ''} aria-current={currentPath === '/about' ? 'page' : undefined}>
         <span class="nav-text">ABOUT</span>
       </a>
     </div>
 
     <div class="mobile-nav-footer">
       <div class="social-links">
-        <a href="#" class="social-link">IG</a>
-        <a href="#" class="social-link">GH</a>
-        <a href="#" class="social-link">TW</a>
+        <a href="https://instagram.com/ivokun" class="social-link" aria-label="Instagram">IG</a>
+        <a href="https://github.com/ivokun" class="social-link" aria-label="GitHub">GH</a>
+        <a href="https://x.com/ivokun" class="social-link" aria-label="Twitter / X">X</a>
       </div>
     </div>
   </div>
 
-  <button class="mobile-nav-toggle" id="mobile-nav-toggle">
+  <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-expanded="false" aria-controls="mobile-nav-menu" aria-label="Toggle navigation menu">
     <span class="hamburger-line"></span>
     <span class="hamburger-line"></span>
     <span class="hamburger-line"></span>
@@ -603,10 +603,12 @@ const currentPath = Astro.url.pathname;
         if (isOpen) {
           sidebar.classList.remove('open');
           toggle.classList.remove('active');
+          toggle.setAttribute('aria-expanded', 'false');
           overlay.classList.remove('active');
         } else {
           sidebar.classList.add('open');
           toggle.classList.add('active');
+          toggle.setAttribute('aria-expanded', 'true');
           overlay.classList.add('active');
         }
       });
@@ -615,6 +617,7 @@ const currentPath = Astro.url.pathname;
       overlay.addEventListener('click', () => {
         sidebar.classList.remove('open');
         toggle.classList.remove('active');
+        toggle.setAttribute('aria-expanded', 'false');
         overlay.classList.remove('active');
       });
 
@@ -639,6 +642,7 @@ const currentPath = Astro.url.pathname;
 
     function openMobileNav() {
       mobileNavToggle?.classList.add('active');
+      mobileNavToggle?.setAttribute('aria-expanded', 'true');
       mobileNavMenu?.classList.add('active');
       mobileNavOverlay?.classList.add('active');
       document.body.style.overflow = 'hidden';
@@ -646,6 +650,7 @@ const currentPath = Astro.url.pathname;
 
     function closeMobileNav() {
       mobileNavToggle?.classList.remove('active');
+      mobileNavToggle?.setAttribute('aria-expanded', 'false');
       mobileNavMenu?.classList.remove('active');
       mobileNavOverlay?.classList.remove('active');
       document.body.style.overflow = '';
