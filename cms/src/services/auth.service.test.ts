@@ -346,7 +346,9 @@ describe('AuthService', () => {
 
       expect(result.key).toBeDefined();
       expect(result.key.startsWith('cms_')).toBe(true);
-      expect(result.prefix).toBe(result.key.substring(0, 12));
+      // Prefix is now a cryptographically random 12-hex-char string
+      expect(result.prefix).toHaveLength(12);
+      expect(result.prefix).toMatch(/^[0-9a-f]{12}$/);
       expect(result.hash).toBeDefined();
       // hash is an Effect, not a string
       expect(typeof result.hash).toBe('object');

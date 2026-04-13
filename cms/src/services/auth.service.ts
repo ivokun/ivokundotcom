@@ -6,6 +6,7 @@
 
 import { hash, verify } from '@node-rs/argon2';
 import { createId } from '@paralleldrive/cuid2';
+import { randomBytes } from 'crypto';
 import { Context, Effect, Layer } from 'effect';
 
 import { DatabaseError, InvalidCredentials, SessionExpired } from '../errors';
@@ -158,8 +159,9 @@ export const makeAuthService = Effect.gen(function* () {
     });
 
   const generateApiKey = () => {
-    const key = `cms_${createId()}${createId()}`;
-    const prefix = key.substring(0, 12);
+    // Use cryptographically random prefix for unique lookup
+    const prefix = randomBytes(6).toString('hex');
+    const key = `cms_${prefix}${createId()}${createId()}`;
     return {
       key,
       prefix,

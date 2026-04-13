@@ -195,8 +195,9 @@ export const apiKeyMiddleware = HttpMiddleware.make((app) =>
       return yield* Effect.fail(new InvalidApiKey({ message: 'Missing X-Api-Key header' }));
     }
 
-    // Extract prefix (first 12 chars based on AuthService implementation)
-    const prefix = apiKey.substring(0, 12);
+    // Extract prefix: key format is cms_{12-hex-prefix}{cuid2}{cuid2}
+    // Prefix starts at index 4 (after "cms_") and is 12 characters
+    const prefix = apiKey.substring(4, 16);
 
     yield* authService.verifyApiKey(prefix, apiKey).pipe(
       Effect.catchAll((error) => {

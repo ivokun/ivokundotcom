@@ -257,8 +257,8 @@ export type UpdateHomeInput = typeof UpdateHomeInput.Type;
 export const ApiKey = Schema.Struct({
   id: Cuid2,
   name: NonEmptyString,
-  // Prefix is first 12 characters of the key — aligned with auth.service.ts and middleware.ts
-  prefix: Schema.String.pipe(Schema.minLength(8), Schema.maxLength(12)),
+  // Prefix is a 12-hex-char crypto-random string — aligned with auth.service.ts and middleware.ts
+  prefix: Schema.String.pipe(Schema.minLength(12), Schema.maxLength(12)),
   last_used_at: Schema.NullOr(Schema.Date),
   created_at: Schema.Date,
 });
@@ -362,13 +362,15 @@ export type LoginResponse = typeof LoginResponse.Type;
 // MEDIA MANAGEMENT SCHEMAS
 // =============================================================================
 
-/** Allowed MIME types for media uploads - SEC-005 */
+/** Allowed MIME types for media uploads - SEC-005
+ * NOTE: SVG is intentionally excluded due to stored XSS risk.
+ * See media.service.ts ALLOWED_MIME_TYPES comment for details.
+ */
 export const AllowedMimeType = Schema.Literal(
   'image/jpeg',
   'image/png',
   'image/gif',
   'image/webp',
-  'image/svg+xml',
   'video/mp4',
   'video/webm',
   'application/pdf'

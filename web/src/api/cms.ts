@@ -72,19 +72,26 @@ export async function cmsFetch<T>(endpoint: string, options: RequestInit = {}): 
   const path = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
   const url = `${CMS_API_URL}/${path}`;
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': CMS_API_TOKEN,
-      ...options.headers,
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': CMS_API_TOKEN,
+        ...options.headers,
+      },
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`CMS API error (${response.status}): ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`CMS API error (${response.status}): ${errorText}`);
+    }
+
+    return response.json() as Promise<T>;
+  } catch (error) {
+    if (error instanceof TypeError && error.message === 'fetch failed') {
+      throw new Error('CMS API is unreachable. Please try again later.');
+    }
+    throw error;
   }
-
-  return response.json() as Promise<T>;
 }

@@ -432,7 +432,7 @@ const applySecurityHeaders = (
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'nonce-{nonce}'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
       "font-src 'self'",
@@ -1371,7 +1371,11 @@ const appRouter = healthRouter.pipe(
   HttpRouter.concat(publicRouter),
   HttpRouter.concat(adminRouter),
   HttpRouter.concat(adminStaticRouter),
-  HttpRouter.concat(uploadsRouter)
+  HttpRouter.concat(uploadsRouter),
+  // Apply security headers to all routes including static assets
+  HttpRouter.use(HttpMiddleware.make((app) =>
+    Effect.map(app, applySecurityHeaders)
+  ))
 );
 
 // =============================================================================

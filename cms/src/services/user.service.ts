@@ -69,10 +69,20 @@ export const makeUserService = Effect.gen(function* () {
 
   const generatePassword = (): string => {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    const bytes = randomBytes(16);
+    // Use rejection sampling to avoid modulo bias
+    const maxValid = Math.floor(256 / charset.length) * charset.length;
+    const bytes = randomBytes(256); // Extra bytes for rejection sampling
     let password = '';
+    let byteIndex = 0;
     for (let i = 0; i < 16; i++) {
-      password += charset[bytes[i]! % charset.length];
+      while (byteIndex < bytes.length) {
+        const byte = bytes[byteIndex]!;
+        byteIndex++;
+        if (byte < maxValid) {
+          password += charset[byte % charset.length];
+          break;
+        }
+      }
     }
     return password;
   };
