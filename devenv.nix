@@ -150,6 +150,9 @@
   tasks = {
     "test:migrate" = {
       exec = ''
+        echo "Installing dependencies..."
+        bun install --frozen-lockfile
+
         echo "Running CMS database migrations..."
         DATABASE_URL="postgres://postgres:postgres@localhost:$PGPORT/ivokundotcom_test?sslmode=disable" \
           dbmate -d "./cms/db/migrations" up
