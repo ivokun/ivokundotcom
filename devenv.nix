@@ -146,9 +146,54 @@
   # };
 
   # Testing — run with `devenv test`
-  # Uses .test.sh script to avoid Nix ''${} escaping issues with devenv v3
+  # Tasks are chained: migrate -> unit -> e2e -> enterTest
+  tasks = {
+    "test:migrate" = {
+      exec = ''
+        echo "Installing dependencies..."
+        bun install --frozen-lockfile
+
+        echo "Running CMS database migrations..."
+        DATABASE_URL="postgres://postgres:postgres@localhost:$PGPORT/ivokundotcom_test?sslmode=disable" \
+          dbmate -d "./cms/db/migrations" up
+      '';
+      before = [ "test:unit" ];
+    };
+
+    "test:unit" = {
+      exec = ''
+        echo "Running unit tests (with 5min timeout)..."
+        DATABASE_URL="postgres://postgres:postgres@localhost:$PGPORT/ivokundotcom_test?sslmode=disable" \
+          timeout 300 bun --filter '@ivokundotcom/cms' test src/services/ src/middleware.test.ts src/schemas.test.ts src/errors.test.ts || EXIT_CODE=$?
+        if [ "''${EXIT_CODE:-0}" -eq 124 ]; then
+          echo "❌ Unit tests timed out after 5 minutes"
+          exit 1
+        elif [ "''${EXIT_CODE:-0}" -ne 0 ]; then
+          echo "❌ Unit tests failed"
+          exit 1
+        fi
+      '';
+      before = [ "test:e2e" ];
+    };
+
+    "test:e2e" = {
+      exec = ''
+        echo "Running E2E tests (with 10min timeout)..."
+        timeout 600 test-e2e || EXIT_CODE=$?
+        if [ "''${EXIT_CODE:-0}" -eq 124 ]; then
+          echo "❌ E2E tests timed out after 10 minutes"
+          exit 1
+        elif [ "''${EXIT_CODE:-0}" -ne 0 ]; then
+          echo "❌ E2E tests failed"
+          exit 1
+        fi
+      '';
+      before = [ "devenv:enterTest" ];
+    };
+  };
+
   enterTest = ''
-    bash .test.sh
+    echo "✅ All tests completed."
   '';
 
   # Shell hook - runs when entering the environment
