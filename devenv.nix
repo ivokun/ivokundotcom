@@ -145,7 +145,9 @@
   #   };
   # };
 
-  # Testing — run with `devenv test`
+  # Testing tasks for LOCAL development only.
+  # CI uses GitHub Actions service containers + `devenv shell --` instead of
+  # `devenv test` because devenv v3 task execution is unreliable in CI runners.
   # Tasks are chained: migrate -> unit -> e2e -> enterTest
   tasks = {
     "test:migrate" = {

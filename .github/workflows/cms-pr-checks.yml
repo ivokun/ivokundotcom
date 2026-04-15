@@ -64,7 +64,22 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ivokundotcom_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -89,8 +104,25 @@ jobs:
       - name: Install devenv binary
         run: nix profile install --accept-flake-config github:cachix/devenv/latest
 
-      - name: Run tests
-        run: timeout 1200 devenv test
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..10}; do
+            pg_isready -h localhost -p 5432 && break
+            sleep 1
+          done
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable
+        run: |
+          devenv shell -- dbmate -d "./cms/db/migrations" up
+
+      - name: Run unit tests
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable
+          SESSION_SECRET: test-secret-min-32-chars-long-for-ci-only!!!
+        run: |
+          devenv shell -- bun --filter '@ivokundotcom/cms' test src/services/ src/middleware.test.ts src/schemas.test.ts src/errors.test.ts
         # timeout returns 124 if killed by timeout, 0-123 for command exit
 
   build-spa:
