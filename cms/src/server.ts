@@ -1396,15 +1396,12 @@ const appRouter = healthRouter.pipe(
 // This ensures all errors (typed failures AND defects) produce proper JSON.
 const appRouterWithErrors = appRouter.pipe(
   HttpRouter.catchAllCause((cause) => {
-    if (Cause.isDie(cause)) {
-      console.error('Defect (unrecoverable error):', Cause.pretty(cause));
-    } else {
-      console.error('Unhandled error:', Cause.pretty(cause));
-    }
+    const pretty = Cause.pretty(cause);
+    console.error('Error caught by catchAllCause:', pretty);
     return HttpServerResponse.json(
       {
         error: 'InternalServerError',
-        message: 'An unexpected error occurred',
+        message: pretty,
       },
       { status: 500 }
     );
