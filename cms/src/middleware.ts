@@ -6,7 +6,7 @@
 import { HttpMiddleware, HttpServerRequest, HttpServerResponse } from '@effect/platform';
 import { Context, Effect } from 'effect';
 
-import { InvalidApiKey, InvalidCredentials, isAppError,SessionExpired } from './errors';
+import { DatabaseError, InvalidApiKey, InvalidCredentials, SessionExpired } from './errors';
 
 // =============================================================================
 // RATE LIMITING
@@ -163,8 +163,7 @@ export const sessionMiddleware = HttpMiddleware.make((app) =>
     const session = yield* authService.validateSession(sessionId).pipe(
       Effect.catchTag('SessionExpired', () =>
         Effect.fail(new SessionExpired({ message: 'Session expired' }))
-      ),
-      Effect.catchTag('DatabaseError', (e) => Effect.die(e))
+      )
     );
 
     // Provide session to the app
@@ -200,18 +199,9 @@ export const apiKeyMiddleware = HttpMiddleware.make((app) =>
     const prefix = apiKey.substring(4, 16);
 
     yield* authService.verifyApiKey(prefix, apiKey).pipe(
-      Effect.catchAll((error) => {
-        if (isAppError(error)) {
-          if (error._tag === 'InvalidCredentials') {
-            return Effect.fail(new InvalidApiKey({ message: 'Invalid API key' }));
-          }
-          if (error._tag === 'DatabaseError') {
-            return Effect.die(error);
-          }
-        }
-        // Fallback for unknown errors or untagged errors
-        return Effect.fail(new InvalidApiKey({ message: 'Invalid API key' }));
-      })
+      Effect.catchTag('InvalidCredentials', () =>
+        Effect.fail(new InvalidApiKey({ message: 'Invalid API key' }))
+      )
     );
 
     return yield* app;

@@ -530,7 +530,20 @@ const errorHandler = HttpMiddleware.make((app) =>
         { status: 500 }
       );
     },
-  })
+  }).pipe(
+    // Safety net: catch defects (Effect.die, unhandled exceptions, missing services)
+    // that bypass matchEffect's onFailure handler
+    Effect.catchAllDefect((defect) => {
+      console.error('Defect (unrecoverable error):', defect);
+      return HttpServerResponse.json(
+        {
+          error: 'InternalServerError',
+          message: 'An unexpected error occurred',
+        },
+        { status: 500 }
+      );
+    })
+  )
 );
 
 // =============================================================================
