@@ -641,10 +641,11 @@ const publicRouter = HttpRouter.empty.pipe(
     })
   ),
 
-  HttpRouter.use(publicCacheMiddleware),
-  HttpRouter.use(publicApiRateLimitMiddleware),
-  HttpRouter.use(apiKeyMiddleware),
-  HttpRouter.use(corsMiddleware)
+  // Temporarily disabled middleware to isolate crash
+  // HttpRouter.use(publicCacheMiddleware),
+  // HttpRouter.use(publicApiRateLimitMiddleware),
+  // HttpRouter.use(apiKeyMiddleware),
+  // HttpRouter.use(corsMiddleware)
 );
 
 // =============================================================================
