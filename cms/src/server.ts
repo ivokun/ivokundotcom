@@ -1391,17 +1391,36 @@ const appRouter = healthRouter.pipe(
   ))
 );
 
-// Catch defects at the router level, BEFORE @effect/platform's built-in
+// Catch ALL errors at the router level, BEFORE @effect/platform's built-in
 // withErrorHandling layer swallows them and returns a 500 with empty body.
-// This ensures all errors (typed failures AND defects) produce proper JSON.
+// This handles both typed failures (Effect.fail) and defects (Effect.die).
 const appRouterWithErrors = appRouter.pipe(
   HttpRouter.catchAllCause((cause) => {
-    const pretty = Cause.pretty(cause);
-    console.error('Error caught by catchAllCause:', pretty);
+    if (Cause.isDie(cause)) {
+      console.error('Defect (unrecoverable error):', Cause.pretty(cause));
+      return HttpServerResponse.json(
+        {
+          error: 'InternalServerError',
+          message: 'An unexpected error occurred',
+        },
+        { status: 500 }
+      );
+    }
+
+    if (Cause.isFailType(cause)) {
+      const error = cause.error;
+      if (isAppError(error)) {
+        const status = toHttpStatus(error);
+        const body = toJsonResponse(error);
+        return HttpServerResponse.json(body, { status });
+      }
+      console.error('Unhandled typed error:', error);
+    }
+
     return HttpServerResponse.json(
       {
         error: 'InternalServerError',
-        message: pretty,
+        message: 'An unexpected error occurred',
       },
       { status: 500 }
     );
