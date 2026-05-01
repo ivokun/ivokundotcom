@@ -40,7 +40,6 @@ jobs:
             --compile \
             --target=bun-linux-x64 \
             --outfile dist/cms \
-            --minify \
             --sourcemap=linked \
             --external @effect/cluster \
             --external sharp

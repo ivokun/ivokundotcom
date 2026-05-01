@@ -13,7 +13,7 @@ import {
 } from '@effect/platform';
 import { BunHttpServer, BunRuntime } from '@effect/platform-bun';
 import { createId } from '@paralleldrive/cuid2';
-import { Console, Duration, Effect, Layer, ParseResult, Redacted, Schedule,Schema } from 'effect';
+import { Cause, Console, Duration, Effect, Layer, ParseResult, Redacted, Schedule, Schema } from 'effect';
 
 import { AppConfig, AppConfigLive } from './config';
 import {
@@ -555,7 +555,19 @@ const publicRouter = HttpRouter.empty.pipe(
   HttpRouter.get(
     '/api/posts',
     Effect.gen(function* () {
-      return yield* HttpServerResponse.json({ data: [], meta: { total: 0, limit: 20, offset: 0 } });
+      const req = yield* HttpServerRequest.HttpServerRequest;
+      const query = yield* decodeQuery(PostListQueryParams)(req);
+      const postService = yield* PostService;
+      const posts = yield* postService.findAll({
+        limit: query.limit,
+        offset: query.offset,
+        filter: {
+          locale: query.locale,
+          status: 'published',
+          categoryId: query.category_id,
+        },
+      });
+      return yield* HttpServerResponse.json(posts);
     })
   ),
   HttpRouter.get(
@@ -641,11 +653,10 @@ const publicRouter = HttpRouter.empty.pipe(
     })
   ),
 
-  // Temporarily disabled middleware to isolate crash
-  // HttpRouter.use(publicCacheMiddleware),
-  // HttpRouter.use(publicApiRateLimitMiddleware),
-  // HttpRouter.use(apiKeyMiddleware),
-  // HttpRouter.use(corsMiddleware)
+  HttpRouter.use(publicCacheMiddleware),
+  HttpRouter.use(publicApiRateLimitMiddleware),
+  HttpRouter.use(apiKeyMiddleware),
+  HttpRouter.use(corsMiddleware)
 );
 
 // =============================================================================
@@ -1380,6 +1391,26 @@ const appRouter = healthRouter.pipe(
   ))
 );
 
+// Catch defects at the router level, BEFORE @effect/platform's built-in
+// withErrorHandling layer swallows them and returns a 500 with empty body.
+// This ensures all errors (typed failures AND defects) produce proper JSON.
+const appRouterWithErrors = appRouter.pipe(
+  HttpRouter.catchAllCause((cause) => {
+    if (Cause.isDie(cause)) {
+      console.error('Defect (unrecoverable error):', Cause.pretty(cause));
+    } else {
+      console.error('Unhandled error:', Cause.pretty(cause));
+    }
+    return HttpServerResponse.json(
+      {
+        error: 'InternalServerError',
+        message: 'An unexpected error occurred',
+      },
+      { status: 500 }
+    );
+  })
+);
+
 // =============================================================================
 // LAYER COMPOSITION
 // =============================================================================
@@ -1420,7 +1451,10 @@ const PORT = process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 3000;
 
 const ServerLive = BunHttpServer.layer({ port: PORT, maxRequestBodySize: 10 * 1024 * 1024 });
 
-const serverEffect = appRouter.pipe(HttpServer.serve(errorHandler), HttpServer.withLogAddress);
+const serverEffect = appRouterWithErrors.pipe(
+  HttpServer.serve(errorHandler),
+  HttpServer.withLogAddress
+);
 
 // Build the complete layer hierarchy
 // DbLive needs AppConfig
