@@ -390,7 +390,7 @@ async function createGallery(data: {
     slug: data.slug,
     description: data.description,
     status: data.status,
-    category_id: data.categoryId,
+    category_id: data.categoryId || null,
     images: data.images,
   };
 
@@ -414,7 +414,7 @@ async function updateGallery(id: string, data: Partial<{
   if (data.slug !== undefined) payload['slug'] = data.slug;
   if (data.description !== undefined) payload['description'] = data.description;
   if (data.status !== undefined) payload['status'] = data.status;
-  if (data.categoryId !== undefined) payload['category_id'] = data.categoryId;
+  if (data.categoryId !== undefined) payload['category_id'] = data.categoryId || null;
   if (data.images !== undefined) payload['images'] = data.images;
 
   return request<{ id: string; title: string; slug: string; status: string; updated_at: string }>(`/galleries/${id}`, {

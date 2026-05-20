@@ -213,7 +213,7 @@ export const CreateGalleryInput = Schema.Struct({
   slug: Slug,
   description: Schema.optional(Schema.String),
   images: Schema.optional(Schema.Array(GalleryImageInput)),
-  category_id: Schema.optional(Cuid2),
+  category_id: Schema.optional(Schema.NullOr(Cuid2)),
 });
 export type CreateGalleryInput = typeof CreateGalleryInput.Type;
 
