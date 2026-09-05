@@ -162,7 +162,9 @@ export class MediaService extends Context.Tag('MediaService')<
       alt?: string;
     }) => Effect.Effect<PresignedUploadResult, DatabaseError | StorageError | ValidationError>;
     /** Called after the browser finishes uploading — enqueues image processing */
-    readonly confirmUpload: (mediaId: string) => Effect.Effect<Media, DatabaseError | NotFound | ValidationError>;
+    readonly confirmUpload: (
+      mediaId: string
+    ) => Effect.Effect<Media, DatabaseError | NotFound | ValidationError>;
     readonly update: (
       id: string,
       data: MediaUpdate
@@ -173,6 +175,9 @@ export class MediaService extends Context.Tag('MediaService')<
     readonly findAll: (options?: {
       limit?: number;
       offset?: number;
+      /** Case-insensitive match on filename OR alt text */
+      search?: string;
+      status?: MediaStatus;
     }) => Effect.Effect<PaginatedResponse<Media>, DatabaseError>;
     /** Clean up orphaned uploads (status='uploading' older than 1 hour) */
     readonly cleanupOrphanedUploads: () => Effect.Effect<number, DatabaseError | StorageError>;
@@ -216,7 +221,9 @@ export const makeMediaService = Effect.gen(function* () {
       if (!ALLOWED_MIME_TYPES.includes(params.contentType.toLowerCase())) {
         return yield* Effect.fail(
           new ValidationError({
-            errors: [{ path: 'contentType', message: `Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}` }],
+            errors: [
+              { path: 'contentType', message: `Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}` },
+            ],
           })
         );
       }
@@ -278,15 +285,18 @@ export const makeMediaService = Effect.gen(function* () {
         const media = yield* findById(mediaId); // will throw NotFound if missing
         return yield* Effect.fail(
           new ValidationError({
-            errors: [{ path: 'status', message: `Media is in '${media.status}' state, expected 'uploading'` }],
+            errors: [
+              {
+                path: 'status',
+                message: `Media is in '${media.status}' state, expected 'uploading'`,
+              },
+            ],
           })
         );
       }
 
       if (!updated.upload_key) {
-        return yield* Effect.fail(
-          new NotFound({ resource: 'Media upload_key', id: mediaId })
-        );
+        return yield* Effect.fail(new NotFound({ resource: 'Media upload_key', id: mediaId }));
       }
 
       // Enqueue background image processing
@@ -318,15 +328,23 @@ export const makeMediaService = Effect.gen(function* () {
       const media = yield* findById(id);
 
       // Delete processed variants
-      yield* imageService.deleteVariants(id).pipe(
-        Effect.catchAll((error) => Effect.logWarning(`Failed to delete image variants for media ${id}: ${error}`))
-      );
+      yield* imageService
+        .deleteVariants(id)
+        .pipe(
+          Effect.catchAll((error) =>
+            Effect.logWarning(`Failed to delete image variants for media ${id}: ${error}`)
+          )
+        );
 
       // Delete original upload
       if (media.upload_key) {
-        yield* storage.delete(media.upload_key).pipe(
-          Effect.catchAll((error) => Effect.logWarning(`Failed to delete upload for media ${id}: ${error}`))
-        );
+        yield* storage
+          .delete(media.upload_key)
+          .pipe(
+            Effect.catchAll((error) =>
+              Effect.logWarning(`Failed to delete upload for media ${id}: ${error}`)
+            )
+          );
       }
 
       // Delete from DB
@@ -339,16 +357,36 @@ export const makeMediaService = Effect.gen(function* () {
       }
     });
 
-  const findAll = (options?: { limit?: number; offset?: number }) =>
+  const findAll = (options?: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    status?: MediaStatus;
+  }) =>
     Effect.gen(function* () {
       const limit = options?.limit ?? 50;
       const offset = options?.offset ?? 0;
+      const search = options?.search?.trim();
+      const status = options?.status;
 
       const [data, countResult] = yield* Effect.all([
         query('find_all_media', (db) =>
           db
             .selectFrom('media')
             .selectAll()
+            .where((eb) => {
+              const conditions = [];
+              if (search) {
+                const pattern = `%${search}%`;
+                conditions.push(
+                  eb.or([eb('filename', 'ilike', pattern), eb('alt', 'ilike', pattern)])
+                );
+              }
+              if (status) {
+                conditions.push(eb('status', '=', status));
+              }
+              return eb.and(conditions);
+            })
             .orderBy('created_at', 'desc')
             .limit(limit)
             .offset(offset)
@@ -358,6 +396,19 @@ export const makeMediaService = Effect.gen(function* () {
           db
             .selectFrom('media')
             .select((eb) => eb.fn.count<string>('id').as('count'))
+            .where((eb) => {
+              const conditions = [];
+              if (search) {
+                const pattern = `%${search}%`;
+                conditions.push(
+                  eb.or([eb('filename', 'ilike', pattern), eb('alt', 'ilike', pattern)])
+                );
+              }
+              if (status) {
+                conditions.push(eb('status', '=', status));
+              }
+              return eb.and(conditions);
+            })
             .executeTakeFirstOrThrow()
         ),
       ]);
@@ -397,13 +448,15 @@ export const makeMediaService = Effect.gen(function* () {
           Effect.gen(function* () {
             // Delete from R2 storage if upload_key exists
             if (media.upload_key) {
-              yield* storage.delete(media.upload_key).pipe(
-                Effect.catchAll((error) =>
-                  Effect.logWarning(
-                    `Failed to delete orphaned upload ${media.id} from storage: ${error}`
+              yield* storage
+                .delete(media.upload_key)
+                .pipe(
+                  Effect.catchAll((error) =>
+                    Effect.logWarning(
+                      `Failed to delete orphaned upload ${media.id} from storage: ${error}`
+                    )
                   )
-                )
-              );
+                );
             }
 
             // Delete from DB

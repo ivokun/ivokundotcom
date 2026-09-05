@@ -1,9 +1,17 @@
-import { Link } from '@tanstack/react-router'
-import { FileEdit, Image as ImageIcon, MoreHorizontal, Plus, Trash } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
+import { Link } from '@tanstack/react-router';
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileEdit,
+  Image as ImageIcon,
+  MoreHorizontal,
+  Plus,
+  Trash,
+} from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
-import { PageHeader } from '~/admin/components/page-header'
+import { PageHeader } from '~/admin/components/page-header';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,41 +21,53 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '~/admin/components/ui/alert-dialog'
-import { Badge } from '~/admin/components/ui/badge'
-import { Button } from '~/admin/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '~/admin/components/ui/card'
+} from '~/admin/components/ui/alert-dialog';
+import { Badge } from '~/admin/components/ui/badge';
+import { Button } from '~/admin/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '~/admin/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '~/admin/components/ui/dropdown-menu'
-import { useDeleteGallery, useGalleries } from '~/admin/hooks/use-galleries'
-import { formatDate } from '~/admin/lib/utils'
+} from '~/admin/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/admin/components/ui/select';
+import { useDeleteGallery, useGalleries } from '~/admin/hooks/use-galleries';
+import { formatDate } from '~/admin/lib/utils';
+
+const PAGE_SIZE = 12;
 
 export function GalleriesListPage() {
-  const { data: galleries, isLoading } = useGalleries()
-  const deleteGallery = useDeleteGallery()
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { data: galleries, isLoading } = useGalleries({
+    page,
+    pageSize: PAGE_SIZE,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+  });
+  const deleteGallery = useDeleteGallery();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleDelete = () => {
     if (deleteId) {
       deleteGallery.mutate(deleteId, {
         onSuccess: () => {
-          toast.success('Gallery deleted')
-          setDeleteId(null)
+          toast.success('Gallery deleted');
+          setDeleteId(null);
         },
         onError: (err) => toast.error(err.message),
-      })
+      });
     }
-  }
+  };
+
+  const total = galleries?.meta.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-6">
@@ -60,21 +80,52 @@ export function GalleriesListPage() {
         </Button>
       </PageHeader>
 
+      <div className="flex items-center gap-4 rounded-lg border bg-card p-4">
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => {
+            setStatusFilter(value);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="h-9 w-[160px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="published">Published</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoading ? (
-          <p className="col-span-full py-10 text-center text-muted-foreground">Loading galleries...</p>
+          <p className="col-span-full py-10 text-center text-muted-foreground">
+            Loading galleries...
+          </p>
         ) : galleries?.data.length ? (
           galleries.data.map((gallery) => (
             <Card key={gallery.id} className="flex flex-col overflow-hidden">
               <div className="aspect-video flex items-center justify-center border-b bg-muted">
-                <ImageIcon className="h-10 w-10 text-muted-foreground/50" />
+                {gallery.cover_url ? (
+                  <img
+                    src={gallery.cover_url}
+                    alt={gallery.title}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <ImageIcon className="h-10 w-10 text-muted-foreground/50" />
+                )}
               </div>
               <CardHeader className="space-y-1 p-4">
                 <div className="flex items-center justify-between">
                   <Badge variant={gallery.status === 'published' ? 'default' : 'secondary'}>
                     {gallery.status}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">{gallery.image_count} images</span>
+                  <span className="text-xs text-muted-foreground">
+                    {gallery.image_count} images
+                  </span>
                 </div>
                 <CardTitle className="truncate text-lg">{gallery.title}</CardTitle>
               </CardHeader>
@@ -110,9 +161,41 @@ export function GalleriesListPage() {
             </Card>
           ))
         ) : (
-          <p className="col-span-full py-10 text-center text-muted-foreground">No galleries found</p>
+          <p className="col-span-full py-10 text-center text-muted-foreground">
+            No galleries found
+          </p>
         )}
       </div>
+
+      {/* Pagination */}
+      {!isLoading && total > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">{total} galleries</p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Prev
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
@@ -135,5 +218,5 @@ export function GalleriesListPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
