@@ -13,7 +13,17 @@ import {
 } from '@effect/platform';
 import { BunHttpServer, BunRuntime } from '@effect/platform-bun';
 import { createId } from '@paralleldrive/cuid2';
-import { Cause, Console, Duration, Effect, Layer, ParseResult, Redacted, Schedule, Schema } from 'effect';
+import {
+  Cause,
+  Console,
+  Duration,
+  Effect,
+  Layer,
+  ParseResult,
+  Redacted,
+  Schedule,
+  Schema,
+} from 'effect';
 
 import { AppConfig, AppConfigLive } from './config';
 import {
@@ -43,8 +53,10 @@ import {
   ListQueryParams,
   Locale,
   LoginInput,
+  MediaStatus,
   MediaUploadInput,
   PostListQueryParams,
+  Status,
   UpdateCategoryInput,
   UpdateGalleryInput,
   UpdateHomeInput,
@@ -108,8 +120,7 @@ export const createAppLayer = (
   // The main config path (AppConfigLive) already enforces this via Config.redacted(),
   // but createAppLayer is used by tests with fallback defaults. Guard against
   // accidental production use without proper secrets.
-  const resolvedSessionSecret =
-    config?.sessionSecret ?? process.env['SESSION_SECRET'];
+  const resolvedSessionSecret = config?.sessionSecret ?? process.env['SESSION_SECRET'];
   if (isProductionEnv && (!resolvedSessionSecret || resolvedSessionSecret.length < 32)) {
     throw new Error(
       'SESSION_SECRET is required in production and must be at least 32 characters. ' +
@@ -137,13 +148,9 @@ export const createAppLayer = (
         process.env['DATABASE_URL'] ??
         'postgres://postgres:postgres@localhost:5432/ivokundotcom_dev?sslmode=disable'
     ),
-    sessionSecret: Redacted.make(
-      resolvedSessionSecret ?? 'dev-secret-min-32-chars-long!!!'
-    ),
+    sessionSecret: Redacted.make(resolvedSessionSecret ?? 'dev-secret-min-32-chars-long!!!'),
     r2: {
-      accessKeyId: Redacted.make(
-        config?.r2?.accessKeyId ?? process.env['R2_ACCESS_KEY_ID'] ?? ''
-      ),
+      accessKeyId: Redacted.make(config?.r2?.accessKeyId ?? process.env['R2_ACCESS_KEY_ID'] ?? ''),
       secretAccessKey: Redacted.make(
         config?.r2?.secretAccessKey ?? process.env['R2_ACCESS_SECRET'] ?? ''
       ),
@@ -198,10 +205,7 @@ export const createAppLayer = (
   // Create server with the configured port
   const ServerLive = BunHttpServer.layer({ port: configValue.port });
 
-  return serverEffect.pipe(
-    Layer.provide(ServerLive),
-    Layer.provide(AllServices)
-  );
+  return serverEffect.pipe(Layer.provide(ServerLive), Layer.provide(AllServices));
 };
 
 // =============================================================================
@@ -315,7 +319,9 @@ const sanitizeTipTapNode = (node: unknown): Record<string, unknown> | null => {
   // Sanitize marks — filter to allowlist, validate link hrefs
   if (Array.isArray(n['marks'])) {
     sanitized['marks'] = (n['marks'] as Record<string, unknown>[])
-      .filter((mark) => mark && typeof mark === 'object' && ALLOWED_MARK_TYPES.has(mark['type'] as string))
+      .filter(
+        (mark) => mark && typeof mark === 'object' && ALLOWED_MARK_TYPES.has(mark['type'] as string)
+      )
       .map((mark) => {
         const sanitizedMark: Record<string, unknown> = { type: mark['type'] };
         if (mark['attrs'] && typeof mark['attrs'] === 'object') {
@@ -389,7 +395,10 @@ const calculateReadTime = (content: TipTapDocument | null | undefined): number |
   if (!content || !content.content) return null;
 
   const text = content.content.map(extractTextFromTipTap).join(' ');
-  const wordCount = text.trim().split(/\s+/).filter((word) => word.length > 0).length;
+  const wordCount = text
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0).length;
 
   if (wordCount === 0) return null;
 
@@ -420,7 +429,11 @@ const applySecurityHeaders = (
   let result = response;
   result = HttpServerResponse.setHeader(result, 'X-Content-Type-Options', 'nosniff');
   result = HttpServerResponse.setHeader(result, 'X-Frame-Options', 'DENY');
-  result = HttpServerResponse.setHeader(result, 'Referrer-Policy', 'strict-origin-when-cross-origin');
+  result = HttpServerResponse.setHeader(
+    result,
+    'Referrer-Policy',
+    'strict-origin-when-cross-origin'
+  );
   result = HttpServerResponse.setHeader(result, 'X-DNS-Prefetch-Control', 'off');
   result = HttpServerResponse.setHeader(
     result,
@@ -465,7 +478,10 @@ const corsMiddleware = HttpMiddleware.make((app) =>
     if (req.method === 'OPTIONS') {
       return HttpServerResponse.empty({ status: 204 }).pipe(
         HttpServerResponse.setHeader('Access-Control-Allow-Origin', config.corsOrigin),
-        HttpServerResponse.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS'),
+        HttpServerResponse.setHeader(
+          'Access-Control-Allow-Methods',
+          'GET,POST,PATCH,DELETE,OPTIONS'
+        ),
         HttpServerResponse.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization'),
         HttpServerResponse.setHeader('Access-Control-Max-Age', '86400')
       );
@@ -492,9 +508,7 @@ const publicCacheMiddleware = HttpMiddleware.make((app) =>
     // List endpoints: /api/posts, /api/categories, /api/galleries
     // Single-item endpoints: /api/posts/:slug, /api/categories/:slug, /api/galleries/:slug
     const isListEndpoint =
-      pathname === '/api/posts' ||
-      pathname === '/api/categories' ||
-      pathname === '/api/galleries';
+      pathname === '/api/posts' || pathname === '/api/categories' || pathname === '/api/galleries';
 
     const cacheHeader = isListEndpoint
       ? 'public, max-age=60, stale-while-revalidate=300'
@@ -648,7 +662,9 @@ const publicRouter = HttpRouter.empty.pipe(
     '/api/home',
     Effect.gen(function* () {
       const homeService = yield* HomeService;
-      const home = yield* homeService.get().pipe(Effect.catchTag('NotFound', () => Effect.succeed(defaultHome)));
+      const home = yield* homeService
+        .get()
+        .pipe(Effect.catchTag('NotFound', () => Effect.succeed(defaultHome)));
       return yield* HttpServerResponse.json(home);
     })
   ),
@@ -949,12 +965,34 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
     '/admin/api/galleries',
     Effect.gen(function* () {
       const req = yield* HttpServerRequest.HttpServerRequest;
-      const query = yield* decodeQuery(ListQueryParams)(req);
+      const query = yield* decodeQuery(
+        Schema.Struct({
+          ...ListQueryParams.fields,
+          status: Schema.optional(Status),
+        })
+      )(req);
       const galleryService = yield* GalleryService;
       const result = yield* galleryService.findAll({
         limit: query.limit,
         offset: query.offset,
+        filter: query.status ? { status: query.status } : undefined,
       });
+      // Resolve cover thumbnails: batch-fetch the first image of each gallery
+      const firstImageIds = [
+        ...new Set(
+          result.data
+            .map((g) => g.images[0]?.mediaId)
+            .filter((mediaId): mediaId is string => typeof mediaId === 'string')
+        ),
+      ];
+      const mediaService = yield* MediaService;
+      const coverMedia = yield* mediaService.findByIds(firstImageIds);
+      const coverUrlById = new Map(
+        coverMedia.map((m) => [
+          m.id,
+          m.urls?.thumbnail ?? m.urls?.small ?? m.urls?.original ?? null,
+        ])
+      );
       // Return snake_case to match DB and other endpoints
       const transformed = {
         data: result.data.map((g) => ({
@@ -963,6 +1001,7 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
           slug: g.slug,
           status: g.status,
           image_count: g.images.length,
+          cover_url: coverUrlById.get(g.images[0]?.mediaId ?? '') ?? null,
           published_at: g.published_at,
           created_at: g.created_at,
         })),
@@ -989,10 +1028,7 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
       return yield* HttpServerResponse.json(gallery, { status: 201 });
     }).pipe(
       Effect.catchTag('MediaNotFound', (error) =>
-        HttpServerResponse.json(
-          { error: 'MediaNotFound', message: error.message },
-          { status: 422 }
-        )
+        HttpServerResponse.json({ error: 'MediaNotFound', message: error.message }, { status: 422 })
       )
     )
   ),
@@ -1029,10 +1065,7 @@ const adminGalleryRouter = HttpRouter.empty.pipe(
       return yield* HttpServerResponse.json(gallery);
     }).pipe(
       Effect.catchTag('MediaNotFound', (error) =>
-        HttpServerResponse.json(
-          { error: 'MediaNotFound', message: error.message },
-          { status: 422 }
-        )
+        HttpServerResponse.json({ error: 'MediaNotFound', message: error.message }, { status: 422 })
       )
     )
   ),
@@ -1077,7 +1110,9 @@ const adminMiscRouter = HttpRouter.empty.pipe(
     '/admin/api/home',
     Effect.gen(function* () {
       const homeService = yield* HomeService;
-      const home = yield* homeService.get().pipe(Effect.catchTag('NotFound', () => Effect.succeed(defaultHome)));
+      const home = yield* homeService
+        .get()
+        .pipe(Effect.catchTag('NotFound', () => Effect.succeed(defaultHome)));
       return yield* HttpServerResponse.json(home);
     })
   ),
@@ -1103,9 +1138,20 @@ const adminMiscRouter = HttpRouter.empty.pipe(
     '/admin/api/media',
     Effect.gen(function* () {
       const req = yield* HttpServerRequest.HttpServerRequest;
-      const query = yield* decodeQuery(ListQueryParams)(req);
+      const query = yield* decodeQuery(
+        Schema.Struct({
+          ...ListQueryParams.fields,
+          search: Schema.optional(Schema.String),
+          status: Schema.optional(MediaStatus),
+        })
+      )(req);
       const mediaService = yield* MediaService;
-      const media = yield* mediaService.findAll({ limit: query.limit, offset: query.offset });
+      const media = yield* mediaService.findAll({
+        limit: query.limit,
+        offset: query.offset,
+        search: query.search,
+        status: query.status,
+      });
       return yield* HttpServerResponse.json(media);
     })
   ),
@@ -1231,7 +1277,9 @@ const adminMiscRouter = HttpRouter.empty.pipe(
       const req = yield* HttpServerRequest.HttpServerRequest;
       const { id } = yield* decodeParams(Schema.Struct({ id: Schema.String }))(req);
       const { query } = yield* DbService;
-      yield* query('delete_api_key', (db) => db.deleteFrom('api_keys').where('id', '=', id).execute());
+      yield* query('delete_api_key', (db) =>
+        db.deleteFrom('api_keys').where('id', '=', id).execute()
+      );
       return yield* HttpServerResponse.empty();
     })
   ),
@@ -1254,13 +1302,16 @@ const adminMiscRouter = HttpRouter.empty.pipe(
       const userService = yield* UserService;
       const user = yield* userService.invite(body.name, body.email);
       // Return flat object with snake_case for consistency
-      return yield* HttpServerResponse.json({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        initialPassword: user.initialPassword,
-        created_at: user.createdAt.toISOString(),
-      }, { status: 201 });
+      return yield* HttpServerResponse.json(
+        {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          initialPassword: user.initialPassword,
+          created_at: user.createdAt.toISOString(),
+        },
+        { status: 201 }
+      );
     })
   ),
   HttpRouter.del(
@@ -1386,9 +1437,7 @@ const appRouter = healthRouter.pipe(
   HttpRouter.concat(adminStaticRouter),
   HttpRouter.concat(uploadsRouter),
   // Apply security headers to all routes including static assets
-  HttpRouter.use(HttpMiddleware.make((app) =>
-    Effect.map(app, applySecurityHeaders)
-  ))
+  HttpRouter.use(HttpMiddleware.make((app) => Effect.map(app, applySecurityHeaders)))
 );
 
 // Catch ALL errors at the router level, BEFORE @effect/platform's built-in
@@ -1501,7 +1550,10 @@ const MediaWithDeps = MediaServiceLive.pipe(
 const CategoryWithDb = CategoryServiceLive.pipe(Layer.provide(DbWithConfig));
 const PostWithDb = PostServiceLive.pipe(Layer.provide(DbWithConfig));
 // GalleryService also needs MediaService for image resolution
-const GalleryWithDb = GalleryServiceLive.pipe(Layer.provide(DbWithConfig), Layer.provide(MediaWithDeps));
+const GalleryWithDb = GalleryServiceLive.pipe(
+  Layer.provide(DbWithConfig),
+  Layer.provide(MediaWithDeps)
+);
 const HomeWithDb = HomeServiceLive.pipe(Layer.provide(DbWithConfig));
 
 // AuthServiceLive needs DbService
@@ -1560,11 +1612,7 @@ const orphanedUploadCleanupJob = Effect.gen(function* () {
   if (count > 0) {
     yield* Effect.log(`Cleaned up ${count} orphaned uploads`);
   }
-}).pipe(
-  Effect.catchAll((error) =>
-    Effect.logError(`Orphaned upload cleanup failed: ${error}`)
-  )
-);
+}).pipe(Effect.catchAll((error) => Effect.logError(`Orphaned upload cleanup failed: ${error}`)));
 
 /** Scheduled cleanup job that runs every hour */
 const scheduledCleanupJob = Effect.repeat(
@@ -1579,10 +1627,7 @@ const program = Effect.gen(function* () {
   yield* Console.log('Starting CMS server...');
 
   // Start the cleanup job in the background (providing the same services as the server)
-  yield* scheduledCleanupJob.pipe(
-    Effect.provide(AllServices),
-    Effect.forkDaemon
-  );
+  yield* scheduledCleanupJob.pipe(Effect.provide(AllServices), Effect.forkDaemon);
 
   yield* Effect.log('Orphaned upload cleanup job started (runs every hour)');
 

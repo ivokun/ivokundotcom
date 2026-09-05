@@ -1,120 +1,213 @@
-import { Check, Copy, Loader2, Search, Trash, Upload } from 'lucide-react'
-import { useState } from 'react'
-import { toast } from 'sonner'
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Loader2,
+  Search,
+  Trash,
+  Upload,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
-import { PageHeader } from '~/admin/components/page-header'
-import { Badge } from '~/admin/components/ui/badge'
-import { Button } from '~/admin/components/ui/button'
+import type { MediaStatusParam } from '~/admin/api';
+import { PageHeader } from '~/admin/components/page-header';
+import { Badge } from '~/admin/components/ui/badge';
+import { Button } from '~/admin/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '~/admin/components/ui/dialog'
-import { Input } from '~/admin/components/ui/input'
-import { Label } from '~/admin/components/ui/label'
+} from '~/admin/components/ui/dialog';
+import { Input } from '~/admin/components/ui/input';
+import { Label } from '~/admin/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '~/admin/components/ui/select'
-import { useDeleteMedia, useMedia, useUpdateMedia,useUploadMedia } from '~/admin/hooks/use-media'
-import { cn, formatDate,formatFileSize } from '~/admin/lib/utils'
+} from '~/admin/components/ui/select';
+import { useDeleteMedia, useMedia, useUpdateMedia, useUploadMedia } from '~/admin/hooks/use-media';
+import { cn, formatDate, formatFileSize } from '~/admin/lib/utils';
+
+const PAGE_SIZE = 24;
 
 type MediaItem = {
-  id: string
-  filename: string
-  mime_type: string
-  size: number
-  alt: string | null
-  urls: { original: string; thumbnail: string; small: string; large: string } | null
-  status: 'uploading' | 'processing' | 'ready' | 'failed'
-  created_at: string
-}
+  id: string;
+  filename: string;
+  mime_type: string;
+  size: number;
+  alt: string | null;
+  urls: { original: string; thumbnail: string; small: string; large: string } | null;
+  width: number | null;
+  height: number | null;
+  status: 'uploading' | 'processing' | 'ready' | 'failed';
+  created_at: string;
+};
 
 function getMediaThumbnailUrl(item: MediaItem): string | undefined {
-  if (!item.urls) return undefined
-  return item.urls.thumbnail || item.urls.small || item.urls.original
+  if (!item.urls) return undefined;
+  return item.urls.thumbnail || item.urls.small || item.urls.original;
 }
 
 function getMediaFullUrl(item: MediaItem): string | undefined {
-  if (!item.urls) return undefined
-  return item.urls.original
+  if (!item.urls) return undefined;
+  return item.urls.original;
+}
+
+function formatDimensions(item: MediaItem): string | null {
+  if (!item.width || !item.height) return null;
+  return `${item.width} × ${item.height}`;
 }
 
 export function MediaLibraryPage() {
-  const { data: media, isLoading } = useMedia()
-  const { mutate: uploadMutate, progress, isPending: isUploading } = useUploadMedia()
-  const deleteMedia = useDeleteMedia()
-  const updateMedia = useUpdateMedia()
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<MediaStatusParam | 'all'>('all');
 
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  // Debounce the search input so we don't fire a request per keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const { data: media, isLoading } = useMedia({
+    page,
+    pageSize: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+  });
+  const { mutate: uploadMutate, progress, isPending: isUploading } = useUploadMedia();
+  const deleteMedia = useDeleteMedia();
+  const updateMedia = useUpdateMedia();
+  const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
+  const [altValue, setAltValue] = useState('');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const uploadFiles = (files: File[]) => {
+    const images = files.filter((file) => file.type.startsWith('image/'));
+    if (images.length < files.length) {
+      toast.info('Only image files can be uploaded');
+    }
+    images.forEach((file) => {
+      uploadMutate(
+        { file },
+        {
+          onSuccess: () => toast.success(`Uploaded ${file.name}`),
+          onError: (err) => toast.error(`Failed to upload ${file.name}: ${err.message}`),
+        }
+      );
+    });
+  };
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    files.forEach(file => {
-      uploadMutate({ file }, {
-        onSuccess: () => toast.success(`Uploaded ${file.name}`),
-        onError: (err) => toast.error(`Failed to upload ${file.name}: ${err.message}`)
-      })
-    })
+    uploadFiles(Array.from(e.target.files || []));
     // Reset input
-    e.target.value = ''
-  }
+    e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    uploadFiles(Array.from(e.dataTransfer.files));
+  };
 
   const handleDelete = () => {
     if (selectedItem) {
       deleteMedia.mutate(selectedItem.id, {
         onSuccess: () => {
-          toast.success('Media deleted')
-          setSelectedItem(null)
+          toast.success('Media deleted');
+          setSelectedItem(null);
         },
-        onError: (err) => toast.error(err.message)
-      })
+        onError: (err) => toast.error(err.message),
+      });
     }
-  }
+  };
 
   const handleUpdateAlt = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!selectedItem) return
-    const formData = new FormData(e.currentTarget)
-    const alt = formData.get('alt') as string
-    updateMedia.mutate({ id: selectedItem.id, data: { alt } }, {
-      onSuccess: () => {
-        toast.success('Updated alt text')
-        setSelectedItem((prev) => prev ? { ...prev, alt } : prev)
-      },
-      onError: (err) => toast.error(err.message)
-    })
-  }
+    e.preventDefault();
+    if (!selectedItem) return;
+    const alt = altValue;
+    updateMedia.mutate(
+      { id: selectedItem.id, data: { alt } },
+      {
+        onSuccess: () => {
+          toast.success('Updated alt text');
+          setSelectedItem((prev) => (prev ? { ...prev, alt } : prev));
+        },
+        onError: (err) => toast.error(err.message),
+      }
+    );
+  };
 
-  const copyUrl = (item: MediaItem) => {
-    const url = getMediaFullUrl(item)
-    if (!url) return
-    navigator.clipboard.writeText(url)
-    setCopiedId(item.id)
-    toast.success('URL copied to clipboard')
-    setTimeout(() => setCopiedId(null), 2000)
-  }
+  const copyUrl = (url: string, key: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedKey(key);
+    toast.success('URL copied to clipboard');
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
-  const filteredMedia = (media?.data as MediaItem[] | undefined)?.filter((item) => {
-    const matchesSearch =
-      item.filename.toLowerCase().includes(search.toLowerCase()) ||
-      item.alt?.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const filteredMedia = media?.data as MediaItem[] | undefined;
 
-  const uploadingFiles = Object.entries(progress)
+  const uploadingFiles = Object.entries(progress);
+  const total = media?.meta.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Clamp the page when the result set shrinks (e.g. after a delete or a
+  // narrower search) so we don't sit on an out-of-range empty page
+  useEffect(() => {
+    if (media && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [media, page, totalPages]);
+
+  const variants: Array<{ label: string; key: string; url: string | undefined }> =
+    selectedItem?.status === 'ready' && selectedItem.urls
+      ? [
+          { label: 'Original', key: 'original', url: selectedItem.urls.original },
+          { label: 'Large (1920w)', key: 'large', url: selectedItem.urls.large },
+          { label: 'Small (800w)', key: 'small', url: selectedItem.urls.small },
+          { label: 'Thumbnail (200w)', key: 'thumbnail', url: selectedItem.urls.thumbnail },
+        ]
+      : [];
 
   return (
-    <div className="space-y-6">
+    <div
+      className="relative space-y-6"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center rounded-lg border-2 border-dashed border-primary bg-background/80">
+          <div className="flex flex-col items-center gap-2 text-primary">
+            <Upload className="h-10 w-10" />
+            <p className="text-lg font-medium">Drop images to upload</p>
+          </div>
+        </div>
+      )}
+
       <PageHeader title="Media Library" description="Upload and manage your images and files">
         <div className="relative">
           <input
@@ -144,7 +237,10 @@ export function MediaLibraryPage() {
               <span className="flex-1 truncate text-sm">{name}</span>
               <span className="text-sm font-medium text-muted-foreground">{pct}%</span>
               <div className="h-2 w-24 rounded-full bg-muted overflow-hidden">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${pct}%` }}
+                />
               </div>
             </div>
           ))}
@@ -161,7 +257,13 @@ export function MediaLibraryPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => {
+            setStatusFilter(value as MediaStatusParam | 'all');
+            setPage(1);
+          }}
+        >
           <SelectTrigger className="h-9 w-[140px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -178,40 +280,83 @@ export function MediaLibraryPage() {
         {isLoading ? (
           <p className="col-span-full py-10 text-center text-muted-foreground">Loading media...</p>
         ) : filteredMedia?.length ? (
-          filteredMedia.map((item) => (
-            <div
-              key={item.id}
-              className={cn(
-                "group relative aspect-square cursor-pointer overflow-hidden rounded-lg border bg-muted transition-all hover:border-primary",
-                item.status !== 'ready' && "opacity-70"
-              )}
-              onClick={() => setSelectedItem(item)}
-            >
-              {item.status === 'ready' && getMediaThumbnailUrl(item) ? (
-                <img
-                  src={getMediaThumbnailUrl(item)}
-                  alt={item.alt || ''}
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                />
-              ) : (
-                <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-2">
-                  {item.status === 'processing' || item.status === 'uploading' ? (
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  ) : null}
-                  <Badge variant={item.status === 'failed' ? 'destructive' : 'secondary'} className="text-[10px]">
-                    {item.status}
-                  </Badge>
+          filteredMedia.map((item) => {
+            const dimensions = formatDimensions(item);
+            return (
+              <div
+                key={item.id}
+                className={cn(
+                  'group relative aspect-square cursor-pointer overflow-hidden rounded-lg border bg-muted transition-all hover:border-primary',
+                  item.status !== 'ready' && 'opacity-70'
+                )}
+                onClick={() => {
+                  setSelectedItem(item);
+                  setAltValue(item.alt || '');
+                }}
+              >
+                {item.status === 'ready' && getMediaThumbnailUrl(item) ? (
+                  <img
+                    src={getMediaThumbnailUrl(item)}
+                    alt={item.alt || ''}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-2">
+                    {item.status === 'processing' || item.status === 'uploading' ? (
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    ) : null}
+                    <Badge
+                      variant={item.status === 'failed' ? 'destructive' : 'secondary'}
+                      className="text-[10px]"
+                    >
+                      {item.status}
+                    </Badge>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex flex-col justify-end p-2">
+                  <p className="truncate text-[10px] text-white font-medium">{item.filename}</p>
+                  <p className="text-[10px] text-white/80">
+                    {dimensions ? `${dimensions} • ` : ''}
+                    {formatFileSize(item.size)}
+                  </p>
                 </div>
-              )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex flex-col justify-end p-2">
-                <p className="truncate text-[10px] text-white font-medium">{item.filename}</p>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <p className="col-span-full py-10 text-center text-muted-foreground">No media found</p>
         )}
       </div>
+
+      {/* Pagination */}
+      {!isLoading && total > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">{total} items</p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Prev
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
         <DialogContent className="max-w-3xl">
@@ -229,7 +374,9 @@ export function MediaLibraryPage() {
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    {selectedItem.status === 'processing' && <Loader2 className="h-8 w-8 animate-spin" />}
+                    {selectedItem.status === 'processing' && (
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                    )}
                     <Badge variant={selectedItem.status === 'failed' ? 'destructive' : 'secondary'}>
                       {selectedItem.status}
                     </Badge>
@@ -240,27 +387,67 @@ export function MediaLibraryPage() {
                 <div className="space-y-1">
                   <h4 className="font-semibold">{selectedItem.filename}</h4>
                   <p className="text-sm text-muted-foreground">
-                    {selectedItem.mime_type} {'\u2022'} {formatFileSize(selectedItem.size)}
+                    {formatDimensions(selectedItem)
+                      ? `${formatDimensions(selectedItem)} px • `
+                      : ''}
+                    {selectedItem.mime_type} {'•'} {formatFileSize(selectedItem.size)}
                   </p>
-                  <p className="text-xs text-muted-foreground">Uploaded on {formatDate(selectedItem.created_at)}</p>
-                  <Badge variant={selectedItem.status === 'ready' ? 'default' : selectedItem.status === 'failed' ? 'destructive' : 'secondary'} className="mt-1">
+                  <p className="text-xs text-muted-foreground">
+                    Uploaded on {formatDate(selectedItem.created_at)}
+                  </p>
+                  <Badge
+                    variant={
+                      selectedItem.status === 'ready'
+                        ? 'default'
+                        : selectedItem.status === 'failed'
+                          ? 'destructive'
+                          : 'secondary'
+                    }
+                    className="mt-1"
+                  >
                     {selectedItem.status}
                   </Badge>
                 </div>
 
-                {selectedItem.status === 'ready' && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => copyUrl(selectedItem)}>
-                      {copiedId === selectedItem.id ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                      Copy URL
-                    </Button>
+                {variants.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Variants</Label>
+                    <div className="divide-y rounded-md border">
+                      {variants.map((variant) => (
+                        <div key={variant.key} className="flex items-center justify-between p-2">
+                          <span className="text-sm">{variant.label}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={!variant.url}
+                            onClick={() =>
+                              variant.url &&
+                              copyUrl(variant.url, `${selectedItem.id}:${variant.key}`)
+                            }
+                          >
+                            {copiedKey === `${selectedItem.id}:${variant.key}` ? (
+                              <Check className="mr-2 h-4 w-4" />
+                            ) : (
+                              <Copy className="mr-2 h-4 w-4" />
+                            )}
+                            Copy URL
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 <form onSubmit={handleUpdateAlt} className="space-y-4 pt-2">
                   <div className="space-y-2">
                     <Label htmlFor="alt">Alt Text</Label>
-                    <Input id="alt" name="alt" defaultValue={selectedItem.alt || ''} placeholder="Describe the image..." />
+                    <Input
+                      id="alt"
+                      name="alt"
+                      value={altValue}
+                      onChange={(e) => setAltValue(e.target.value)}
+                      placeholder="Describe the image..."
+                    />
                   </div>
                   <Button type="submit" size="sm" disabled={updateMedia.isPending}>
                     {updateMedia.isPending ? 'Saving...' : 'Save Alt Text'}
@@ -268,7 +455,13 @@ export function MediaLibraryPage() {
                 </form>
 
                 <div className="pt-4">
-                  <Button variant="destructive" size="sm" className="w-full" onClick={handleDelete} disabled={deleteMedia.isPending}>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleDelete}
+                    disabled={deleteMedia.isPending}
+                  >
                     <Trash className="mr-2 h-4 w-4" />
                     Delete Media
                   </Button>
@@ -277,10 +470,12 @@ export function MediaLibraryPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedItem(null)}>Close</Button>
+            <Button variant="outline" onClick={() => setSelectedItem(null)}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
