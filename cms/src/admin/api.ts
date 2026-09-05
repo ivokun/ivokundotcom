@@ -22,10 +22,7 @@ interface PaginatedResponse<T> {
 // Authentication is handled by HttpOnly session cookies set by the server.
 // No client-side token management needed.
 
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
 
   // Build headers — skip Content-Type for FormData (browser sets multipart boundary)
@@ -167,32 +164,34 @@ async function getPosts(params?: {
   searchParams.set('offset', offset.toString());
 
   const query = searchParams.toString();
-  return request<PaginatedResponse<{
-    id: string;
-    title: string;
-    slug: string;
-    excerpt: string | null;
-    content: object | null;
-    status: string;
-    locale: string;
-    category_id: string | null;
-    featured_image: string | null;
-    published_at: string | null;
-    created_at: string;
-    updated_at: string;
-    read_time_minute: number | null;
-    category: {
+  return request<
+    PaginatedResponse<{
       id: string;
-      name: string;
+      title: string;
       slug: string;
-    } | null;
-    featured_media: {
-      id: string;
-      filename: string;
-      urls: { original: string; thumbnail: string; small: string; large: string } | null;
-      alt: string | null;
-    } | null;
-  }>>(`/posts${query ? `?${query}` : ''}`);
+      excerpt: string | null;
+      content: object | null;
+      status: string;
+      locale: string;
+      category_id: string | null;
+      featured_image: string | null;
+      published_at: string | null;
+      created_at: string;
+      updated_at: string;
+      read_time_minute: number | null;
+      category: {
+        id: string;
+        name: string;
+        slug: string;
+      } | null;
+      featured_media: {
+        id: string;
+        filename: string;
+        urls: { original: string; thumbnail: string; small: string; large: string } | null;
+        alt: string | null;
+      } | null;
+    }>
+  >(`/posts${query ? `?${query}` : ''}`);
 }
 
 async function getPost(id: string) {
@@ -241,7 +240,7 @@ async function createPost(data: {
       parsedContent = null;
     }
   }
-  
+
   const payload = {
     title: data.title,
     slug: data.slug,
@@ -252,7 +251,7 @@ async function createPost(data: {
     featured_image: data.featuredImageId || null,
     keywords: data.keywords || [],
   };
-  
+
   const response = await request<{
     id: string;
     title: string;
@@ -274,17 +273,20 @@ async function createPost(data: {
   return response;
 }
 
-async function updatePost(id: string, data: Partial<{
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string;
-  status: string;
-  locale: string;
-  categoryId: string;
-  featuredImageId: string;
-  keywords: string[];
-}>) {
+async function updatePost(
+  id: string,
+  data: Partial<{
+    title: string;
+    slug: string;
+    content: string;
+    excerpt: string;
+    status: string;
+    locale: string;
+    categoryId: string;
+    featuredImageId: string;
+    keywords: string[];
+  }>
+) {
   // Transform camelCase to snake_case for backend
   const payload: Record<string, unknown> = {};
   if (data.title !== undefined) payload['title'] = data.title;
@@ -292,7 +294,8 @@ async function updatePost(id: string, data: Partial<{
   if (data.content !== undefined && data.content !== '') {
     // Only parse and send content if it's not empty
     try {
-      payload['content'] = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+      payload['content'] =
+        typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
     } catch (e) {
       console.error('Failed to parse content:', e);
       // If parsing fails, send null
@@ -350,15 +353,18 @@ async function getGalleries(params?: { status?: string; page?: number; pageSize?
   searchParams.set('offset', offset.toString());
 
   const query = searchParams.toString();
-  return request<PaginatedResponse<{
-    id: string;
-    title: string;
-    slug: string;
-    status: string;
-    image_count: number;
-    published_at: string | null;
-    created_at: string;
-  }>>(`/galleries${query ? `?${query}` : ''}`);
+  return request<
+    PaginatedResponse<{
+      id: string;
+      title: string;
+      slug: string;
+      status: string;
+      image_count: number;
+      cover_url: string | null;
+      published_at: string | null;
+      created_at: string;
+    }>
+  >(`/galleries${query ? `?${query}` : ''}`);
 }
 
 async function getGallery(id: string) {
@@ -394,20 +400,30 @@ async function createGallery(data: {
     images: data.images,
   };
 
-  return request<{ id: string; title: string; slug: string; status: string; created_at: string }>('/galleries', {
+  return request<{
+    id: string;
+    title: string;
+    slug: string;
+    status: string;
+    images: Array<{ id: string; mediaId: string; order: number }>;
+    created_at: string;
+  }>('/galleries', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 }
 
-async function updateGallery(id: string, data: Partial<{
-  title: string;
-  slug: string;
-  description: string;
-  status: string;
-  categoryId?: string;
-  images: Array<{ id: string; mediaId: string; order: number }>;
-}>) {
+async function updateGallery(
+  id: string,
+  data: Partial<{
+    title: string;
+    slug: string;
+    description: string;
+    status: string;
+    categoryId?: string;
+    images: Array<{ id: string; mediaId: string; order: number }>;
+  }>
+) {
   // Transform camelCase to snake_case for backend
   const payload: Record<string, unknown> = {};
   if (data.title !== undefined) payload['title'] = data.title;
@@ -417,7 +433,14 @@ async function updateGallery(id: string, data: Partial<{
   if (data.categoryId !== undefined) payload['category_id'] = data.categoryId || null;
   if (data.images !== undefined) payload['images'] = data.images;
 
-  return request<{ id: string; title: string; slug: string; status: string; updated_at: string }>(`/galleries/${id}`, {
+  return request<{
+    id: string;
+    title: string;
+    slug: string;
+    status: string;
+    images: Array<{ id: string; mediaId: string; order: number }>;
+    updated_at: string;
+  }>(`/galleries/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
@@ -437,27 +460,42 @@ async function unpublishGallery(id: string) {
 
 // Media
 // Note: Backend returns upload_key but this should be excluded - it's leaked in responses
-async function getMedia(params?: { page?: number; pageSize?: number }) {
+export type MediaStatusParam = 'uploading' | 'processing' | 'ready' | 'failed';
+
+async function getMedia(params?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: MediaStatusParam;
+}) {
   const pageSize = params?.pageSize ?? 50;
   const page = params?.page ?? 1;
   const offset = (page - 1) * pageSize;
   const searchParams = new URLSearchParams();
   searchParams.set('limit', pageSize.toString());
   searchParams.set('offset', offset.toString());
+  if (params?.search?.trim()) {
+    searchParams.set('search', params.search.trim());
+  }
+  if (params?.status) {
+    searchParams.set('status', params.status);
+  }
 
   const query = searchParams.toString();
-  return request<PaginatedResponse<{
-    id: string;
-    filename: string;
-    mime_type: string;
-    size: number;
-    alt: string | null;
-    urls: { original: string; thumbnail: string; small: string; large: string } | null;
-    width: number | null;
-    height: number | null;
-    status: 'uploading' | 'processing' | 'ready' | 'failed';
-    created_at: string;
-  }>>(`/media${query ? `?${query}` : ''}`);
+  return request<
+    PaginatedResponse<{
+      id: string;
+      filename: string;
+      mime_type: string;
+      size: number;
+      alt: string | null;
+      urls: { original: string; thumbnail: string; small: string; large: string } | null;
+      width: number | null;
+      height: number | null;
+      status: 'uploading' | 'processing' | 'ready' | 'failed';
+      created_at: string;
+    }>
+  >(`/media${query ? `?${query}` : ''}`);
 }
 
 async function getMediaById(id: string) {
@@ -602,7 +640,8 @@ async function updateHomePage(data: {
 }) {
   const payload: Record<string, unknown> = {};
   if (data.title !== undefined) payload['title'] = data.title || null;
-  if (data.shortDescription !== undefined) payload['short_description'] = data.shortDescription || null;
+  if (data.shortDescription !== undefined)
+    payload['short_description'] = data.shortDescription || null;
   if (data.heroImageId !== undefined) payload['hero'] = data.heroImageId || null;
   if (data.description !== undefined) {
     try {
@@ -620,18 +659,29 @@ async function updateHomePage(data: {
 
 // API Keys
 async function getApiKeys() {
-  const response = await request<{ data: Array<{
-    id: string;
-    name: string;
-    prefix: string;
-    created_at: string;
-    last_used_at: string | null;
-  }> }>('/api-keys');
+  const response = await request<{
+    data: Array<{
+      id: string;
+      name: string;
+      prefix: string;
+      created_at: string;
+      last_used_at: string | null;
+    }>;
+  }>('/api-keys');
   return response.data;
 }
 
 async function createApiKey(data: { name: string }) {
-  const response = await request<{ data: { id: string; key: string; name: string; prefix: string; created_at: string; last_used_at: string | null } }>('/api-keys', {
+  const response = await request<{
+    data: {
+      id: string;
+      key: string;
+      name: string;
+      prefix: string;
+      created_at: string;
+      last_used_at: string | null;
+    };
+  }>('/api-keys', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -644,11 +694,19 @@ async function deleteApiKey(id: string) {
 
 // Users
 async function getUsers() {
-  return request<{ data: Array<{ id: string; email: string; name: string | null; created_at: string }> }>('/users');
+  return request<{
+    data: Array<{ id: string; email: string; name: string | null; created_at: string }>;
+  }>('/users');
 }
 
 async function inviteUser(data: { name: string; email: string }) {
-  return request<{ id: string; email: string; name: string | null; initialPassword: string; created_at: string }>('/users/invite', {
+  return request<{
+    id: string;
+    email: string;
+    name: string | null;
+    initialPassword: string;
+    created_at: string;
+  }>('/users/invite', {
     method: 'POST',
     body: JSON.stringify(data),
   });
