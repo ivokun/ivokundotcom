@@ -99,9 +99,7 @@ export const validateMagicBytes = (mimeType: string, bytes: Uint8Array): boolean
       // MP4 uses ftyp box: bytes 4-7 = "ftyp" (66 74 79 70)
       if (bytes.length < 8) return false;
       // Skip first 4 bytes (box size), check for "ftyp"
-      return (
-        bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70
-      );
+      return bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70;
 
     case 'video/webm':
       // First 4 bytes: 1A 45 DF A3 (EBML header for Matroska/WebM)
