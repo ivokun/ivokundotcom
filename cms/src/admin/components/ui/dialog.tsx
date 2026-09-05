@@ -60,6 +60,7 @@ const DialogHeader = ({
       "flex flex-col space-y-1.5 text-center sm:text-left",
       className
     )}
+    {...props}
   />
 )
 DialogHeader.displayName = "DialogHeader"
@@ -73,6 +74,7 @@ const DialogFooter = ({
       "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
       className
     )}
+    {...props}
   />
 )
 DialogFooter.displayName = "DialogFooter"
