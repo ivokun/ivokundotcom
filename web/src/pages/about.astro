@@ -36,10 +36,26 @@ import Navigation from '@components/Navigation.astro';
             <div class="about-section">
               <h3 class="section-heading">TECHNOLOGY</h3>
               <p>
-                As a developer, I believe in building things that matter. I write about 
-                web development, emerging technologies, and the impact of digital tools 
-                on creative expression. Code is just another form of art.
+                For the past two years I have been a Senior Cloud Solution Architect, leading 
+                cloud transformation and platform modernization for large enterprise clients. 
+                The interesting details are all behind NDAs, but it boils down to Kubernetes, 
+                CI/CD, observability — and turning legacy systems into boring, reliable platforms.
               </p>
+              <p>
+                Beyond the day job, I build with Go, TypeScript and Effect, run a NixOS-based 
+                homelab (storage, containers, zero-trust network), and tinker with self-hosted 
+                AI agents. Code is just another form of art.
+              </p>
+            </div>
+
+            <div class="about-section">
+              <h3 class="section-heading">RECENTLY</h3>
+              <ul class="recent-list">
+                <li>Cloud &amp; platform architecture for enterprise transformation programs</li>
+                <li>Modern web stacks — Bun + Effect + PostgreSQL, Astro frontends</li>
+                <li>Self-hosting everything: NAS, monitoring, personal AI tooling</li>
+                <li>Still shooting the streets whenever I can</li>
+              </ul>
             </div>
           </div>
 
@@ -50,7 +66,7 @@ import Navigation from '@components/Navigation.astro';
               </div>
               <div class="profile-info">
                 <h4 class="profile-name">SALAHUDDIN MUHAMMAD IQBAL</h4>
-                <p class="profile-role">PHOTOGRAPHER / DIGITAL BUSINESS ENBLER</p>
+                <p class="profile-role">PHOTOGRAPHER / DEVELOPER / DIGITAL BUSINESS ENABLER</p>
               </div>
             </div>
 
@@ -130,6 +146,18 @@ import Navigation from '@components/Navigation.astro';
     font-size: 1.25rem;
     margin-bottom: 1rem;
     color: var(--color-blue);
+  }
+
+  .recent-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .recent-list li {
+    padding: 0.75rem 0 0.75rem 1.25rem;
+    border-left: 4px solid var(--color-blue);
+    margin-bottom: 0.75rem;
   }
 
   .about-visual {
