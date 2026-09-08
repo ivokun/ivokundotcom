@@ -41,7 +41,6 @@ jobs:
             --target=bun-linux-x64 \
             --outfile dist/cms \
             --sourcemap=linked \
-            --external @effect/cluster \
             --external sharp
 
       - name: Prepare deploy package
@@ -55,7 +54,7 @@ jobs:
 
           # Install external deps marked with --external in the compile step
           cd dist
-          echo '{"dependencies":{"sharp":"^0.34.5","@effect/cluster":"0.55.0"}}' > package.json
+          echo '{"dependencies":{"sharp":"^0.34.5"}}' > package.json
           bun install --production
           rm -f package.json bun.lock
 

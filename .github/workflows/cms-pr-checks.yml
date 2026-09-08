@@ -160,6 +160,21 @@ jobs:
       run:
         working-directory: cms
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ivokundotcom_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -179,10 +194,26 @@ jobs:
             --compile \
             --target=bun-linux-x64 \
             --outfile dist/cms \
-            --minify \
             --sourcemap=linked \
-            --external @effect/cluster \
             --external sharp
+          # NOTE: no --minify here (and no @effect/cluster external anymore).
+          # --minify breaks Effect Context.Tag identity in compiled binaries:
+          # it caused the May 2026 empty-body 500 incidents (see
+          # docs/adr/013). Keep this step in sync with deploy-cms.yml.
+
+      - name: Boot test binary
+        # The compiled binary must actually START and serve. This is the
+        # guard that was missing when --minify silently broke the binary
+        # (the empty-body 500 incidents, docs/adr/013) - CI only compiled,
+        # never ran it. sharp is installed beside the binary exactly like
+        # deploy-cms.yml does for the real deployment.
+        run: |
+          cd dist
+          echo '{"dependencies":{"sharp":"^0.34.5"}}' > package.json
+          bun install --production
+          rm -f package.json bun.lock
+          cd ..
+          bun scripts/boot-test.ts ./dist/cms
 
   sanity-check:
     name: Sanity Check

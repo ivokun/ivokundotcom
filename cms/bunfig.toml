@@ -1,7 +1,8 @@
 [install]
-# Force correct resolution for @effect/cluster subpath exports
+# Pin the registry explicitly (Effect packages use subpath exports that
+# need consistent resolution across workspaces)
 registry = "https://registry.npmjs.org"
 
 [resolve]
-# Help Bun resolve @effect/cluster subpath exports
+# Effect packages use subpath exports; keep Bun resolving them consistently
 conditions = ["import", "module", "node"]
