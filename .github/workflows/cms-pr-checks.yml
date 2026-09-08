@@ -102,11 +102,11 @@ jobs:
           name: devenv
 
       - name: Install devenv binary
-        # Pinned to the last devenv commit verified green in CI (2026-09-05).
+        # Pinned to devenv v2.2.2 - the version verified green in CI (2026-09-05).
         # devenv 2.3 (released 2026-09-07 on :latest) breaks `devenv shell`
         # with "The option `dotenv.resolved' was accessed but has no value
         # defined" during nix evaluation. Unpin once that regression is fixed.
-        run: nix profile install --accept-flake-config github:cachix/devenv/8ea6b32683c7108e6705edc7817ccfa8d358a2d9
+        run: nix profile install --accept-flake-config github:cachix/devenv/b8030c58deafc013fc51791377fe8fea4dadcb00 # v2.2.2
 
       - name: Wait for PostgreSQL
         run: |
