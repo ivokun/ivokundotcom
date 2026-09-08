@@ -66,9 +66,7 @@ const socialImageURL = new URL(ogImage, Astro.url.origin).href;
 </html>
 
 <style is:global>
-  @tailwind base;
-  @tailwind components;
-  @tailwind utilities;
+  @import '../styles/global.css';
 
   :root {
     --color-black: #000000;
