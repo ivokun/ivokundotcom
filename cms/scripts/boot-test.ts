@@ -9,11 +9,12 @@ const binary = process.argv[2] ?? './dist/cms';
 const port = '3999';
 
 // Assembled from parts to keep a literal conninfo out of this file.
-const dbUser = 'postgres';
-const dbPass = 'postgres';
-const dbHost = '127.0.0.1';
-const dbPort = '5432';
-const dbName = 'ivokundotcom_test';
+// Override the database name via env when testing against a fresh DB.
+const dbUser = process.env['BOOT_DB_USER'] ?? 'postgres';
+const dbPass = process.env['BOOT_DB_PASS'] ?? 'postgres';
+const dbHost = process.env['BOOT_DB_HOST'] ?? '127.0.0.1';
+const dbPort = process.env['BOOT_DB_PORT'] ?? '5432';
+const dbName = process.env['BOOT_DB_NAME'] ?? 'ivokundotcom_test';
 const databaseUrl = `postgres://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}?sslmode=disable`;
 
 const proc = Bun.spawn([binary], {

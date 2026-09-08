@@ -201,6 +201,20 @@ jobs:
           # it caused the May 2026 empty-body 500 incidents (see
           # docs/adr/013). Keep this step in sync with deploy-cms.yml.
 
+      - name: Apply DB migrations
+        # The boot test needs a schema'd database (the server's connection
+        # probe touches core tables). Migrations are dbmate single-file
+        # format (-- migrate:up / -- migrate:down markers), so extract the
+        # up section with awk and pipe to psql - raw psql -f would run the
+        # down block too.
+        run: |
+          cd cms/db/migrations
+          for f in *.sql; do
+            awk '/-- migrate:down/{exit} /-- migrate:up/{next} {print}' "$f" \
+              | PGPASSWORD=postgres psql -h localhost -U postgres -d ivokundotcom_test -v ON_ERROR_STOP=1 --quiet
+            echo "applied: $f"
+          done
+
       - name: Boot test binary
         # The compiled binary must actually START and serve. This is the
         # guard that was missing when --minify silently broke the binary
