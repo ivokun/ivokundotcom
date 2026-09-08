@@ -68,7 +68,7 @@ in stdenv.mkDerivation rec {
       --compile \
       --target=bun \
       --outfile=$binaryName \
-      --external @effect/cluster \
+luster \/d
       --external sharp
     
     runHook postBuild

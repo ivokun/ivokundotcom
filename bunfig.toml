@@ -1,0 +1,9 @@
+# Root bunfig for the monorepo. Bun only reads bunfig.toml from the working
+# directory, so repo-wide install settings live here (workspace bunfig.toml
+# files only apply when installing from inside that workspace).
+[install]
+registry = "https://registry.npmjs.org"
+
+[resolve]
+# Effect packages use subpath exports; keep Bun resolving them consistently
+conditions = ["import", "module", "node"]

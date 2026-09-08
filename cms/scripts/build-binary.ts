@@ -107,8 +107,6 @@ async function compileBinary(options: BuildOptions = {}): Promise<string> {
     // External dependencies that have native bindings
     // These must be installed on the target system
     '--external',
-    '@effect/cluster',
-    '--external',
     'sharp',
   ];
 
