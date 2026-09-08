@@ -1,0 +1,40 @@
+name: CI Hygiene
+
+# Regression guards for incidents that broke CI or docs silently.
+# See scripts/check-ci-hygiene.sh for the incident list.
+# Add new guards there; keep this workflow's paths in sync with what the
+# script reads (workflows, AGENTS.md, cms READMEs, CUTOVER).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'AGENTS.md'
+      - 'cms/README.md'
+      - 'cms/CUTOVER.md'
+      - 'scripts/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'AGENTS.md'
+      - 'cms/README.md'
+      - 'cms/CUTOVER.md'
+      - 'scripts/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    name: Regression guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Run hygiene guards
+        run: bash scripts/check-ci-hygiene.sh
