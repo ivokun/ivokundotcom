@@ -208,7 +208,7 @@ jobs:
         # up section with awk and pipe to psql - raw psql -f would run the
         # down block too.
         run: |
-          cd cms/db/migrations
+          cd db/migrations
           for f in *.sql; do
             awk '/-- migrate:down/{exit} /-- migrate:up/{next} {print}' "$f" \
               | PGPASSWORD=postgres psql -h localhost -U postgres -d ivokundotcom_test -v ON_ERROR_STOP=1 --quiet
