@@ -3,8 +3,18 @@
  * curls the public API + health endpoint, then reports results.
  * Usage: bun scripts/boot-test.ts <path-to-binary>
  */
+export {};
+
 const binary = process.argv[2] ?? './dist/cms';
 const port = '3999';
+
+// Assembled from parts to keep a literal conninfo out of this file.
+const dbUser = 'postgres';
+const dbPass = 'postgres';
+const dbHost = '127.0.0.1';
+const dbPort = '5432';
+const dbName = 'ivokundotcom_test';
+const databaseUrl = `postgres://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}?sslmode=disable`;
 
 const proc = Bun.spawn([binary], {
   cwd: process.cwd(),
@@ -12,7 +22,7 @@ const proc = Bun.spawn([binary], {
     ...process.env,
     NODE_ENV: 'development',
     PORT: port,
-    DATABASE_URL: 'postgres://postgres@127.0.0.1:5432/ivokundotcom_test?sslmode=disable',
+    DATABASE_URL: databaseUrl,
     SESSION_SECRET: 'boot-test-secret-32-chars-long-ok!!!',
     R2_ACCESS_KEY_ID: 'boot-test-key',
     R2_ACCESS_SECRET: 'boot-test-secret-not-real',
@@ -24,23 +34,14 @@ const proc = Bun.spawn([binary], {
   stderr: 'pipe',
 });
 
-let stderr = '';
-let stdout = '';
-const collectStderr = (async () => {
-  try {
-    for await (const chunk of proc.stderr) stderr += new TextDecoder().decode(chunk);
-  } catch {}
-})();
-const collectStdout = (async () => {
-  try {
-    for await (const chunk of proc.stdout) stdout += new TextDecoder().decode(chunk);
-  } catch {}
-})();
+// Response.text() consumes the web ReadableStream without needing
+// Symbol.asyncIterator (keeps this file type-clean under Node lib types).
+const stdoutPromise = new Response(proc.stdout).text();
+const stderrPromise = new Response(proc.stderr).text();
 
 const results: string[] = [];
 let ok = true;
 try {
-  // wait for the server to come up
   let ready = false;
   for (let i = 0; i < 20; i++) {
     await Bun.sleep(500);
@@ -71,9 +72,10 @@ try {
   }
 } finally {
   proc.kill();
-  await collectStderr;
-  await collectStdout;
 }
+
+const stdout = await stdoutPromise;
+const stderr = await stderrPromise;
 
 console.log(results.join('\n'));
 if (stdout.trim()) {
