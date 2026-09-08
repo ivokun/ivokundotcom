@@ -17,8 +17,6 @@ import { formatCategoryName } from './category';
 import { formatReadTime, getImageUrl } from './article';
 import { cmsFetch } from './cms';
 
-const DUMMY_ENV = { CMS_API_URL: 'http://127.0.0.1:1', CMS_API_TOKEN: 'dummy-token' };
-
 describe('formatCategoryName', () => {
   it('lowercases names for data-filtering by default', () => {
     expect(formatCategoryName('Web Development')).toBe('web development');
@@ -72,31 +70,18 @@ describe('getImageUrl', () => {
 });
 
 describe('cmsFetch', () => {
-  // cmsFetch captures import.meta.env at module-eval time, so each case
-  // re-imports the module with a unique query string to get a fresh copy.
+  // cmsFetch captures import.meta.env at module-eval time, so env cases run
+  // in a spawned child bun process with a clean environment (dynamic import
+  // with query strings hangs on bun 1.1.38, hence not used here).
   it('throws a descriptive error when CMS_API_URL is missing', async () => {
-    delete process.env.CMS_API_URL;
-    delete process.env.CMS_API_TOKEN;
-    const { cmsFetch: fresh } = await import(`./cms.ts?case=missing-url-${Date.now()}`);
-    let message = '';
-    try {
-      await fresh('api/posts');
-    } catch (e) {
-      message = e instanceof Error ? e.message : String(e);
-    }
-    expect(message).toContain('CMS_API_URL');
+    const proc = Bun.spawnSync(['bun', `${import.meta.dir}/../../scripts/cms-fetch-env.ts`, 'missing-url']);
+    const output = proc.stdout.toString() + proc.stderr.toString();
+    expect(output).toContain('OK:');
   });
 
   it('throws a descriptive error when the CMS is unreachable', async () => {
-    process.env.CMS_API_URL = DUMMY_ENV.CMS_API_URL;
-    process.env.CMS_API_TOKEN = DUMMY_ENV.CMS_API_TOKEN;
-    const { cmsFetch: fresh } = await import(`./cms.ts?case=unreachable-${Date.now()}`);
-    let message = '';
-    try {
-      await fresh('api/posts');
-    } catch (e) {
-      message = e instanceof Error ? e.message : String(e);
-    }
-    expect(message).toContain('unreachable');
+    const proc = Bun.spawnSync(['bun', `${import.meta.dir}/../../scripts/cms-fetch-env.ts`, 'unreachable']);
+    const output = proc.stdout.toString() + proc.stderr.toString();
+    expect(output).toContain('OK:');
   });
 });
