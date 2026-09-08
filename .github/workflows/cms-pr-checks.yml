@@ -122,7 +122,7 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable
           SESSION_SECRET: test-secret-min-32-chars-long-for-ci-only!!!
         run: |
-          devenv shell -- bun --filter '@ivokundotcom/cms' test src/services/ src/middleware.test.ts src/schemas.test.ts src/errors.test.ts
+          devenv shell -- bun --filter '@ivokundotcom/cms' test src/services/ src/config.test.ts src/middleware.test.ts src/schemas.test.ts src/errors.test.ts
         # timeout returns 124 if killed by timeout, 0-123 for command exit
 
   build-spa:

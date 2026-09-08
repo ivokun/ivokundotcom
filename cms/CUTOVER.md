@@ -1,5 +1,7 @@
 # CMS Cutover Plan
 
+> **STATUS: COMPLETED — May 2026.** The Strapi → ivokun CMS cutover described below was executed and completed (see ADR-007 and the May 2026 incident trail documented in ADR-013, commits `3cf8cb1`–`47480bf`). This document is retained as a historical record of the procedure; the checklists below were **not** ticked in-place during execution. Do not treat unchecked boxes as pending work.
+
 Migration from Strapi 5 to ivokun CMS.
 
 ## Pre-Migration Checklist
@@ -79,9 +81,10 @@ SELECT count(*) FROM posts WHERE status = 'published';
 
 1. Update frontend environment variables:
    ```
-   CMS_API_URL=https://cms.ivokun.com/api
+   CMS_API_URL=https://cms.ivokun.com
    CMS_API_TOKEN=new-api-key-from-admin
    ```
+   <!-- Note: no /api suffix — cmsFetch appends "api/..." paths itself. -->
 
 2. Update API client code if response format differs
 

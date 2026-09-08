@@ -14,7 +14,7 @@
 | **Issue** | CORS defaults to `'*'` allowing any origin to access the API |
 | **Risk** | CSRF attacks, credential theft, unauthorized API access |
 | **Fix** | Change default based on environment; add validation |
-| **Status** | ⚠️ Partial — CORS warns in production but no hard enforcement (`e4b4794`) |
+| **Status** | ✅ Fixed — Hard-enforced: both config paths fail-fast (`Effect.die` / `throw`) when `CORS_ORIGIN` is wildcard or empty in production (hardening round, 2026-08) |
 
 **Current Code:**
 ```typescript

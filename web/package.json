@@ -11,6 +11,8 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "test": "bun test src/",
+    "test:build": "bash scripts/smoke.sh",
     "typecheck": "astro check",
     "astro": "astro"
   },

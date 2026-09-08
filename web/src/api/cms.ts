@@ -89,7 +89,9 @@ export async function cmsFetch<T>(endpoint: string, options: RequestInit = {}): 
 
     return response.json() as Promise<T>;
   } catch (error) {
-    if (error instanceof TypeError && error.message === 'fetch failed') {
+    // Node's fetch throws TypeError("fetch failed"); Bun's throws Error("Unable
+    // to connect..."). Translate both to a friendlier message (prod runs Bun).
+    if (error instanceof Error && /fetch failed|unable to connect/i.test(error.message)) {
       throw new Error('CMS API is unreachable. Please try again later.');
     }
     throw error;

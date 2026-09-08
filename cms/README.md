@@ -7,7 +7,7 @@ A custom headless CMS built with Effect TS, Kysely, and Bun. Designed as a light
 - **Content Types**: Posts (with i18n), Categories, Galleries, Media, Home singleton
 - **Rich Text Editor**: TipTap-based editor with image support
 - **Media Management**: Image processing with automatic WebP conversion and responsive variants
-- **Admin Panel**: SolidJS single-page application
+- **Admin Panel**: React single-page application (Radix UI + TanStack Router/Query)
 - **Authentication**: Session-based admin auth, API key auth for public endpoints
 - **Storage**: Cloudflare R2 integration for media files
 - **Deployment**: Single binary compilation, NixOS module included
@@ -18,7 +18,7 @@ A custom headless CMS built with Effect TS, Kysely, and Bun. Designed as a light
 - **Language**: TypeScript with strict mode
 - **Backend**: Effect TS for type-safe error handling and services
 - **Database**: PostgreSQL with Kysely query builder
-- **Admin UI**: SolidJS + TailwindCSS + TipTap 3.x
+- **Admin UI**: React + Radix UI + TailwindCSS + TipTap 3.x
 - **Image Processing**: Sharp
 
 ## Monorepo Context
@@ -289,7 +289,7 @@ cms/
 │   │   ├── image.service.ts
 │   │   ├── storage.service.ts
 │   │   └── db.service.ts
-│   └── admin/              # SolidJS admin panel
+│   └── admin/              # React admin panel
 │       ├── App.tsx
 │       ├── api.ts
 │       └── store.ts
@@ -331,7 +331,7 @@ This ensures proper resolution of Effect TS subpath exports and prevents version
 
 - [ADR-001: Custom CMS Architecture](../docs/adr/001-cms-architecture.md)
 - [ADR-002: Effect TS Adoption](../docs/adr/002-effect-ts-adoption.md)
-- [ADR-003: SolidJS for Admin SPA](../docs/adr/003-admin-spa-technology.md)
+- [ADR-003: React for Admin SPA](../docs/adr/003-admin-spa-technology.md)
 - [ADR-004: Image Processing Pipeline](../docs/adr/004-image-processing-pipeline.md)
 - [ADR-005: Authentication Strategy](../docs/adr/005-authentication-strategy.md)
 - [ADR-006: Bun Workspace Configuration](../docs/adr/006-bun-workspace-configuration.md)
