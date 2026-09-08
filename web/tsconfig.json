@@ -17,5 +17,11 @@
       "@utils/*": ["src/utils/*"]
     },
     "typeRoots": []
-  }
+  },
+  "exclude": [
+    "dist",
+    "node_modules",
+    "scripts",
+    "src/**/*.test.ts"
+  ]
 }

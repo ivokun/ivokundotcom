@@ -12,7 +12,7 @@ An Architecture Decision Record captures an important architectural decision mad
 |-----|-------|--------|------|
 | [001](./001-cms-architecture.md) | Custom CMS Architecture | Accepted | 2025-01-06 |
 | [002](./002-effect-ts-adoption.md) | Effect TS Adoption for Backend | Accepted | 2025-01-06 |
-| [003](./003-admin-spa-technology.md) | SolidJS for Admin SPA | Accepted | 2025-01-06 |
+| [003](./003-admin-spa-technology.md) | SolidJS for Admin SPA | Superseded (shipped as React) | 2025-01-06 |
 | [004](./004-image-processing-pipeline.md) | Image Processing Pipeline | Accepted | 2025-01-06 |
 | [005](./005-authentication-strategy.md) | Authentication Strategy | Accepted | 2025-01-06 |
 | [006](./006-bun-workspace-configuration.md) | Bun Workspace Configuration | Accepted | 2025-01-07 |
@@ -22,6 +22,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [010](./010-unified-api-client.md) | Unified API Client Architecture | Accepted | 2026-02-24 |
 | [011](./011-gallery-ordering-strategy.md) | Gallery Image Ordering and Resolution Strategy | Accepted | 2026-02-24 |
 | [012](./012-async-debounced-webhook.md) | Asynchronous Debounced Webhook Deployment | Accepted | 2026-03-05 |
+| [013](./013-may-2026-empty-body-500-postmortem.md) | Post-mortem: May 2026 Empty-Body 500s | Accepted | 2026-08-31 |
 
 ## Summary
 
@@ -46,6 +47,8 @@ An Architecture Decision Record captures an important architectural decision mad
 - Composable async operations
 
 ### ADR-003: SolidJS for Admin SPA
+
+**Status note:** Superseded in practice — the shipped implementation is React 18 + Radix UI + TanStack Router/Query (see ADR-003 file header and `cms/src/admin/`).
 
 **Decision:** Use SolidJS instead of React/Vue for the admin interface.
 

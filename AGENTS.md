@@ -15,7 +15,7 @@
 - **Build:** `bun --filter web build`
 - **Check:** `bun --filter web astro check`
 
-### CMS (Effect TS + Kysely + SolidJS)
+### CMS (Effect TS + Kysely + React)
 - **Dev Server:** `bun --filter '@ivokundotcom/cms' dev` (Runs server + SPA)
 - **Dev Server Only:** `bun --filter '@ivokundotcom/cms' dev:server`
 - **Dev SPA Only:** `bun --filter '@ivokundotcom/cms' dev:spa`
@@ -79,7 +79,7 @@
 
 ### Project Structure
 - **`web/`**: Astro frontend with React islands.
-- **`cms/`**: Standalone CMS binary using Kysely (Postgres) and SolidJS admin panel.
+- **`cms/`**: Standalone CMS binary using Kysely (Postgres) and React admin panel (Radix UI, TanStack Router/Query, TipTap).
 - **`infra/`**: Terraform infrastructure definitions.
 - **`docs/adr/`**: Architecture Decision Records.
 

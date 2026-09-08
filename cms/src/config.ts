@@ -31,11 +31,15 @@ export class AppConfig extends Effect.Service<AppConfig>()('AppConfig', {
       Config.withDefault(isDevelopment ? '*' : '')
     );
 
+    // SEC-001: fail-fast in production. A wildcard or empty CORS_ORIGIN in
+    // production is a deployment error, not a runtime condition — refuse to
+    // start instead of warning and serving with `Access-Control-Allow-Origin: *`.
     if (isProduction && (!corsOrigin || corsOrigin === '*')) {
-      yield* Effect.logWarning(
-        'CORS_ORIGIN is not set or set to wildcard (*) in production. ' +
-          'This allows any origin to access the API. ' +
-          'Set CORS_ORIGIN to your production domain (e.g. https://yourdomain.com).'
+      return yield* Effect.die(
+        new Error(
+          'CORS_ORIGIN must be set to a specific origin (e.g. https://yourdomain.com) ' +
+            'in production. Refusing to start with a wildcard (*) or empty CORS_ORIGIN.'
+        )
       );
     }
 

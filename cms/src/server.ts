@@ -130,10 +130,11 @@ export const createAppLayer = (
 
   const resolvedCorsOrigin =
     config?.corsOrigin ?? process.env['CORS_ORIGIN'] ?? (isProductionEnv ? '' : '*');
+  // SEC-001: fail-fast (consistent with the SESSION_SECRET guard above).
   if (isProductionEnv && (!resolvedCorsOrigin || resolvedCorsOrigin === '*')) {
-    console.warn(
-      '[SECURITY] CORS_ORIGIN is not set or is wildcard (*) in production. ' +
-        'Set CORS_ORIGIN to your production domain (e.g. https://yourdomain.com).'
+    throw new Error(
+      'CORS_ORIGIN must be set to a specific origin (e.g. https://yourdomain.com) ' +
+        'in production. Refusing to start with a wildcard (*) or empty CORS_ORIGIN.'
     );
   }
 

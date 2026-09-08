@@ -102,7 +102,11 @@ jobs:
           name: devenv
 
       - name: Install devenv binary
-        run: nix profile install --accept-flake-config github:cachix/devenv/latest
+        # Pinned to devenv v2.2.2 - the version verified green in CI (2026-09-05).
+        # devenv 2.3 (released 2026-09-07 on :latest) breaks `devenv shell`
+        # with "The option `dotenv.resolved' was accessed but has no value
+        # defined" during nix evaluation. Unpin once that regression is fixed.
+        run: nix profile install --accept-flake-config github:cachix/devenv/b8030c58deafc013fc51791377fe8fea4dadcb00 # v2.2.2
 
       - name: Wait for PostgreSQL
         run: |
@@ -122,7 +126,7 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/ivokundotcom_test?sslmode=disable
           SESSION_SECRET: test-secret-min-32-chars-long-for-ci-only!!!
         run: |
-          devenv shell -- bun --filter '@ivokundotcom/cms' test src/services/ src/middleware.test.ts src/schemas.test.ts src/errors.test.ts
+          devenv shell -- bun --filter '@ivokundotcom/cms' test src/services/ src/config.test.ts src/middleware.test.ts src/schemas.test.ts src/errors.test.ts
         # timeout returns 124 if killed by timeout, 0-123 for command exit
 
   build-spa:

@@ -1,6 +1,6 @@
-# ADR-003: SolidJS for Admin SPA
+# ADR-003: React for Admin SPA
 
-> **Status:** Accepted  
+> **Status:** Superseded in practice — the shipped code is React 18 + Radix UI + TanStack Router/Query (see `cms/src/admin/` and `cms/package.json`). The original decision below chose SolidJS, but the implementation that landed in mid-2025 (`47480bf`) is React. Kept for historical context; do not build new admin features against SolidJS.  
 > **Date:** 2025-01-06  
 > **Deciders:** ivokun  
 > **Related:** ADR-001 (CMS Architecture)
