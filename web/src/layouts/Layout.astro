@@ -20,9 +20,7 @@ const socialImageURL = new URL(ogImage ? ogImage : "ogp.jpg", Astro.url.origin)
 ---
 
 <style is:global>
-  @tailwind base;
-  @tailwind components;
-  @tailwind utilities;
+  @import '../styles/global.css';
 
   @layer base {
     a {
