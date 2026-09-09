@@ -467,8 +467,33 @@ const applySecurityHeaders = (
 };
 
 // =============================================================================
-// CORS MIDDLEWARE - ARCH-003
+// CORS - ARCH-003
 // =============================================================================
+// Add the CORS origin header to a response. Used by corsMiddleware for normal
+// responses AND by the top-level error handler so that auth failures (401) and
+// other error paths still carry the header - without it, browsers block the
+// error response and clients only see an opaque network error.
+// NOTE: HttpServerResponse.json() returns an Effect (serialization can fail),
+// so this takes and returns the effect, mapping over the inner response.
+const withCorsOrigin = <E>(
+  responseEffect: Effect.Effect<HttpServerResponse.HttpServerResponse, E>
+) =>
+  Effect.gen(function* () {
+    const config = yield* AppConfig;
+    return yield* Effect.map(responseEffect, (response) =>
+      HttpServerResponse.setHeader(response, 'Access-Control-Allow-Origin', config.corsOrigin)
+    );
+  });
+
+const preflightResponse = Effect.gen(function* () {
+  const config = yield* AppConfig;
+  return HttpServerResponse.empty({ status: 204 }).pipe(
+    HttpServerResponse.setHeader('Access-Control-Allow-Origin', config.corsOrigin),
+    HttpServerResponse.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS'),
+    HttpServerResponse.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization'),
+    HttpServerResponse.setHeader('Access-Control-Max-Age', '86400')
+  );
+});
 
 const corsMiddleware = HttpMiddleware.make((app) =>
   Effect.gen(function* () {
@@ -477,15 +502,7 @@ const corsMiddleware = HttpMiddleware.make((app) =>
 
     // Handle OPTIONS preflight requests
     if (req.method === 'OPTIONS') {
-      return HttpServerResponse.empty({ status: 204 }).pipe(
-        HttpServerResponse.setHeader('Access-Control-Allow-Origin', config.corsOrigin),
-        HttpServerResponse.setHeader(
-          'Access-Control-Allow-Methods',
-          'GET,POST,PATCH,DELETE,OPTIONS'
-        ),
-        HttpServerResponse.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization'),
-        HttpServerResponse.setHeader('Access-Control-Max-Age', '86400')
-      );
+      return yield* preflightResponse;
     }
 
     // For non-OPTIONS requests, add CORS header to the response
@@ -1437,6 +1454,16 @@ const appRouter = healthRouter.pipe(
   HttpRouter.concat(adminRouter),
   HttpRouter.concat(adminStaticRouter),
   HttpRouter.concat(uploadsRouter),
+  // CORS preflight fallback: browsers send OPTIONS before cross-origin
+  // requests. Without a matching route, OPTIONS on any registered path
+  // falls through to a 404 (no CORS headers), and the browser reports a
+  // CORS failure instead of the real error.
+  HttpRouter.options(
+    '/api/*',
+    Effect.gen(function* () {
+      return yield* preflightResponse;
+    })
+  ),
   // Apply security headers to all routes including static assets
   HttpRouter.use(HttpMiddleware.make((app) => Effect.map(app, applySecurityHeaders)))
 );
@@ -1444,37 +1471,46 @@ const appRouter = healthRouter.pipe(
 // Catch ALL errors at the router level, BEFORE @effect/platform's built-in
 // withErrorHandling layer swallows them and returns a 500 with empty body.
 // This handles both typed failures (Effect.fail) and defects (Effect.die).
+// Every response here is wrapped with the CORS origin header: these are the
+// responses browsers most need to be able to READ (otherwise the request
+// shows up as an opaque network error in the client instead of the 401/500).
 const appRouterWithErrors = appRouter.pipe(
-  HttpRouter.catchAllCause((cause) => {
-    if (Cause.isDie(cause)) {
-      console.error('Defect (unrecoverable error):', Cause.pretty(cause));
-      return HttpServerResponse.json(
-        {
-          error: 'InternalServerError',
-          message: 'An unexpected error occurred',
-        },
-        { status: 500 }
-      );
-    }
-
-    if (Cause.isFailType(cause)) {
-      const error = cause.error;
-      if (isAppError(error)) {
-        const status = toHttpStatus(error);
-        const body = toJsonResponse(error);
-        return HttpServerResponse.json(body, { status });
+  HttpRouter.catchAllCause((cause) =>
+    Effect.gen(function* () {
+      if (Cause.isDie(cause)) {
+        console.error('Defect (unrecoverable error):', Cause.pretty(cause));
+        return yield* withCorsOrigin(
+          HttpServerResponse.json(
+            {
+              error: 'InternalServerError',
+              message: 'An unexpected error occurred',
+            },
+            { status: 500 }
+          )
+        );
       }
-      console.error('Unhandled typed error:', error);
-    }
 
-    return HttpServerResponse.json(
-      {
-        error: 'InternalServerError',
-        message: 'An unexpected error occurred',
-      },
-      { status: 500 }
-    );
-  })
+      if (Cause.isFailType(cause)) {
+        const error = cause.error;
+        if (isAppError(error)) {
+          const status = toHttpStatus(error);
+          const body = toJsonResponse(error);
+          return yield* withCorsOrigin(HttpServerResponse.json(body, { status }));
+        }
+        console.error('Unhandled typed error:', error);
+      }
+
+      return yield* withCorsOrigin(
+        HttpServerResponse.json(
+          {
+            error: 'InternalServerError',
+            message: 'An unexpected error occurred',
+          },
+          { status: 500 }
+        )
+      );
+    })
+  )
 );
 
 // =============================================================================
