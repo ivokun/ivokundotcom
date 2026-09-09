@@ -70,6 +70,29 @@ try {
       results.push(`FAIL: /api/posts -> HTTP ${posts.status}, body JSON: ${bodyIsJson}, body: ${bodyText.slice(0, 120)}`);
       ok = false;
     }
+
+    // CORS contract (dev: wildcard, prod: specific origin):
+    // - error responses (401) must carry Access-Control-Allow-Origin
+    // - OPTIONS preflight must be 204 with the preflight headers, not 404
+    const acao = posts.headers.get('access-control-allow-origin');
+    if (acao) {
+      results.push(`ok: 401 carries Access-Control-Allow-Origin (${acao})`);
+    } else {
+      results.push('FAIL: 401 missing Access-Control-Allow-Origin header');
+      ok = false;
+    }
+    const preflight = await fetch(`http://127.0.0.1:${port}/api/posts`, {
+      method: 'OPTIONS',
+      headers: { 'Origin': 'https://ivokun.com', 'Access-Control-Request-Method': 'GET' },
+    });
+    const pfAcao = preflight.headers.get('access-control-allow-origin');
+    const pfMethods = preflight.headers.get('access-control-allow-methods');
+    if (preflight.status === 204 && pfAcao && pfMethods) {
+      results.push(`ok: OPTIONS /api/posts -> 204 with preflight headers`);
+    } else {
+      results.push(`FAIL: OPTIONS /api/posts -> ${preflight.status}, acao=${pfAcao}, methods=${pfMethods}`);
+      ok = false;
+    }
   }
 } finally {
   proc.kill();
