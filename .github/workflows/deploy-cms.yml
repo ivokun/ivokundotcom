@@ -159,19 +159,13 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           ssh -i ~/.ssh/deploy_key "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' << 'EOF'
-            ENV_FILE="$(systemctl show cms -p EnvironmentFile --value | head -1)"
-            if [ -z "$ENV_FILE" ]; then
-              echo "ERROR: cms unit has no EnvironmentFile; cannot set CORS_ORIGIN" >&2
-              exit 1
-            fi
-            echo "env file: $ENV_FILE"
-            if sudo cat "$ENV_FILE" | grep -q '^CORS_ORIGIN='; then
-              echo "CORS_ORIGIN already present - leaving as-is"
-              sudo cat "$ENV_FILE" | grep '^CORS_ORIGIN='
-            else
-              echo "CORS_ORIGIN=https://ivokun.com" | sudo tee -a "$ENV_FILE"
-              echo "appended CORS_ORIGIN to $ENV_FILE"
-            fi
+            set -u
+            echo "=== unit file (cms.service) ==="
+            systemctl cat cms 2>/dev/null | sed -n '1,80p' || echo "(systemctl cat failed)"
+            echo "=== effective env of running unit ==="
+            systemctl show cms -p Environment --value 2>/dev/null | tr ' ' '\n' | sed -E 's/(KEY|SECRET|PASSWORD|TOKEN)=.*/\1=REDACTED/' || true
+            echo "=== drop-ins ==="
+            ls -la /etc/systemd/system/cms.service.d/ 2>/dev/null || echo "(no drop-ins)"
           EOF
 
       - name: Restart CMS service
