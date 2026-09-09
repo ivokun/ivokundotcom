@@ -159,13 +159,32 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           ssh -i ~/.ssh/deploy_key "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' << 'EOF'
-            set -u
-            echo "=== unit file (cms.service) ==="
-            systemctl cat cms 2>/dev/null | sed -n '1,80p' || echo "(systemctl cat failed)"
-            echo "=== effective env of running unit ==="
-            systemctl show cms -p Environment --value 2>/dev/null | tr ' ' '\n' | sed -E 's/(KEY|SECRET|PASSWORD|TOKEN)=.*/\1=REDACTED/' || true
-            echo "=== drop-ins ==="
-            ls -la /etc/systemd/system/cms.service.d/ 2>/dev/null || echo "(no drop-ins)"
+            set -eu
+            ORIGIN_VALUE="CORS_ORIGIN=https://ivokun.com"
+
+            # 1. Immediate: append to the sops-nix env file. Note: /run/secrets
+            #    is regenerated at boot, so this alone is NOT durable.
+            ENV_FILE="/run/secrets/vars/cms/cms.env"
+            if sudo cat "$ENV_FILE" | grep -q '^CORS_ORIGIN='; then
+              echo "env file already has CORS_ORIGIN - leaving as-is"
+              sudo cat "$ENV_FILE" | grep '^CORS_ORIGIN='
+            else
+              echo "$ORIGIN_VALUE" | sudo tee -a "$ENV_FILE"
+              echo "appended CORS_ORIGIN to $ENV_FILE"
+            fi
+
+            # 2. Durable: systemd drop-in. Persists across reboots and
+            #    sops-nix secret regeneration until a NixOS switch removes it.
+            DROP_DIR="/etc/systemd/system/cms.service.d"
+            DROP_FILE="$DROP_DIR/cors-origin.conf"
+            if [ -f "$DROP_FILE" ] && grep -q '^CORS_ORIGIN=' "$DROP_FILE"; then
+              echo "drop-in already present - leaving as-is"
+            else
+              sudo mkdir -p "$DROP_DIR"
+              printf '[Service]\nEnvironment="%s"\n' "$ORIGIN_VALUE" | sudo tee "$DROP_FILE"
+              sudo systemctl daemon-reload
+              echo "wrote $DROP_FILE"
+            fi
           EOF
 
       - name: Restart CMS service
