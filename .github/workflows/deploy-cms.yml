@@ -173,17 +173,23 @@ jobs:
               echo "appended CORS_ORIGIN to $ENV_FILE"
             fi
 
-            # 2. Durable: systemd drop-in. Persists across reboots and
-            #    sops-nix secret regeneration until a NixOS switch removes it.
+            # 2. Durable-on-NixOS: /etc/systemd/system is READ-ONLY on NixOS
+            #    (declaratively managed), so a drop-in usually cannot be
+            #    written here. Try, but never fail the deploy over it - the
+            #    real persistent fix is CORS_ORIGIN in the sops plaintext.
             DROP_DIR="/etc/systemd/system/cms.service.d"
             DROP_FILE="$DROP_DIR/cors-origin.conf"
             if [ -f "$DROP_FILE" ] && grep -q '^CORS_ORIGIN=' "$DROP_FILE"; then
               echo "drop-in already present - leaving as-is"
             else
-              sudo mkdir -p "$DROP_DIR"
-              printf '[Service]\nEnvironment="%s"\n' "$ORIGIN_VALUE" | sudo tee "$DROP_FILE"
-              sudo systemctl daemon-reload
-              echo "wrote $DROP_FILE"
+              if sudo mkdir -p "$DROP_DIR" 2>/dev/null \
+                 && printf '[Service]\nEnvironment="%s"\n' "$ORIGIN_VALUE" | sudo tee "$DROP_FILE" >/dev/null 2>&1 \
+                 && sudo systemctl daemon-reload 2>/dev/null; then
+                echo "wrote $DROP_FILE"
+              else
+                echo "WARN: could not write systemd drop-in ($DROP_DIR read-only on NixOS) - "
+                echo "      relying on env-file edit; add CORS_ORIGIN to the sops plaintext for durability."
+              fi
             fi
           EOF
 
