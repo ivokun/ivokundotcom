@@ -149,6 +149,31 @@ jobs:
           # Close SSH tunnel
           pkill -f "ssh.*-L 15432" || true
 
+      - name: Ensure CORS_ORIGIN in service env
+        # SEC-001 (docs/issues/01-security.md) now hard-fails startup in
+        # production without a specific CORS_ORIGIN. The prod env file
+        # historically had none (CMS ran wildcard without anyone noticing),
+        # so set it idempotently before restarting the service.
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' << 'EOF'
+            ENV_FILE="$(systemctl show cms -p EnvironmentFile --value | head -1)"
+            if [ -z "$ENV_FILE" ]; then
+              echo "ERROR: cms unit has no EnvironmentFile; cannot set CORS_ORIGIN" >&2
+              exit 1
+            fi
+            echo "env file: $ENV_FILE"
+            if sudo cat "$ENV_FILE" | grep -q '^CORS_ORIGIN='; then
+              echo "CORS_ORIGIN already present - leaving as-is"
+              sudo cat "$ENV_FILE" | grep '^CORS_ORIGIN='
+            else
+              echo "CORS_ORIGIN=https://ivokun.com" | sudo tee -a "$ENV_FILE"
+              echo "appended CORS_ORIGIN to $ENV_FILE"
+            fi
+          EOF
+
       - name: Restart CMS service
         env:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
@@ -157,6 +182,34 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
             "${DEPLOY_USER}@${DEPLOY_HOST}" \
             'chmod +x /opt/cms/cms && systemctl restart cms'
+
+      - name: Health check (post-deploy)
+        # Refusing a "green" deploy when the service is dead. Without this,
+        # a failing binary (e.g. the SEC-001 CORS_ORIGIN fail-fast) dies
+        # silently after restart and the workflow still reports success.
+        env:
+          HEALTH_URL: ${{ secrets.CMS_HEALTH_URL }}
+        run: |
+          URL="${HEALTH_URL:-https://cms.ivokun.com/health}"
+          ready=0
+          for i in $(seq 1 15); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$URL" || true)"
+            if [ "$code" = "200" ]; then
+              echo "ok: /health 200 (attempt $i)"
+              ready=1
+              break
+            fi
+            echo "waiting: /health -> ${code:-no-response} (attempt $i/15)"
+            sleep 3
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::CMS did not become healthy after deploy (last: $code)."
+            echo "::error::If the log shows CORS_ORIGIN fail-fast, set CORS_ORIGIN in the service EnvironmentFile on ${DEPLOY_HOST}."
+            echo "FETCHING JOURNAL: the remote journalctl may still be readable from the runner:"
+            ssh -i ~/.ssh/deploy_key "${DEPLOY_USER}@${DEPLOY_HOST}" \
+              'sudo journalctl -u cms -n 30 --no-pager || journalctl -u cms -n 30 --no-pager' || true
+            exit 1
+          fi
 
       # SEC: Always clean up SSH key, even if previous steps fail
       - name: Cleanup SSH key
